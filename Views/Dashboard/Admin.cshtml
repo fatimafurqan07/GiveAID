@@ -1,0 +1,255 @@
+@model GiveAID_Project.Models.AdminDashboardViewModel
+
+@{
+    ViewBag.Title = "Admin Dashboard";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="dashboard-wrapper">
+    <!-- Header Banner -->
+    <div class="dashboard-header">
+        <div>
+            <div class="dashboard-badge admin-badge">🛡️ Platform Administrator</div>
+            <h1 class="dashboard-title">System Overview & Analytics</h1>
+            <p class="dashboard-subtitle">Monitor platform-wide fundraising activity, registered NGOs, active programs, and donor growth.</p>
+        </div>
+        <div class="dashboard-actions">
+            <span class="live-status-pill"><span class="pulse-dot"></span> Live Data</span>
+        </div>
+    </div>
+
+    <!-- Stat Cards Grid -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-icon icon-users">👥</div>
+            <div class="stat-info">
+                <div class="stat-value">@Model.TotalUsers</div>
+                <div class="stat-label">Total Registered Users</div>
+            </div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-icon icon-ngo">🏢</div>
+            <div class="stat-info">
+                <div class="stat-value">@Model.TotalNGOs</div>
+                <div class="stat-label">Active Partner NGOs</div>
+            </div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-icon icon-programs">🎯</div>
+            <div class="stat-info">
+                <div class="stat-value">@Model.TotalPrograms</div>
+                <div class="stat-label">Active Programs</div>
+            </div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-icon icon-funds">💰</div>
+            <div class="stat-info">
+                <div class="stat-value">$@Model.TotalFundsRaised.ToString("N0")</div>
+                <div class="stat-label">Total Donations Raised</div>
+            </div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-icon icon-apps">📝</div>
+            <div class="stat-info">
+                <div class="stat-value">@Model.PendingApplicationsCount</div>
+                <div class="stat-label">Pending NGO Reviews</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Section -->
+    <div class="dashboard-charts-grid">
+        <div class="dashboard-card chart-card">
+            <div class="card-header">
+                <h3>📈 Platform Donation Trends</h3>
+                <span class="card-subtitle">Monthly total contribution volume</span>
+            </div>
+            <div class="chart-container">
+                <canvas id="monthlyTrendChart"></canvas>
+            </div>
+        </div>
+
+        <div class="dashboard-card chart-card">
+            <div class="card-header">
+                <h3>🌍 Funding by Cause Category</h3>
+                <span class="card-subtitle">Distribution across humanitarian sectors</span>
+            </div>
+            <div class="chart-container">
+                <canvas id="causeDistChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tables Grid -->
+    <div class="dashboard-tables-grid">
+        <!-- Recent Donations -->
+        <div class="dashboard-card">
+            <div class="card-header">
+                <h3>💳 Recent Platform Donations</h3>
+                <span class="card-subtitle">Latest incoming contributions</span>
+            </div>
+            <div class="table-responsive">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Ref</th>
+                            <th>Donor</th>
+                            <th>NGO & Program</th>
+                            <th>Amount</th>
+                            <th>Date</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model.RecentDonations != null && Model.RecentDonations.Any())
+                        {
+                            foreach (var item in Model.RecentDonations)
+                            {
+                                <tr>
+                                    <td><code class="ref-code">@item.PaymentReference</code></td>
+                                    <td>
+                                        <strong>@item.DonorName</strong>
+                                        <div class="text-sub">@item.DonorEmail</div>
+                                    </td>
+                                    <td>
+                                        <strong>@item.NGOName</strong>
+                                        <div class="text-sub">@item.ProgramName</div>
+                                    </td>
+                                    <td class="amount-cell">$@item.Amount.ToString("N2")</td>
+                                    <td>@item.DonationDate.ToString("MMM dd, yyyy")</td>
+                                    <td><span class="status-pill status-completed">@item.Status</span></td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="6" class="text-center text-muted">No donations recorded yet.</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Pending & Recent NGO Applications -->
+        <div class="dashboard-card">
+            <div class="card-header">
+                <h3>📋 NGO Applications</h3>
+                <span class="card-subtitle">Partner onboarding requests</span>
+            </div>
+            <div class="table-responsive">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>NGO Name</th>
+                            <th>Applicant</th>
+                            <th>Location</th>
+                            <th>Submitted</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model.RecentApplications != null && Model.RecentApplications.Any())
+                        {
+                            foreach (var app in Model.RecentApplications)
+                            {
+                                <tr>
+                                    <td><strong>@app.NGOName</strong></td>
+                                    <td>
+                                        @app.ApplicantName
+                                        <div class="text-sub">@app.ApplicantEmail</div>
+                                    </td>
+                                    <td>@app.City</td>
+                                    <td>@app.SubmittedAt.ToString("MMM dd, yyyy")</td>
+                                    <td>
+                                        @if (app.Status == "Approved")
+                                        {
+                                            <span class="status-pill status-completed">Approved</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="status-pill status-pending">Pending Review</span>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="5" class="text-center text-muted">No applications found.</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        $(document).ready(function () {
+            // 1. Monthly Donation Trend Chart
+            var monthlyLabels = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(Model.MonthlyLabels));
+            var monthlyData = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(Model.MonthlyAmounts));
+
+            var ctxMonthly = document.getElementById('monthlyTrendChart').getContext('2d');
+            new Chart(ctxMonthly, {
+                type: 'bar',
+                data: {
+                    labels: monthlyLabels,
+                    datasets: [{
+                        label: 'Donations ($)',
+                        data: monthlyData,
+                        backgroundColor: '#2e7d32',
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function (val) { return '$' + val; }
+                            }
+                        }
+                    }
+                }
+            });
+
+            // 2. Cause Distribution Doughnut Chart
+            var causeLabels = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(Model.CauseLabels));
+            var causeData = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(Model.CauseAmounts));
+
+            var ctxCause = document.getElementById('causeDistChart').getContext('2d');
+            new Chart(ctxCause, {
+                type: 'doughnut',
+                data: {
+                    labels: causeLabels,
+                    datasets: [{
+                        data: causeData,
+                        backgroundColor: ['#2e7d32', '#1976d2', '#f57c00', '#7b1fa2', '#00796b', '#c2185b']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+        });
+    </script>
+}

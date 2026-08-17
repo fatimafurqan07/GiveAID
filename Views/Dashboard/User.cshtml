@@ -1,0 +1,238 @@
+@model GiveAID_Project.Models.UserDashboardViewModel
+
+@{
+    ViewBag.Title = "Donor Dashboard";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="dashboard-wrapper">
+    <!-- Header Banner -->
+    <div class="dashboard-header">
+        <div>
+            <div class="dashboard-badge user-badge">💚 Give-AID Donor Portal</div>
+            <h1 class="dashboard-title">Welcome back, @Model.FullName!</h1>
+            <p class="dashboard-subtitle">Track your charitable impact, review donation receipts, and manage your bookmarked humanitarian causes.</p>
+        </div>
+        <div class="dashboard-actions">
+            <span class="user-meta-pill">Member since @Model.MemberSince.ToString("MMM yyyy")</span>
+        </div>
+    </div>
+
+    <!-- Stat Cards Grid -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-icon icon-funds">💸</div>
+            <div class="stat-info">
+                <div class="stat-value">$@Model.TotalDonated.ToString("N2")</div>
+                <div class="stat-label">Total Impact Contributed</div>
+            </div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-icon icon-programs">🎁</div>
+            <div class="stat-info">
+                <div class="stat-value">@Model.TotalDonationsCount</div>
+                <div class="stat-label">Total Donations Made</div>
+            </div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-icon icon-ngo">🌍</div>
+            <div class="stat-info">
+                <div class="stat-value">@Model.CausesSupportedCount</div>
+                <div class="stat-label">Causes Supported</div>
+            </div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-icon icon-apps">⭐</div>
+            <div class="stat-info">
+                <div class="stat-value">@Model.SavedProgramsCount</div>
+                <div class="stat-label">Saved Programs of Interest</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Section -->
+    <div class="dashboard-charts-grid">
+        <div class="dashboard-card chart-card">
+            <div class="card-header">
+                <h3>🌱 My Giving by Cause</h3>
+                <span class="card-subtitle">Breakdown of your philanthropic contributions</span>
+            </div>
+            <div class="chart-container">
+                <canvas id="userCauseChart"></canvas>
+            </div>
+        </div>
+
+        <div class="dashboard-card chart-card">
+            <div class="card-header">
+                <h3>📅 Contribution History</h3>
+                <span class="card-subtitle">Monthly distribution of your donations</span>
+            </div>
+            <div class="chart-container">
+                <canvas id="userMonthlyChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tables Section -->
+    <div class="dashboard-tables-grid">
+        <!-- Donation History -->
+        <div class="dashboard-card">
+            <div class="card-header">
+                <h3>📜 My Donation History</h3>
+                <span class="card-subtitle">Official records and payment receipts</span>
+            </div>
+            <div class="table-responsive">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Receipt Ref</th>
+                            <th>NGO & Program</th>
+                            <th>Amount</th>
+                            <th>Date</th>
+                            <th>Method</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model.Donations != null && Model.Donations.Any())
+                        {
+                            foreach (var d in Model.Donations)
+                            {
+                                <tr>
+                                    <td><code class="ref-code">@d.PaymentReference</code></td>
+                                    <td>
+                                        <strong>@d.NGOName</strong>
+                                        <div class="text-sub">@d.ProgramName</div>
+                                    </td>
+                                    <td class="amount-cell">$@d.Amount.ToString("N2")</td>
+                                    <td>@d.DonationDate.ToString("MMM dd, yyyy")</td>
+                                    <td><span class="text-sub">@d.CardType (•••• @d.CardLastFour)</span></td>
+                                    <td><span class="status-pill status-completed">@d.Status</span></td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="6" class="text-center text-muted">You haven't made any donations yet. Explore causes to make your first donation!</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Saved Programs of Interest -->
+        <div class="dashboard-card">
+            <div class="card-header">
+                <h3>⭐ Bookmarked Programs</h3>
+                <span class="card-subtitle">Causes you are following closely</span>
+            </div>
+            <div class="table-responsive">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Program</th>
+                            <th>NGO</th>
+                            <th>Progress</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model.SavedPrograms != null && Model.SavedPrograms.Any())
+                        {
+                            foreach (var prog in Model.SavedPrograms)
+                            {
+                                <tr>
+                                    <td>
+                                        <strong>@prog.ProgramName</strong>
+                                        <div class="text-sub">@prog.CauseName</div>
+                                    </td>
+                                    <td>@prog.NGOName</td>
+                                    <td style="min-width: 140px;">
+                                        <div class="progress-bar-container">
+                                            <div class="progress-bar-fill" style="width: @(prog.ProgressPercent)%"></div>
+                                        </div>
+                                        <div class="progress-text">$@prog.CurrentAmount.ToString("N0") of $@prog.TargetAmount.ToString("N0") (@prog.ProgressPercent%)</div>
+                                    </td>
+                                    <td><span class="status-pill status-completed">@prog.Status</span></td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="4" class="text-center text-muted">No bookmarked programs yet.</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        $(document).ready(function () {
+            // 1. User Giving by Cause Doughnut Chart
+            var causeLabels = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(Model.CauseLabels));
+            var causeAmounts = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(Model.CauseAmounts));
+
+            var ctxCause = document.getElementById('userCauseChart').getContext('2d');
+            new Chart(ctxCause, {
+                type: 'doughnut',
+                data: {
+                    labels: causeLabels,
+                    datasets: [{
+                        data: causeAmounts,
+                        backgroundColor: ['#2e7d32', '#1976d2', '#f57c00', '#7b1fa2', '#00796b', '#c2185b']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+
+            // 2. User Monthly Giving History Bar Chart
+            var monthlyLabels = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(Model.MonthlyLabels));
+            var monthlyAmounts = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(Model.MonthlyAmounts));
+
+            var ctxMonthly = document.getElementById('userMonthlyChart').getContext('2d');
+            new Chart(ctxMonthly, {
+                type: 'bar',
+                data: {
+                    labels: monthlyLabels,
+                    datasets: [{
+                        label: 'My Donations ($)',
+                        data: monthlyAmounts,
+                        backgroundColor: '#2e7d32',
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function (val) { return '$' + val; }
+                            }
+                        }
+                    }
+                }
+            });
+        });
+    </script>
+}

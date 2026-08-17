@@ -1,0 +1,32 @@
+@{
+    ViewBag.Title = "Access Denied";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="auth-container">
+    <div class="auth-card access-denied-card text-center">
+        <div class="auth-header">
+            <div class="auth-icon">🚫</div>
+            <h2>Access Restricted</h2>
+            <p>You do not have permission to view or manage this section of Give-AID.</p>
+        </div>
+
+        <div class="access-denied-content">
+            <p class="text-muted">
+                Your account (@(Session["UserEmail"] ?? User.Identity.Name)) with role 
+                <strong class="badge-role">@(Session["UserRole"] ?? "User")</strong> 
+                is not authorized to perform administrative or restricted actions on this page.
+            </p>
+        </div>
+
+        <div class="logout-actions">
+            <a href="@Url.Action("Index", "Dashboard")" class="auth-btn">
+                Go to My Dashboard
+            </a>
+
+            <a href="@Url.Action("Index", "Home")" class="btn-secondary-link">
+                Return to Homepage
+            </a>
+        </div>
+    </div>
+</div>

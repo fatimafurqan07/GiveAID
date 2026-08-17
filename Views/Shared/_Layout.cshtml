@@ -1,0 +1,120 @@
+@{
+    Layout = null;
+}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@(ViewBag.Title ?? "Give-AID") - Give-AID</title>
+    
+    <link rel="stylesheet" href="@Url.Content("~/Content/bootstrap.min.css")" />
+    <link rel="stylesheet" href="@Url.Content("~/wwwroot/css/site.css")" />
+    @RenderSection("Styles", required: false)
+</head>
+<body>
+
+    <!-- =========================
+         NAVBAR
+         ========================= -->
+    <header class="site-header">
+        <nav class="navbar">
+            <!-- LOGO -->
+            <a class="brand" href="@Url.Action("Index", "Home")">
+                <span class="brand-give">Give</span><span class="brand-aid">-AID</span>
+            </a>
+
+            <!-- NAVIGATION -->
+            <div class="nav-links">
+                <a href="@Url.Action("Index", "Home")">Home</a>
+                <a href="@Url.Action("Index", "Donation")">Donate</a>
+                <a href="@Url.Action("Index", "HelpCenter")">Help Center</a>
+                <a href="@Url.Action("Index", "About")">About Us</a>
+                <a href="@Url.Action("Index", "Partner")">Our Partners</a>
+
+                @if (Request.IsAuthenticated || Session["UserID"] != null)
+                {
+                    <a href="@Url.Action("Index", "Dashboard")" class="dashboard-nav-link">
+                        📊 Dashboard
+                    </a>
+                    <span class="nav-user-greeting">
+                        <span class="nav-user-avatar">👤</span>
+                        <span class="nav-user-name">@(Session["UserName"] ?? (User != null && User.Identity != null ? User.Identity.Name : "User"))</span>
+                        @if (Session["UserRole"] != null)
+                        {
+                            <span class="badge-role badge-role-@((Session["UserRole"]?.ToString() ?? "").ToLower())">@Session["UserRole"]</span>
+                        }
+                    </span>
+                    <a href="@Url.Action("Logout", "Account")" class="register-button logout-button">Logout</a>
+                }
+                else
+                {
+                    <a href="@Url.Action("Login", "Account")" class="login-nav-link">Login</a>
+                    <a href="@Url.Action("Register", "Account")" class="register-button">Register</a>
+                }
+            </div>
+        </nav>
+    </header>
+
+    <!-- =========================
+         FLASH NOTIFICATIONS
+         ========================= -->
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert-banner alert-success-banner">
+            <div class="alert-content">
+                <span>✓ @TempData["SuccessMessage"]</span>
+            </div>
+        </div>
+    }
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert-banner alert-danger-banner">
+            <div class="alert-content">
+                <span>⚠ @TempData["ErrorMessage"]</span>
+            </div>
+        </div>
+    }
+
+    <!-- =========================
+         MAIN CONTENT
+         ========================= -->
+    <main class="main-content">
+        @RenderBody()
+    </main>
+
+    <!-- =========================
+         FOOTER
+         ========================= -->
+    <footer class="site-footer">
+        <div class="footer-content">
+            <div class="footer-brand">
+                <h3>Give-AID</h3>
+                <p>Connecting people with causes that matter.</p>
+            </div>
+
+            <div class="footer-links">
+                <a href="@Url.Action("Index", "Home")">Home</a>
+                <a href="@Url.Action("Index", "About")">About Us</a>
+                <a href="@Url.Action("Index", "HelpCenter")">Help Center</a>
+                <a href="@Url.Action("Index", "Partner")">Our Partners</a>
+            </div>
+
+            <div class="footer-contact">
+                <p>&copy; @DateTime.Now.Year Give-AID</p>
+                <p>All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- =========================
+         SCRIPTS
+         ========================= -->
+    <script src="@Url.Content("~/Scripts/jquery-3.7.0.min.js")"></script>
+    <script src="@Url.Content("~/Scripts/bootstrap.bundle.min.js")"></script>
+    <script src="@Url.Content("~/Scripts/jquery.validate.min.js")"></script>
+    <script src="@Url.Content("~/Scripts/jquery.validate.unobtrusive.min.js")"></script>
+    @RenderSection("Scripts", required: false)
+</body>
+</html>

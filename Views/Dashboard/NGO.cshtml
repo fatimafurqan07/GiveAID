@@ -1,0 +1,301 @@
+@model GiveAID_Project.Models.NgoDashboardViewModel
+
+@{
+    ViewBag.Title = "NGO Dashboard";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="dashboard-wrapper">
+    <!-- Header Banner -->
+    <div class="dashboard-header">
+        <div>
+            <div class="dashboard-badge ngo-badge">🏢 Partner NGO Portal</div>
+            <h1 class="dashboard-title">@Model.NGOName</h1>
+            <p class="dashboard-subtitle">Manage your philanthropic programs, monitor fundraising milestones, and engage with your supporters.</p>
+        </div>
+        <div class="dashboard-actions">
+            <span class="status-pill status-completed">✓ @Model.Status Partner</span>
+        </div>
+    </div>
+
+    <!-- Stat Cards Grid -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-icon icon-funds">💰</div>
+            <div class="stat-info">
+                <div class="stat-value">$@Model.TotalRaised.ToString("N0")</div>
+                <div class="stat-label">Total Raised to Date</div>
+            </div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-icon icon-users">🤝</div>
+            <div class="stat-info">
+                <div class="stat-value">@Model.TotalDonorsCount</div>
+                <div class="stat-label">Unique Donors</div>
+            </div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-icon icon-programs">📋</div>
+            <div class="stat-info">
+                <div class="stat-value">@Model.TotalProgramsCount</div>
+                <div class="stat-label">Active Programs</div>
+            </div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-icon icon-ngo">⭐</div>
+            <div class="stat-info">
+                <div class="stat-value">@Model.TotalInterestedUsersCount</div>
+                <div class="stat-label">Interested Supporters</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Section -->
+    <div class="dashboard-charts-grid">
+        <div class="dashboard-card chart-card">
+            <div class="card-header">
+                <h3>📊 Program Funding Milestones</h3>
+                <span class="card-subtitle">Current amount raised vs campaign target</span>
+            </div>
+            <div class="chart-container">
+                <canvas id="ngoProgramsChart"></canvas>
+            </div>
+        </div>
+
+        <div class="dashboard-card chart-card">
+            <div class="card-header">
+                <h3>📈 Monthly Donation Inflow</h3>
+                <span class="card-subtitle">Recent monthly contribution trends</span>
+            </div>
+            <div class="chart-container">
+                <canvas id="ngoMonthlyChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Programs Progress Table -->
+    <div class="dashboard-card mb-4">
+        <div class="card-header">
+            <h3>🎯 Your Active Programs</h3>
+            <span class="card-subtitle">Fundraising campaign progress and status</span>
+        </div>
+        <div class="table-responsive">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Program Name</th>
+                        <th>Cause & Location</th>
+                        <th>Target Amount</th>
+                        <th>Raised so far</th>
+                        <th>Progress</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model.Programs != null && Model.Programs.Any())
+                    {
+                        foreach (var prog in Model.Programs)
+                        {
+                            <tr>
+                                <td><strong>@prog.ProgramName</strong></td>
+                                <td>
+                                    <div>@prog.CauseName</div>
+                                    <div class="text-sub">📍 @prog.Location</div>
+                                </td>
+                                <td>$@prog.TargetAmount.ToString("N0")</td>
+                                <td class="amount-cell">$@prog.CurrentAmount.ToString("N0")</td>
+                                <td style="min-width: 160px;">
+                                    <div class="progress-bar-container">
+                                        <div class="progress-bar-fill" style="width: @(prog.ProgressPercent)%"></div>
+                                    </div>
+                                    <div class="progress-text">@prog.ProgressPercent% funded (@prog.InterestedCount supporters interested)</div>
+                                </td>
+                                <td><span class="status-pill status-completed">@prog.Status</span></td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="6" class="text-center text-muted">No programs created yet.</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Split Grid: Recent Donations & Top Supporters -->
+    <div class="dashboard-tables-grid">
+        <!-- Recent Donations -->
+        <div class="dashboard-card">
+            <div class="card-header">
+                <h3>💳 Recent Donations Received</h3>
+                <span class="card-subtitle">Contributions to your programs</span>
+            </div>
+            <div class="table-responsive">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Donor</th>
+                            <th>Program</th>
+                            <th>Amount</th>
+                            <th>Date</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model.RecentDonations != null && Model.RecentDonations.Any())
+                        {
+                            foreach (var d in Model.RecentDonations)
+                            {
+                                <tr>
+                                    <td>
+                                        <strong>@d.DonorName</strong>
+                                        <div class="text-sub">@d.DonorEmail</div>
+                                    </td>
+                                    <td>@d.ProgramName</td>
+                                    <td class="amount-cell">$@d.Amount.ToString("N2")</td>
+                                    <td>@d.DonationDate.ToString("MMM dd, yyyy")</td>
+                                    <td><span class="status-pill status-completed">@d.Status</span></td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="5" class="text-center text-muted">No recent donations.</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Top Supporters -->
+        <div class="dashboard-card">
+            <div class="card-header">
+                <h3>🏆 Top Benefactors & Donors</h3>
+                <span class="card-subtitle">Key supporters driving your mission</span>
+            </div>
+            <div class="table-responsive">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Supporter</th>
+                            <th>Donations</th>
+                            <th>Total Donated</th>
+                            <th>Last Active</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model.TopSupporters != null && Model.TopSupporters.Any())
+                        {
+                            foreach (var s in Model.TopSupporters)
+                            {
+                                <tr>
+                                    <td>
+                                        <strong>@s.SupporterName</strong>
+                                        <div class="text-sub">@s.SupporterEmail</div>
+                                    </td>
+                                    <td>@s.DonationsCount gifts</td>
+                                    <td class="amount-cell">$@s.TotalDonated.ToString("N2")</td>
+                                    <td>@s.LastDonationDate.ToString("MMM dd, yyyy")</td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="4" class="text-center text-muted">No supporters recorded yet.</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        $(document).ready(function () {
+            // 1. Program Progress Chart (Raised vs Target)
+            var progNames = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(Model.ProgramNames));
+            var progRaised = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(Model.ProgramRaised));
+            var progTargets = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(Model.ProgramTargets));
+
+            var ctxProg = document.getElementById('ngoProgramsChart').getContext('2d');
+            new Chart(ctxProg, {
+                type: 'bar',
+                data: {
+                    labels: progNames,
+                    datasets: [
+                        {
+                            label: 'Amount Raised ($)',
+                            data: progRaised,
+                            backgroundColor: '#2e7d32',
+                            borderRadius: 6
+                        },
+                        {
+                            label: 'Target Goal ($)',
+                            data: progTargets,
+                            backgroundColor: '#e0e0e0',
+                            borderRadius: 6
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function (val) { return '$' + val; }
+                            }
+                        }
+                    }
+                }
+            });
+
+            // 2. NGO Monthly Inflow Chart
+            var monthlyLabels = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(Model.MonthlyLabels));
+            var monthlyAmounts = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(Model.MonthlyAmounts));
+
+            var ctxMonth = document.getElementById('ngoMonthlyChart').getContext('2d');
+            new Chart(ctxMonth, {
+                type: 'line',
+                data: {
+                    labels: monthlyLabels,
+                    datasets: [{
+                        label: 'Donation Inflow ($)',
+                        data: monthlyAmounts,
+                        borderColor: '#2e7d32',
+                        backgroundColor: 'rgba(46, 125, 50, 0.1)',
+                        fill: true,
+                        tension: 0.3,
+                        pointRadius: 5,
+                        pointBackgroundColor: '#2e7d32'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function (val) { return '$' + val; }
+                            }
+                        }
+                    }
+                }
+            });
+        });
+    </script>
+}
