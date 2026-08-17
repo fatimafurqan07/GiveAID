@@ -1,12 +1,20 @@
 @{
     Layout = null;
+    string currentController = ViewContext.RouteData.Values["controller"]?.ToString() ?? "";
+    string currentAction = ViewContext.RouteData.Values["action"]?.ToString() ?? "";
 }
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@(ViewBag.Title ?? "Give-AID") - Give-AID</title>
+    <title>@(ViewBag.Title != null ? ViewBag.Title + " - GiveAID | Transparent Charity & NGO Platform in Pakistan" : "GiveAID | Pakistan's Transparent Giving Platform")</title>
+    <meta name="description" content="GiveAID connects donors, changemakers, and verified NGOs across Pakistan with 100% transparency. Empowering education, flood relief, healthcare, and youth initiatives." />
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     
     <link rel="stylesheet" href="@Url.Content("~/Content/bootstrap.min.css")" />
     <link rel="stylesheet" href="@Url.Content("~/wwwroot/css/site.css")" />
@@ -21,37 +29,49 @@
         <nav class="navbar">
             <!-- LOGO -->
             <a class="brand" href="@Url.Action("Index", "Home")">
-                <span class="brand-give">Give</span><span class="brand-aid">-AID</span>
+                <span class="brand-badge-icon">💚</span>
+                <span class="brand-give">Give</span><span class="brand-aid">AID</span>
+                <span class="brand-country-tag">PK</span>
             </a>
 
-            <!-- NAVIGATION -->
-            <div class="nav-links">
-                <a href="@Url.Action("Index", "Home")">Home</a>
-                <a href="@Url.Action("Index", "Donation")">Donate</a>
-                <a href="@Url.Action("Index", "HelpCenter")">Help Center</a>
-                <a href="@Url.Action("Index", "About")">About Us</a>
-                <a href="@Url.Action("Index", "Partner")">Our Partners</a>
+            <!-- MOBILE TOGGLE BUTTON -->
+            <button type="button" class="nav-toggle" id="navToggle" aria-label="Toggle navigation" aria-expanded="false">
+                <span class="bar"></span>
+                <span class="bar"></span>
+                <span class="bar"></span>
+            </button>
 
-                @if (Request.IsAuthenticated || Session["UserID"] != null)
-                {
-                    <a href="@Url.Action("Index", "Dashboard")" class="dashboard-nav-link">
-                        📊 Dashboard
-                    </a>
-                    <span class="nav-user-greeting">
-                        <span class="nav-user-avatar">👤</span>
-                        <span class="nav-user-name">@(Session["UserName"] ?? (User != null && User.Identity != null ? User.Identity.Name : "User"))</span>
-                        @if (Session["UserRole"] != null)
-                        {
-                            <span class="badge-role badge-role-@((Session["UserRole"]?.ToString() ?? "").ToLower())">@Session["UserRole"]</span>
-                        }
-                    </span>
-                    <a href="@Url.Action("Logout", "Account")" class="register-button logout-button">Logout</a>
-                }
-                else
-                {
-                    <a href="@Url.Action("Login", "Account")" class="login-nav-link">Login</a>
-                    <a href="@Url.Action("Register", "Account")" class="register-button">Register</a>
-                }
+            <!-- NAVIGATION LINKS -->
+            <div class="nav-links" id="navLinks">
+                <div class="nav-main-group">
+                    <a href="@Url.Action("Index", "Home")" class="@(currentController.Equals("Home", StringComparison.OrdinalIgnoreCase) && currentAction.Equals("Index", StringComparison.OrdinalIgnoreCase) ? "active-nav" : "")">Home</a>
+                    <a href="@Url.Action("About", "Home")" class="@(currentController.Equals("Home", StringComparison.OrdinalIgnoreCase) && currentAction.Equals("About", StringComparison.OrdinalIgnoreCase) ? "active-nav" : "")">About Us</a>
+                    <a href="@Url.Action("Partners", "Home")" class="@(currentController.Equals("Home", StringComparison.OrdinalIgnoreCase) && currentAction.Equals("Partners", StringComparison.OrdinalIgnoreCase) ? "active-nav" : "")">Partners</a>
+                    <a href="@Url.Action("Contact", "Home")" class="@(currentController.Equals("Home", StringComparison.OrdinalIgnoreCase) && currentAction.Equals("Contact", StringComparison.OrdinalIgnoreCase) ? "active-nav" : "")">Contact Us</a>
+                </div>
+
+                <div class="nav-auth-group">
+                    @if (Request.IsAuthenticated || Session["UserID"] != null)
+                    {
+                        <a href="@Url.Action("Index", "Dashboard")" class="dashboard-nav-link">
+                            📊 Dashboard
+                        </a>
+                        <span class="nav-user-greeting">
+                            <span class="nav-user-avatar">👤</span>
+                            <span class="nav-user-name">@(Session["UserName"] ?? (User != null && User.Identity != null ? User.Identity.Name : "User"))</span>
+                            @if (Session["UserRole"] != null)
+                            {
+                                <span class="badge-role badge-role-@((Session["UserRole"]?.ToString() ?? "").ToLower())">@Session["UserRole"]</span>
+                            }
+                        </span>
+                        <a href="@Url.Action("Logout", "Account")" class="logout-button">Logout</a>
+                    }
+                    else
+                    {
+                        <a href="@Url.Action("Login", "Account")" class="login-nav-link">Login</a>
+                        <a href="@Url.Action("Register", "Account")" class="register-button">Register</a>
+                    }
+                </div>
             </div>
         </nav>
     </header>
@@ -90,20 +110,62 @@
     <footer class="site-footer">
         <div class="footer-content">
             <div class="footer-brand">
-                <h3>Give-AID</h3>
-                <p>Connecting people with causes that matter.</p>
+                <div class="footer-logo">
+                    <span class="brand-badge-icon">💚</span>
+                    <span class="brand-give" style="color: #fff;">Give</span><span class="brand-aid">AID</span>
+                </div>
+                <p class="footer-tagline">
+                    Pakistan's first transparent philanthropic ecosystem connecting changemakers, youth, and verified non-profit organizations for verified on-ground impact.
+                </p>
+                <div class="footer-badges">
+                    <span class="verified-footer-pill">🛡️ 100% SECP Verified NGOs</span>
+                    <span class="verified-footer-pill">🇵🇰 Made for Pakistan</span>
+                </div>
             </div>
 
-            <div class="footer-links">
-                <a href="@Url.Action("Index", "Home")">Home</a>
-                <a href="@Url.Action("Index", "About")">About Us</a>
-                <a href="@Url.Action("Index", "HelpCenter")">Help Center</a>
-                <a href="@Url.Action("Index", "Partner")">Our Partners</a>
+            <div class="footer-col">
+                <h4 class="footer-heading">Navigation</h4>
+                <div class="footer-links">
+                    <a href="@Url.Action("Index", "Home")">Home</a>
+                    <a href="@Url.Action("About", "Home")">About Us</a>
+                    <a href="@Url.Action("Partners", "Home")">Partners</a>
+                    <a href="@Url.Action("Contact", "Home")">Contact Us</a>
+                    <a href="@Url.Action("Register", "Account")">Join as Donor / Volunteer</a>
+                </div>
             </div>
 
-            <div class="footer-contact">
-                <p>&copy; @DateTime.Now.Year Give-AID</p>
-                <p>All rights reserved.</p>
+            <div class="footer-col">
+                <h4 class="footer-heading">Key Initiatives</h4>
+                <div class="footer-links">
+                    <a href="@Url.Action("Index", "Home")#causes">Flood & Climate Relief</a>
+                    <a href="@Url.Action("Index", "Home")#causes">Youth Tech & Education</a>
+                    <a href="@Url.Action("Index", "Home")#causes">Emergency Healthcare</a>
+                    <a href="@Url.Action("Index", "Home")#causes">Clean Drinking Water</a>
+                    <a href="@Url.Action("Partners", "Home")">NGO Verification Network</a>
+                </div>
+            </div>
+
+            <div class="footer-col">
+                <h4 class="footer-heading">Connect</h4>
+                <div class="footer-contact-info">
+                    <p>📍 Shahrah-e-Faisal, Karachi, Pakistan</p>
+                    <p>📧 <a href="mailto:support@giveaid.pk">support@giveaid.pk</a></p>
+                    <p>📞 +92 (21) 3456-7890</p>
+                    <p>💬 WhatsApp Helpline: +92 300 1234567</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer-bottom">
+            <div class="footer-bottom-content">
+                <p>&copy; @DateTime.Now.Year GiveAID Pakistan. All rights reserved. Registered non-profit facilitation platform.</p>
+                <div class="footer-bottom-links">
+                    <span>Transparency First</span>
+                    <span>•</span>
+                    <span>Zero Hidden Fees</span>
+                    <span>•</span>
+                    <span>Empowering Gen Z Giving</span>
+                </div>
             </div>
         </div>
     </footer>
@@ -115,6 +177,17 @@
     <script src="@Url.Content("~/Scripts/bootstrap.bundle.min.js")"></script>
     <script src="@Url.Content("~/Scripts/jquery.validate.min.js")"></script>
     <script src="@Url.Content("~/Scripts/jquery.validate.unobtrusive.min.js")"></script>
+    <script>
+        // Mobile navigation drawer toggle
+        $(document).ready(function () {
+            $('#navToggle').on('click', function () {
+                var expanded = $(this).attr('aria-expanded') === 'true';
+                $(this).attr('aria-expanded', !expanded);
+                $('#navLinks').toggleClass('show');
+                $(this).toggleClass('open');
+            });
+        });
+    </script>
     @RenderSection("Scripts", required: false)
 </body>
 </html>

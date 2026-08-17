@@ -1,19 +1,220 @@
-﻿@{
-    ViewBag.Title = "Contact";
+@{
+    ViewBag.Title = "Contact Us - GiveAID Pakistan";
+    Layout = "~/Views/Shared/_Layout.cshtml";
 }
-<main aria-labelledby="title">
-    <h2 id="title">@ViewBag.Title.</h2>
-    <h3>@ViewBag.Message</h3>
 
-    <address>
-        One Microsoft Way<br />
-        Redmond, WA 98052-6399<br />
-        <abbr title="Phone">P:</abbr>
-        425.555.0100
-    </address>
+<!-- =========================================================
+     CONTACT HERO
+     ========================================================= -->
+<section class="contact-hero-section">
+    <div class="section-container">
+        <div class="contact-hero-content">
+            <span class="section-badge">Get in Touch</span>
+            <h1 class="contact-hero-title">
+                We’re Here to <span class="highlight-text">Help</span> & <span class="highlight-text-accent">Connect</span>
+            </h1>
+            <p class="contact-hero-lead">
+                Have questions about verified campaigns, corporate CSR partnerships, NGO onboarding, or volunteering? Reach out to our team in Karachi & Lahore.
+            </p>
+        </div>
+    </div>
+</section>
 
-    <address>
-        <strong>Support:</strong>   <a href="mailto:Support@example.com">Support@example.com</a><br />
-        <strong>Marketing:</strong> <a href="mailto:Marketing@example.com">Marketing@example.com</a>
-    </address>
-</main>
+
+<!-- =========================================================
+     CONTACT DETAILS & INQUIRY FORM GRID
+     ========================================================= -->
+<section class="contact-main-section">
+    <div class="section-container">
+        <div class="contact-grid">
+            <!-- Left Column: Direct Contact Info & Regional Hubs -->
+            <div class="contact-info-col">
+                <div class="contact-info-card">
+                    <h3 class="info-card-title">GiveAID Pakistan Headquarters</h3>
+                    <p class="info-card-desc">Visit our offices or connect with our support liaisons during operating hours (Monday–Saturday, 9:00 AM – 6:00 PM PKT).</p>
+                    
+                    <div class="info-items-list">
+                        <div class="info-item">
+                            <div class="info-icon">📍</div>
+                            <div class="info-body">
+                                <strong>Karachi Principal Office:</strong>
+                                <span>Level 4, FTC Building, Shahrah-e-Faisal, Karachi, Sindh 75400</span>
+                            </div>
+                        </div>
+
+                        <div class="info-item">
+                            <div class="info-icon">📍</div>
+                            <div class="info-body">
+                                <strong>Lahore Regional Hub:</strong>
+                                <span>Main Boulevard, Gulberg III, Lahore, Punjab 54000</span>
+                            </div>
+                        </div>
+
+                        <div class="info-item">
+                            <div class="info-icon">📧</div>
+                            <div class="info-body">
+                                <strong>Email Inquiries:</strong>
+                                <span>General Support: <a href="mailto:support@giveaid.pk">support@giveaid.pk</a></span>
+                                <span>NGO Partnerships: <a href="mailto:partnerships@giveaid.pk">partnerships@giveaid.pk</a></span>
+                            </div>
+                        </div>
+
+                        <div class="info-item">
+                            <div class="info-icon">📞</div>
+                            <div class="info-body">
+                                <strong>Direct Helpline:</strong>
+                                <span>+92 (21) 3456-7890</span>
+                                <span>WhatsApp Support: +92 300 1234567</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="social-channels-box">
+                        <h4>Connect On Socials</h4>
+                        <div class="social-pills">
+                            <span class="social-pill">📱 Instagram: @@GiveAID.pk</span>
+                            <span class="social-pill">💼 LinkedIn: /company/giveaid-pk</span>
+                            <span class="social-pill">🐦 X: @@GiveAID_PK</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column: Contact Inquiry Form -->
+            <div class="contact-form-col">
+                <div class="contact-form-card">
+                    <div class="form-header">
+                        <h3>Send Us a Message</h3>
+                        <p>Fill out the form below and a representative will reply within 24 hours.</p>
+                    </div>
+
+                    @using (Html.BeginForm("Contact", "Home", FormMethod.Post, new { @class = "inquiry-form", id = "contactForm" }))
+                    {
+                        @Html.AntiForgeryToken()
+
+                        <div class="form-row">
+                            <div class="form-group col-half">
+                                <label class="form-label" for="name">Your Name *</label>
+                                <input type="text" id="name" name="name" class="form-control" placeholder="e.g. Ayesha Khan" required />
+                            </div>
+
+                            <div class="form-group col-half">
+                                <label class="form-label" for="email">Email Address *</label>
+                                <input type="email" id="email" name="email" class="form-control" placeholder="e.g. ayesha@example.com" required />
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group col-half">
+                                <label class="form-label" for="inquirerType">I am reaching out as:</label>
+                                <select id="inquirerType" name="inquirerType" class="form-control form-select">
+                                    <option value="Individual Donor">Individual Donor / Supporter</option>
+                                    <option value="NGO Partner">NGO / Charity Representative</option>
+                                    <option value="Corporate CSR">Corporate CSR Partner</option>
+                                    <option value="Student Volunteer">Student Volunteer / University Chapter</option>
+                                    <option value="Media & Press">Media & Press</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group col-half">
+                                <label class="form-label" for="subject">Subject *</label>
+                                <input type="text" id="subject" name="subject" class="form-control" placeholder="e.g. Campaign Inquiry / NGO Verification" required />
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="message">Your Message *</label>
+                            <textarea id="message" name="message" class="form-control" rows="5" placeholder="How can we help you or your organization?" required style="resize: vertical; min-height: 120px;"></textarea>
+                        </div>
+
+                        <button type="submit" class="auth-btn btn-send-message">
+                            Send Message →
+                        </button>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+
+<!-- =========================================================
+     FREQUENTLY ASKED QUESTIONS (FAQ ACCORDION)
+     ========================================================= -->
+<section class="faq-section">
+    <div class="section-container">
+        <div class="section-header-center">
+            <span class="section-badge">Common Queries</span>
+            <h2 class="section-title">Frequently Asked Questions</h2>
+            <p class="section-subtitle">Quick answers to common questions about GiveAID's platform and giving process in Pakistan.</p>
+        </div>
+
+        <div class="faq-accordion-wrap">
+            <div class="faq-item">
+                <button type="button" class="faq-question" onclick="toggleFaq(this)">
+                    <span>How does GiveAID verify non-profit organizations in Pakistan?</span>
+                    <span class="faq-toggle-icon">+</span>
+                </button>
+                <div class="faq-answer">
+                    <p>Every non-profit organization on GiveAID must provide valid SECP registration (Section 42 or Societies Act), certified CA-audited financial statements, and FBR tax exemption status. Our compliance team also conducts on-ground spot checks before any campaign is authorized for public fundraising.</p>
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <button type="button" class="faq-question" onclick="toggleFaq(this)">
+                    <span>Which payment rails can I use to donate?</span>
+                    <span class="faq-toggle-icon">+</span>
+                </button>
+                <div class="faq-answer">
+                    <p>We support all major Pakistani digital payment systems including Raast instant bank clearing, 1Link, SadaPay, NayaPay, JazzCash, and Easypaisa, as well as local & international Visa/Mastercard debit and credit cards.</p>
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <button type="button" class="faq-question" onclick="toggleFaq(this)">
+                    <span>Are donations made through GiveAID eligible for tax relief?</span>
+                    <span class="faq-toggle-icon">+</span>
+                </button>
+                <div class="faq-answer">
+                    <p>Yes. All partner charities on GiveAID hold non-profit tax recognition under Section 2(36) of the Income Tax Ordinance. You can download your official tax deduction certificate directly from your GiveAID Donor Dashboard.</p>
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <button type="button" class="faq-question" onclick="toggleFaq(this)">
+                    <span>How do I know my donation actually reached the intended cause?</span>
+                    <span class="faq-toggle-icon">+</span>
+                </button>
+                <div class="faq-answer">
+                    <p>GiveAID requires partner NGOs to upload milestone updates, timestamped field photographs, GPS-tagged distribution records, and procurement vendor receipts. You receive automated email notifications and updates directly in your donor portal.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+
+@section Scripts {
+    <script>
+        function toggleFaq(btn) {
+            var $item = $(btn).closest('.faq-item');
+            var isOpen = $item.hasClass('active');
+
+            // Close all items
+            $('.faq-item').removeClass('active');
+            $('.faq-toggle-icon').text('+');
+
+            if (!isOpen) {
+                $item.addClass('active');
+                $item.find('.faq-toggle-icon').text('−');
+            }
+        }
+
+        $(document).ready(function () {
+            $('#contactForm').on('submit', function () {
+                var btn = $(this).find('button[type="submit"]');
+                btn.prop('disabled', true).text('Sending Message...');
+            });
+        });
+    </script>
+}

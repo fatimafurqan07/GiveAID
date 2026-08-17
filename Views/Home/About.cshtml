@@ -1,9 +1,226 @@
-﻿@{
-    ViewBag.Title = "About";
+@{
+    ViewBag.Title = "About Us - GiveAID Pakistan";
+    Layout = "~/Views/Shared/_Layout.cshtml";
 }
-<main aria-labelledby="title">
-    <h2 id="title">@ViewBag.Title.</h2>
-    <h3>@ViewBag.Message</h3>
 
-    <p>Use this area to provide additional information.</p>
-</main>
+<!-- =========================================================
+     ABOUT HERO / HEADER
+     ========================================================= -->
+<section class="about-hero-section">
+    <div class="section-container">
+        <div class="about-hero-content">
+            <span class="section-badge">Our Story & Purpose</span>
+            <h1 class="about-hero-title">
+                Rebuilding Trust in <span class="highlight-text">Giving</span> across <span class="highlight-text-accent">Pakistan</span>
+            </h1>
+            <p class="about-hero-lead">
+                GiveAID is Pakistan's first digital philanthropic platform built to eliminate charity opacity, connect Gen Z changemakers with verified non-profits, and guarantee 100% financial accountability from donor to field.
+            </p>
+        </div>
+    </div>
+</section>
+
+
+<!-- =========================================================
+     MISSION & VISION SECTION
+     ========================================================= -->
+<section class="about-mv-section">
+    <div class="section-container">
+        <div class="mv-grid">
+            <div class="mv-card card-mission">
+                <div class="mv-icon">🎯</div>
+                <h3>Our Mission</h3>
+                <p>
+                    To democratize charitable giving in Pakistan by providing a frictionless, transparent, and technology-driven platform that empowers individuals, overseas Pakistanis, and student communities to directly fund vetted social causes.
+                </p>
+                <div class="mv-highlight">
+                    <span>✓ 100% Transparent routing</span>
+                    <span>✓ Verified NGO field audits</span>
+                </div>
+            </div>
+
+            <div class="mv-card card-vision">
+                <div class="mv-icon">🔭</div>
+                <h3>Our Vision</h3>
+                <p>
+                    A Pakistan where no deserving student drops out of school, no emergency flood victim is left without shelter, and every citizen has immediate access to verified humanitarian relief through open digital solidarity.
+                </p>
+                <div class="mv-highlight">
+                    <span>✓ Digital-first philanthropy</span>
+                    <span>✓ Empowering Pakistani youth</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+
+<!-- =========================================================
+     WHY WE STARTED (THE PROBLEM & THE GIVEAID SOLUTION)
+     ========================================================= -->
+<section class="about-story-section">
+    <div class="section-container">
+        <div class="story-grid">
+            <div class="story-text-col">
+                <span class="section-badge">The Origin</span>
+                <h2 class="section-title">Why GiveAID Exists</h2>
+                <p class="story-p">
+                    Pakistan is globally recognized as one of the most generous nations in the world, contributing over <strong>PKR 500 Billion annually</strong> in Zakat, Sadqah, and mutual aid. Yet, young Pakistanis and diaspora donors have faced persistent barriers:
+                </p>
+                
+                <div class="problem-solution-list">
+                    <div class="ps-item">
+                        <div class="ps-icon ps-problem">❌</div>
+                        <div class="ps-desc">
+                            <strong>The Trust Deficit:</strong> Uncertainty around whether donations actually reach legitimate beneficiaries or get consumed by administrative overhead.
+                        </div>
+                    </div>
+
+                    <div class="ps-item">
+                        <div class="ps-icon ps-solution">✅</div>
+                        <div class="ps-desc">
+                            <strong>The GiveAID Fix:</strong> Rigorous SECP audit checks, milestone-based fund releases, and mandatory photographic field receipts for every project.
+                        </div>
+                    </div>
+
+                    <div class="ps-item">
+                        <div class="ps-icon ps-problem">❌</div>
+                        <div class="ps-desc">
+                            <strong>Clunky Payment Barriers:</strong> Antiquated bank deposit slips, manual transfer confirmations, and high cross-border processing fees.
+                        </div>
+                    </div>
+
+                    <div class="ps-item">
+                        <div class="ps-icon ps-solution">✅</div>
+                        <div class="ps-desc">
+                            <strong>The GiveAID Fix:</strong> Direct 1-tap integration with Raast, SadaPay, JazzCash, NayaPay, and international Visa/Mastercard rails.
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="story-stats-col">
+                <div class="story-stat-card">
+                    <div class="story-stat-val">PKR 500B+</div>
+                    <div class="story-stat-lbl">Annual Charitable Giving in Pakistan</div>
+                    <p class="story-stat-sub">We are transforming this generosity into trackable, tech-empowered grassroots impact.</p>
+                </div>
+
+                <div class="story-stat-card card-accent-green">
+                    <div class="story-stat-val">100%</div>
+                    <div class="story-stat-lbl">Open Accounting & Public Proof</div>
+                    <p class="story-stat-sub">From procurement invoices to beneficiary handovers, transparency is non-negotiable.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+
+<!-- =========================================================
+     CORE VALUES
+     ========================================================= -->
+<section class="about-values-section">
+    <div class="section-container">
+        <div class="section-header-center">
+            <span class="section-badge">Our North Star</span>
+            <h2 class="section-title">The Values Guiding Everything We Build</h2>
+            <p class="section-subtitle">Rooted in integrity, empathy, and technological excellence.</p>
+        </div>
+
+        <div class="values-grid">
+            <div class="value-card">
+                <div class="value-icon">💎</div>
+                <h4>Radical Transparency</h4>
+                <p>Every transaction has a verifiable audit trail. We believe donors deserve total clarity over how their hard-earned money transforms lives.</p>
+            </div>
+
+            <div class="value-card">
+                <div class="value-icon">⚡</div>
+                <h4>Speed in Crisis</h4>
+                <p>When floods, heatwaves, or medical emergencies strike Pakistan, relief funds can be mobilized in minutes, not weeks.</p>
+            </div>
+
+            <div class="value-card">
+                <div class="value-icon">🤝</div>
+                <h4>Equal Dignity</h4>
+                <p>We respect the privacy, dignity, and honor of every beneficiary we serve, rejecting exploitative charity marketing.</p>
+            </div>
+
+            <div class="value-card">
+                <div class="value-icon">🌱</div>
+                <h4>Youth Empowerment</h4>
+                <p>We actively partner with Pakistani student societies, youth developers, and universities to lead social mobilization on the ground.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+
+<!-- =========================================================
+     MILESTONES & JOURNEY
+     ========================================================= -->
+<section class="about-timeline-section">
+    <div class="section-container">
+        <div class="section-header-center">
+            <span class="section-badge">Our Journey</span>
+            <h2 class="section-title">How We’re Growing the Movement</h2>
+            <p class="section-subtitle">From a student hackathon idea to Pakistan's trusted giving platform.</p>
+        </div>
+
+        <div class="timeline-wrap">
+            <div class="timeline-item">
+                <div class="timeline-dot"></div>
+                <div class="timeline-content">
+                    <span class="timeline-year">Phase 1</span>
+                    <h3>The Inception & Platform Core</h3>
+                    <p>Designed the multi-role ASP.NET architecture, secure role authorization for Donors, NGOs, and Admins, and verified donation tracking.</p>
+                </div>
+            </div>
+
+            <div class="timeline-item">
+                <div class="timeline-dot"></div>
+                <div class="timeline-content">
+                    <span class="timeline-year">Phase 2</span>
+                    <h3>Pakistani NGO Onboarding & Vetting</h3>
+                    <p>Partnered with prominent Pakistani foundations (Edhi, Saylani, TCF, Akhuwat) to standardize compliance and field verification protocols.</p>
+                </div>
+            </div>
+
+            <div class="timeline-item">
+                <div class="timeline-dot"></div>
+                <div class="timeline-content">
+                    <span class="timeline-year">Phase 3</span>
+                    <h3>Raast & Instant Local Rails Integration</h3>
+                    <p>Introduced real-time instant payment options for Gen Z donors through SadaPay, JazzCash, and Raast instant clearing.</p>
+                </div>
+            </div>
+
+            <div class="timeline-item">
+                <div class="timeline-dot"></div>
+                <div class="timeline-content">
+                    <span class="timeline-year">Phase 4 (Current)</span>
+                    <h3>Public Launch & University Chapters</h3>
+                    <p>Expanding across Karachi, Lahore, Islamabad, Quetta, and Peshawar with campus ambassador programs and nationwide emergency relief campaigns.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+
+<!-- =========================================================
+     CALL TO ACTION
+     ========================================================= -->
+<section class="about-cta-section">
+    <div class="section-container">
+        <div class="about-cta-card">
+            <h2>Join Pakistan's Giving Revolution</h2>
+            <p>Whether you want to sponsor an orphan, fund emergency medical care, or register your NGO, GiveAID is your trusted partner.</p>
+            <div class="about-cta-btns">
+                <a href="@Url.Action("Index", "Home")#causes" class="btn-cta-white">Explore Campaigns</a>
+                <a href="@Url.Action("Contact", "Home")" class="btn-cta-outline">Get in Touch with Our Team</a>
+            </div>
+        </div>
+    </div>
+</section>

@@ -1,0 +1,430 @@
+@{
+    ViewBag.Title = "Our Partners - Verified Non-Profits in Pakistan | GiveAID";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<!-- =========================================================
+     PARTNERS HERO SECTION
+     ========================================================= -->
+<section class="partners-hero-section">
+    <div class="section-container">
+        <div class="partners-hero-content">
+            <span class="section-badge">Verified NGO Coalition</span>
+            <h1 class="partners-hero-title">
+                Partnering with Pakistan’s Most <span class="highlight-text">Reputable</span> Non-Profits
+            </h1>
+            <p class="partners-hero-lead">
+                Every NGO on GiveAID undergoes thorough compliance screening, SECP status verification, and financial audit reviews before launching public fundraising campaigns.
+            </p>
+        </div>
+    </div>
+</section>
+
+
+<!-- =========================================================
+     PARTNERS DIRECTORY / GRID
+     ========================================================= -->
+<section class="partners-grid-section">
+    <div class="section-container">
+        <div class="partners-filter-bar">
+            <div class="partner-count-info">
+                Showing <strong>8 Verified Partner Organizations</strong>
+            </div>
+            <div class="partner-category-filters">
+                <button class="filter-pill active" onclick="filterPartners('all', this)">All Sectors</button>
+                <button class="filter-pill" onclick="filterPartners('healthcare', this)">Healthcare</button>
+                <button class="filter-pill" onclick="filterPartners('education', this)">Education</button>
+                <button class="filter-pill" onclick="filterPartners('relief', this)">Relief & Welfare</button>
+                <button class="filter-pill" onclick="filterPartners('microfinance', this)">Micro-Grants</button>
+            </div>
+        </div>
+
+        <div class="partners-grid">
+            <!-- Partner 1: Edhi Foundation -->
+            <div class="partner-card" data-sector="relief">
+                <div class="partner-card-header">
+                    <div class="partner-logo-badge logo-edhi">
+                        <span>🚑</span>
+                    </div>
+                    <div class="partner-badges">
+                        <span class="verified-tag">🛡️ SECP Verified</span>
+                        <span class="partner-tier">Premier Partner</span>
+                    </div>
+                </div>
+                <div class="partner-card-body">
+                    <h3 class="partner-name">Edhi Foundation</h3>
+                    <div class="partner-meta">
+                        <span class="meta-tag">📍 Head Office: Karachi</span>
+                        <span class="meta-tag">🏥 Emergency & Welfare</span>
+                    </div>
+                    <p class="partner-description">
+                        Operating the world’s largest voluntary ambulance service, homeless shelters, orphanages, and 24/7 disaster response operations across all provinces of Pakistan.
+                    </p>
+                    <div class="partner-stats-row">
+                        <div class="p-stat">
+                            <span class="p-stat-val">450+</span>
+                            <span class="p-stat-lbl">Campaigns</span>
+                        </div>
+                        <div class="p-stat">
+                            <span class="p-stat-val">PKR 45M+</span>
+                            <span class="p-stat-lbl">Distributed</span>
+                        </div>
+                        <div class="p-stat">
+                            <span class="p-stat-val">100%</span>
+                            <span class="p-stat-lbl">Audit Score</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="partner-card-footer">
+                    <a href="@Url.Action("Index", "Home")#causes" class="btn-partner-action">Explore Active Causes →</a>
+                </div>
+            </div>
+
+            <!-- Partner 2: Saylani Welfare -->
+            <div class="partner-card" data-sector="education relief">
+                <div class="partner-card-header">
+                    <div class="partner-logo-badge logo-saylani">
+                        <span>🍲</span>
+                    </div>
+                    <div class="partner-badges">
+                        <span class="verified-tag">🛡️ SECP Verified</span>
+                        <span class="partner-tier">Premier Partner</span>
+                    </div>
+                </div>
+                <div class="partner-card-body">
+                    <h3 class="partner-name">Saylani Welfare Trust</h3>
+                    <div class="partner-meta">
+                        <span class="meta-tag">📍 Head Office: Karachi</span>
+                        <span class="meta-tag">💻 Youth Tech & Dastarkhwan</span>
+                    </div>
+                    <p class="partner-description">
+                        Pioneering mass vocational technology training (SMIT) for 100,000+ youth, providing 300,000 daily free meals, clean RO water plants, and emergency relief.
+                    </p>
+                    <div class="partner-stats-row">
+                        <div class="p-stat">
+                            <span class="p-stat-val">320+</span>
+                            <span class="p-stat-lbl">Campaigns</span>
+                        </div>
+                        <div class="p-stat">
+                            <span class="p-stat-val">PKR 38M+</span>
+                            <span class="p-stat-lbl">Distributed</span>
+                        </div>
+                        <div class="p-stat">
+                            <span class="p-stat-val">100%</span>
+                            <span class="p-stat-lbl">Audit Score</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="partner-card-footer">
+                    <a href="@Url.Action("Index", "Home")#causes" class="btn-partner-action">Explore Active Causes →</a>
+                </div>
+            </div>
+
+            <!-- Partner 3: The Citizens Foundation -->
+            <div class="partner-card" data-sector="education">
+                <div class="partner-card-header">
+                    <div class="partner-logo-badge logo-tcf">
+                        <span>📚</span>
+                    </div>
+                    <div class="partner-badges">
+                        <span class="verified-tag">🛡️ SECP Verified</span>
+                        <span class="partner-tier">Gold Partner</span>
+                    </div>
+                </div>
+                <div class="partner-card-body">
+                    <h3 class="partner-name">The Citizens Foundation (TCF)</h3>
+                    <div class="partner-meta">
+                        <span class="meta-tag">📍 Head Office: Karachi</span>
+                        <span class="meta-tag">🎓 Purpose-Built Schools</span>
+                    </div>
+                    <p class="partner-description">
+                        Operating 1,900+ purpose-built formal school units across Pakistan's urban slums and rural villages with a strict 50% female student enrollment target and all-female faculty.
+                    </p>
+                    <div class="partner-stats-row">
+                        <div class="p-stat">
+                            <span class="p-stat-val">280+</span>
+                            <span class="p-stat-lbl">Campaigns</span>
+                        </div>
+                        <div class="p-stat">
+                            <span class="p-stat-val">PKR 30M+</span>
+                            <span class="p-stat-lbl">Distributed</span>
+                        </div>
+                        <div class="p-stat">
+                            <span class="p-stat-val">100%</span>
+                            <span class="p-stat-lbl">Audit Score</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="partner-card-footer">
+                    <a href="@Url.Action("Index", "Home")#causes" class="btn-partner-action">Explore Active Causes →</a>
+                </div>
+            </div>
+
+            <!-- Partner 4: Akhuwat Foundation -->
+            <div class="partner-card" data-sector="microfinance education">
+                <div class="partner-card-header">
+                    <div class="partner-logo-badge logo-akhuwat">
+                        <span>🤝</span>
+                    </div>
+                    <div class="partner-badges">
+                        <span class="verified-tag">🛡️ SECP Verified</span>
+                        <span class="partner-tier">Gold Partner</span>
+                    </div>
+                </div>
+                <div class="partner-card-body">
+                    <h3 class="partner-name">Akhuwat Foundation</h3>
+                    <div class="partner-meta">
+                        <span class="meta-tag">📍 Head Office: Lahore</span>
+                        <span class="meta-tag">🪙 Interest-Free Microfinance</span>
+                    </div>
+                    <p class="partner-description">
+                        The world’s largest interest-free (Qarz-e-Hasna) microfinance organization, offering tuition-free residential college education, clothes bank, and transgender health support.
+                    </p>
+                    <div class="partner-stats-row">
+                        <div class="p-stat">
+                            <span class="p-stat-val">190+</span>
+                            <span class="p-stat-lbl">Campaigns</span>
+                        </div>
+                        <div class="p-stat">
+                            <span class="p-stat-val">PKR 25M+</span>
+                            <span class="p-stat-lbl">Distributed</span>
+                        </div>
+                        <div class="p-stat">
+                            <span class="p-stat-val">100%</span>
+                            <span class="p-stat-lbl">Audit Score</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="partner-card-footer">
+                    <a href="@Url.Action("Index", "Home")#causes" class="btn-partner-action">Explore Active Causes →</a>
+                </div>
+            </div>
+
+            <!-- Partner 5: Indus Hospital & Health Network -->
+            <div class="partner-card" data-sector="healthcare">
+                <div class="partner-card-header">
+                    <div class="partner-logo-badge logo-indus">
+                        <span>🏥</span>
+                    </div>
+                    <div class="partner-badges">
+                        <span class="verified-tag">🛡️ SECP Verified</span>
+                        <span class="partner-tier">Premier Partner</span>
+                    </div>
+                </div>
+                <div class="partner-card-body">
+                    <h3 class="partner-name">Indus Hospital & Health Network</h3>
+                    <div class="partner-meta">
+                        <span class="meta-tag">📍 Head Office: Karachi</span>
+                        <span class="meta-tag">🩺 100% Free Quality Care</span>
+                    </div>
+                    <p class="partner-description">
+                        Delivering multidisciplinary tertiary healthcare, pediatric oncology, and robotic surgery completely free of cost without discrimination to millions of patients nationwide.
+                    </p>
+                    <div class="partner-stats-row">
+                        <div class="p-stat">
+                            <span class="p-stat-val">140+</span>
+                            <span class="p-stat-lbl">Campaigns</span>
+                        </div>
+                        <div class="p-stat">
+                            <span class="p-stat-val">PKR 22M+</span>
+                            <span class="p-stat-lbl">Distributed</span>
+                        </div>
+                        <div class="p-stat">
+                            <span class="p-stat-val">100%</span>
+                            <span class="p-stat-lbl">Audit Score</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="partner-card-footer">
+                    <a href="@Url.Action("Index", "Home")#causes" class="btn-partner-action">Explore Active Causes →</a>
+                </div>
+            </div>
+
+            <!-- Partner 6: Shaukat Khanum Memorial Hospital -->
+            <div class="partner-card" data-sector="healthcare">
+                <div class="partner-card-header">
+                    <div class="partner-logo-badge logo-skmch">
+                        <span>🎗️</span>
+                    </div>
+                    <div class="partner-badges">
+                        <span class="verified-tag">🛡️ SECP Verified</span>
+                        <span class="partner-tier">Gold Partner</span>
+                    </div>
+                </div>
+                <div class="partner-card-body">
+                    <h3 class="partner-name">Shaukat Khanum Cancer Hospital</h3>
+                    <div class="partner-meta">
+                        <span class="meta-tag">📍 Lahore, Peshawar & Karachi</span>
+                        <span class="meta-tag">🔬 Cancer Treatment & Research</span>
+                    </div>
+                    <p class="partner-description">
+                        State-of-the-art comprehensive cancer centers providing financially subsidized and free cancer diagnostics, chemotherapy, radiotherapy, and pediatric surgery.
+                    </p>
+                    <div class="partner-stats-row">
+                        <div class="p-stat">
+                            <span class="p-stat-val">95+</span>
+                            <span class="p-stat-lbl">Campaigns</span>
+                        </div>
+                        <div class="p-stat">
+                            <span class="p-stat-val">PKR 18M+</span>
+                            <span class="p-stat-lbl">Distributed</span>
+                        </div>
+                        <div class="p-stat">
+                            <span class="p-stat-val">100%</span>
+                            <span class="p-stat-lbl">Audit Score</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="partner-card-footer">
+                    <a href="@Url.Action("Index", "Home")#causes" class="btn-partner-action">Explore Active Causes →</a>
+                </div>
+            </div>
+
+            <!-- Partner 7: Alkhidmat Foundation -->
+            <div class="partner-card" data-sector="relief healthcare">
+                <div class="partner-card-header">
+                    <div class="partner-logo-badge logo-alkhidmat">
+                        <span>💧</span>
+                    </div>
+                    <div class="partner-badges">
+                        <span class="verified-tag">🛡️ SECP Verified</span>
+                        <span class="partner-tier">Gold Partner</span>
+                    </div>
+                </div>
+                <div class="partner-card-body">
+                    <h3 class="partner-name">Alkhidmat Foundation Pakistan</h3>
+                    <div class="partner-meta">
+                        <span class="meta-tag">📍 Head Office: Lahore</span>
+                        <span class="meta-tag">🌊 Disaster Response & Clean Water</span>
+                    </div>
+                    <p class="partner-description">
+                        A nationwide network of emergency responders, orphan sponsorship programs, solar water wells in Tharparkar and Balochistan, and diagnostic clinics.
+                    </p>
+                    <div class="partner-stats-row">
+                        <div class="p-stat">
+                            <span class="p-stat-val">210+</span>
+                            <span class="p-stat-lbl">Campaigns</span>
+                        </div>
+                        <div class="p-stat">
+                            <span class="p-stat-val">PKR 20M+</span>
+                            <span class="p-stat-lbl">Distributed</span>
+                        </div>
+                        <div class="p-stat">
+                            <span class="p-stat-val">100%</span>
+                            <span class="p-stat-lbl">Audit Score</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="partner-card-footer">
+                    <a href="@Url.Action("Index", "Home")#causes" class="btn-partner-action">Explore Active Causes →</a>
+                </div>
+            </div>
+
+            <!-- Partner 8: SOS Children's Villages -->
+            <div class="partner-card" data-sector="education relief">
+                <div class="partner-card-header">
+                    <div class="partner-logo-badge logo-sos">
+                        <span>🏡</span>
+                    </div>
+                    <div class="partner-badges">
+                        <span class="verified-tag">🛡️ SECP Verified</span>
+                        <span class="partner-tier">Verified Partner</span>
+                    </div>
+                </div>
+                <div class="partner-card-body">
+                    <h3 class="partner-name">SOS Children's Villages Pakistan</h3>
+                    <div class="partner-meta">
+                        <span class="meta-tag">📍 Nationwide Villages</span>
+                        <span class="meta-tag">👨‍👩‍👧‍👦 Orphan Foster Homes</span>
+                    </div>
+                    <p class="partner-description">
+                        Providing loving family-based homes, healthcare, and higher education for abandoned and orphaned children across purpose-built village homes in Pakistan.
+                    </p>
+                    <div class="partner-stats-row">
+                        <div class="p-stat">
+                            <span class="p-stat-val">85+</span>
+                            <span class="p-stat-lbl">Campaigns</span>
+                        </div>
+                        <div class="p-stat">
+                            <span class="p-stat-val">PKR 12M+</span>
+                            <span class="p-stat-lbl">Distributed</span>
+                        </div>
+                        <div class="p-stat">
+                            <span class="p-stat-val">100%</span>
+                            <span class="p-stat-lbl">Audit Score</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="partner-card-footer">
+                    <a href="@Url.Action("Index", "Home")#causes" class="btn-partner-action">Explore Active Causes →</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+
+<!-- =========================================================
+     PARTNER VERIFICATION CRITERIA & ONBOARDING CALLOUT
+     ========================================================= -->
+<section class="partner-onboarding-section">
+    <div class="section-container">
+        <div class="onboarding-banner-box">
+            <div class="onboarding-text-wrap">
+                <span class="section-badge">Join Our Coalition</span>
+                <h2>Become a GiveAID Partner Organization</h2>
+                <p>
+                    Are you a registered charitable trust, non-profit society, or section 42 company in Pakistan? Partner with GiveAID to gain access to transparent fundraising tools, Gen Z donors, and corporate CSR allocations.
+                </p>
+                <div class="criteria-checklist">
+                    <div class="criterion-item">
+                        <span class="check-icon">✓</span>
+                        <span>SECP Section 42 / Societies Registration Act 1860 documentation</span>
+                    </div>
+                    <div class="criterion-item">
+                        <span class="check-icon">✓</span>
+                        <span>FBR Tax Exemption / NPO certification (Rule 212 / Section 2(36))</span>
+                    </div>
+                    <div class="criterion-item">
+                        <span class="check-icon">✓</span>
+                        <span>Minimum 2 years of audited financial statements by a certified CA</span>
+                    </div>
+                    <div class="criterion-item">
+                        <span class="check-icon">✓</span>
+                        <span>Active, verifiable field operations with photographic milestone reporting</span>
+                    </div>
+                </div>
+                <div class="onboarding-actions">
+                    <a href="@Url.Action("Register", "Account")" class="btn-primary-hero">
+                        Apply for NGO Verification →
+                    </a>
+                    <a href="@Url.Action("Contact", "Home")" class="btn-secondary-hero">
+                        Contact Partnerships Team
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+
+@section Scripts {
+    <script>
+        function filterPartners(sector, btn) {
+            $('.partner-category-filters .filter-pill').removeClass('active');
+            $(btn).addClass('active');
+
+            if (sector === 'all') {
+                $('.partner-card').fadeIn(200);
+            } else {
+                $('.partner-card').hide();
+                $('.partner-card').each(function () {
+                    var dataSector = $(this).attr('data-sector') || '';
+                    if (dataSector.indexOf(sector) !== -1) {
+                        $(this).fadeIn(200);
+                    }
+                });
+            }
+        }
+    </script>
+}

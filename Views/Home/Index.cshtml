@@ -1,33 +1,733 @@
-﻿@{
-    ViewBag.Title = "Home Page";
+@{
+    ViewBag.Title = "GiveAID - Transparent NGO & Charity Giving in Pakistan";
+    Layout = "~/Views/Shared/_Layout.cshtml";
 }
 
-<main>
-    <section class="row" aria-labelledby="aspnetTitle">
-        <h1 id="title">ASP.NET</h1>
-        <p class="lead">ASP.NET is a free web framework for building great Web sites and Web applications using HTML, CSS and JavaScript.</p>
-        <p><a href="https://asp.net" class="btn btn-primary btn-md">Learn more &raquo;</a></p>
-    </section>
+<!-- =========================================================
+     HERO SECTION
+     ========================================================= -->
+<section class="hero-section">
+    <div class="hero-container">
+        <div class="hero-content">
+            <div class="hero-pill">
+                <span class="pulse-dot"></span>
+                <span>Pakistan's 1st Transparent Giving Platform</span>
+            </div>
 
-    <div class="row">
-        <section class="col-md-4" aria-labelledby="gettingStartedTitle">
-            <h2 id="gettingStartedTitle">Getting started</h2>
-            <p>
-                ASP.NET MVC gives you a powerful, patterns-based way to build dynamic websites that
-                enables a clean separation of concerns and gives you full control over markup
-                for enjoyable, agile development.
+            <h1 class="hero-title">
+                Give with <span class="highlight-text">Trust</span>. Transform <span class="highlight-text-accent">Pakistan</span>.
+            </h1>
+
+            <p class="hero-subtitle">
+                Connecting Pakistan's next generation of changemakers with 100% verified NGOs, emergency relief funds, and grassroots education projects. Track every single Rupee in real-time.
             </p>
-            <p><a class="btn btn-outline-dark" href="https://go.microsoft.com/fwlink/?LinkId=301865">Learn more &raquo;</a></p>
-        </section>
-        <section class="col-md-4" aria-labelledby="librariesTitle">
-            <h2 id="librariesTitle">Get more libraries</h2>
-            <p>NuGet is a free Visual Studio extension that makes it easy to add, remove, and update libraries and tools in Visual Studio projects.</p>
-            <p><a class="btn btn-outline-dark" href="https://go.microsoft.com/fwlink/?LinkId=301866">Learn more &raquo;</a></p>
-        </section>
-        <section class="col-md-4" aria-labelledby="hostingTitle">
-            <h2 id="hostingTitle">Web Hosting</h2>
-            <p>You can easily find a web hosting company that offers the right mix of features and price for your applications.</p>
-            <p><a class="btn btn-outline-dark" href="https://go.microsoft.com/fwlink/?LinkId=301867">Learn more &raquo;</a></p>
-        </section>
+
+            <div class="hero-cta-group">
+                <a href="#causes" class="btn-primary-hero">
+                    <span>Explore Causes</span>
+                    <span class="btn-arrow">→</span>
+                </a>
+                @if (Session["UserID"] == null && !Request.IsAuthenticated)
+                {
+                    <a href="@Url.Action("Register", "Account")" class="btn-secondary-hero">
+                        <span>Join GiveAID</span>
+                    </a>
+                }
+                else
+                {
+                    <a href="@Url.Action("Index", "Dashboard")" class="btn-secondary-hero">
+                        <span>Go to Dashboard</span>
+                    </a>
+                }
+            </div>
+
+            <div class="hero-trust-badges">
+                <div class="trust-badge-item">
+                    <span class="badge-icon">🛡️</span>
+                    <span>SECP Verified NGOs</span>
+                </div>
+                <div class="trust-badge-item">
+                    <span class="badge-icon">⚡</span>
+                    <span>Raast / JazzCash / SadaPay Ready</span>
+                </div>
+                <div class="trust-badge-item">
+                    <span class="badge-icon">📊</span>
+                    <span>100% Open Financials</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="hero-visual">
+            <div class="hero-card-stack">
+                <div class="hero-main-card">
+                    <div class="card-hero-header">
+                        <span class="category-tag tag-emergency">🚨 Urgent Relief</span>
+                        <span class="location-badge">📍 Sindh & Balochistan</span>
+                    </div>
+                    <div class="card-hero-body">
+                        <h3>Flood Reconstruction & Clean Water Hubs</h3>
+                        <p>Providing solar RO water plants and weather-resilient brick shelters for 2,400+ displaced families.</p>
+                        
+                        <div class="cause-progress-wrap">
+                            <div class="cause-progress-bar">
+                                <div class="cause-progress-fill" style="width: 76%;"></div>
+                            </div>
+                            <div class="cause-progress-labels">
+                                <span class="raised-text">Raised: <strong>PKR 3,800,000</strong></span>
+                                <span class="target-text">Goal: PKR 5,000,000 (76%)</span>
+                            </div>
+                        </div>
+
+                        <div class="card-hero-footer">
+                            <div class="donors-avatar-group">
+                                <span class="avatar-circle">👩🏽</span>
+                                <span class="avatar-circle">👨🏻</span>
+                                <span class="avatar-circle">🧕🏼</span>
+                                <span class="avatar-count">+412 Donors</span>
+                            </div>
+                            <a href="#causes" class="quick-support-link">Support Cause →</a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Floating Micro Badges -->
+                <div class="floating-stat-card float-stat-left">
+                    <div class="float-icon">💚</div>
+                    <div>
+                        <div class="float-val">PKR 180M+</div>
+                        <div class="float-desc">Delivered to Ground</div>
+                    </div>
+                </div>
+
+                <div class="floating-stat-card float-stat-right">
+                    <div class="float-icon">✓</div>
+                    <div>
+                        <div class="float-val">150+ NGOs</div>
+                        <div class="float-desc">Strictly Audited</div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
-</main>
+</section>
+
+
+<!-- =========================================================
+     PLATFORM IMPACT / STATISTICS SECTION
+     ========================================================= -->
+<section class="impact-stats-section">
+    <div class="section-container">
+        <div class="section-header-center">
+            <span class="section-badge">Real-Time Metrics</span>
+            <h2 class="section-title">Measurable Impact Across Pakistan</h2>
+            <p class="section-subtitle">Every donation through GiveAID is tracked on-chain and in our transparent portal. Here is what we have achieved together.</p>
+        </div>
+
+        <div class="impact-grid">
+            <div class="impact-card">
+                <div class="impact-icon-wrapper icon-accent-green">
+                    <span>🏢</span>
+                </div>
+                <div class="impact-number" data-target="150">150+</div>
+                <div class="impact-title">Verified Partner NGOs</div>
+                <div class="impact-sub">Thoroughly vetted for SECP compliance, financial audits, and zero tax avoidance.</div>
+            </div>
+
+            <div class="impact-card">
+                <div class="impact-icon-wrapper icon-accent-blue">
+                    <span>🎯</span>
+                </div>
+                <div class="impact-number" data-target="1200">1,200+</div>
+                <div class="impact-title">Completed Projects</div>
+                <div class="impact-sub">Covering emergency disaster relief, girl child schooling, orphan care, and healthcare.</div>
+            </div>
+
+            <div class="impact-card">
+                <div class="impact-icon-wrapper icon-accent-gold">
+                    <span>👥</span>
+                </div>
+                <div class="impact-number" data-target="450000">450,000+</div>
+                <div class="impact-title">Lives Positively Touched</div>
+                <div class="impact-sub">Families fed, students educated, patients treated, and rural homes electrified.</div>
+            </div>
+
+            <div class="impact-card">
+                <div class="impact-icon-wrapper icon-accent-emerald">
+                    <span>💸</span>
+                </div>
+                <div class="impact-number">PKR 180M+</div>
+                <div class="impact-title">Charity Distributed</div>
+                <div class="impact-sub">Zero hidden deductions. 100% of donor funding routed directly to verified programs.</div>
+            </div>
+        </div>
+    </div>
+</section>
+
+
+<!-- =========================================================
+     FEATURED CAUSES SECTION
+     ========================================================= -->
+<section class="featured-causes-section" id="causes">
+    <div class="section-container">
+        <div class="causes-header-row">
+            <div>
+                <span class="section-badge">Active Campaigns</span>
+                <h2 class="section-title">Urgent Causes Needing Your Support</h2>
+                <p class="section-subtitle">Support vetted humanitarian initiatives across Karachi, Lahore, Quetta, Peshawar, and rural Pakistan.</p>
+            </div>
+            <div class="causes-filter-pills">
+                <button class="filter-pill active" onclick="filterCauses('all', this)">All Causes</button>
+                <button class="filter-pill" onclick="filterCauses('education', this)">Education</button>
+                <button class="filter-pill" onclick="filterCauses('relief', this)">Emergency Relief</button>
+                <button class="filter-pill" onclick="filterCauses('health', this)">Healthcare</button>
+                <button class="filter-pill" onclick="filterCauses('water', this)">Clean Water</button>
+            </div>
+        </div>
+
+        <div class="causes-grid">
+            <!-- Cause 1 -->
+            <div class="cause-card" data-category="relief">
+                <div class="cause-card-banner banner-relief">
+                    <span class="cause-tag">Emergency Relief</span>
+                    <span class="cause-org">Sindh Relief Coalition</span>
+                </div>
+                <div class="cause-card-content">
+                    <div class="cause-location">📍 Dadu & Sukkur, Sindh</div>
+                    <h3 class="cause-name">Flood Rehabilitation & Brick Shelter Homes</h3>
+                    <p class="cause-desc">Constructing durable, climate-resilient brick rooms for 180 farmer families displaced by devastating flash floods.</p>
+                    
+                    <div class="cause-financials">
+                        <div class="progress-bar-container">
+                            <div class="progress-bar-fill" style="width: 72%;"></div>
+                        </div>
+                        <div class="funding-meta">
+                            <span class="amount-raised">PKR 3,600,000</span>
+                            <span class="amount-target">Goal: PKR 5,000,000</span>
+                        </div>
+                        <div class="funding-footer-meta">
+                            <span class="funded-pct">72% Funded</span>
+                            <span class="donors-meta">👥 390 Donors</span>
+                        </div>
+                    </div>
+
+                    <div class="cause-actions">
+                        <button type="button" class="btn-donate-card" onclick="openDonationModal('Flood Rehabilitation & Brick Shelter Homes', 'PKR 5,000,000', 'Sindh Relief Coalition')">
+                            Donate Now
+                        </button>
+                        <a href="@Url.Action("Contact", "Home")" class="btn-info-card" title="Contact NGO / Inquire">💬 Inquire</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Cause 2 -->
+            <div class="cause-card" data-category="health">
+                <div class="cause-card-banner banner-health">
+                    <span class="cause-tag">Healthcare</span>
+                    <span class="cause-org">Edhi Emergency Network</span>
+                </div>
+                <div class="cause-card-content">
+                    <div class="cause-location">📍 Nationwide Highway Ambulances</div>
+                    <h3 class="cause-name">Emergency Ambulance & ICU Life-Support Fleet</h3>
+                    <p class="cause-desc">Equipping 25 national highway ambulances with oxygen concentrators, automated defibrillators, and trauma response kits.</p>
+                    
+                    <div class="cause-financials">
+                        <div class="progress-bar-container">
+                            <div class="progress-bar-fill" style="width: 85%;"></div>
+                        </div>
+                        <div class="funding-meta">
+                            <span class="amount-raised">PKR 8,500,000</span>
+                            <span class="amount-target">Goal: PKR 10,000,000</span>
+                        </div>
+                        <div class="funding-footer-meta">
+                            <span class="funded-pct">85% Funded</span>
+                            <span class="donors-meta">👥 1,120 Donors</span>
+                        </div>
+                    </div>
+
+                    <div class="cause-actions">
+                        <button type="button" class="btn-donate-card" onclick="openDonationModal('Emergency Ambulance & ICU Life-Support Fleet', 'PKR 10,000,000', 'Edhi Emergency Network')">
+                            Donate Now
+                        </button>
+                        <a href="@Url.Action("Contact", "Home")" class="btn-info-card" title="Contact NGO / Inquire">💬 Inquire</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Cause 3 -->
+            <div class="cause-card" data-category="education">
+                <div class="cause-card-banner banner-tech">
+                    <span class="cause-tag">Youth & IT</span>
+                    <span class="cause-org">Saylani Welfare Tech</span>
+                </div>
+                <div class="cause-card-content">
+                    <div class="cause-location">📍 Karachi, Lahore & Faisalabad</div>
+                    <h3 class="cause-name">Mass IT Training & AI Scholarships for Youth</h3>
+                    <p class="cause-desc">Sponsoring 500 underprivileged Gen Z students through comprehensive software engineering, cloud computing, and AI bootcamps.</p>
+                    
+                    <div class="cause-financials">
+                        <div class="progress-bar-container">
+                            <div class="progress-bar-fill" style="width: 80%;"></div>
+                        </div>
+                        <div class="funding-meta">
+                            <span class="amount-raised">PKR 4,800,000</span>
+                            <span class="amount-target">Goal: PKR 6,000,000</span>
+                        </div>
+                        <div class="funding-footer-meta">
+                            <span class="funded-pct">80% Funded</span>
+                            <span class="donors-meta">👥 680 Donors</span>
+                        </div>
+                    </div>
+
+                    <div class="cause-actions">
+                        <button type="button" class="btn-donate-card" onclick="openDonationModal('Mass IT Training & AI Scholarships for Youth', 'PKR 6,000,000', 'Saylani Welfare Tech')">
+                            Donate Now
+                        </button>
+                        <a href="@Url.Action("Contact", "Home")" class="btn-info-card" title="Contact NGO / Inquire">💬 Inquire</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Cause 4 -->
+            <div class="cause-card" data-category="education">
+                <div class="cause-card-banner banner-education">
+                    <span class="cause-tag">Education</span>
+                    <span class="cause-org">The Citizens Foundation</span>
+                </div>
+                <div class="cause-card-content">
+                    <div class="cause-location">📍 Rural Punjab & KPK</div>
+                    <h3 class="cause-name">Girls' Primary & Secondary Schooling Kits</h3>
+                    <p class="cause-desc">Providing full-year uniforms, textbooks, solar classroom power, and nutritious daily lunches for 350 rural female scholars.</p>
+                    
+                    <div class="cause-financials">
+                        <div class="progress-bar-container">
+                            <div class="progress-bar-fill" style="width: 90%;"></div>
+                        </div>
+                        <div class="funding-meta">
+                            <span class="amount-raised">PKR 3,150,000</span>
+                            <span class="amount-target">Goal: PKR 3,500,000</span>
+                        </div>
+                        <div class="funding-footer-meta">
+                            <span class="funded-pct">90% Funded</span>
+                            <span class="donors-meta">👥 520 Donors</span>
+                        </div>
+                    </div>
+
+                    <div class="cause-actions">
+                        <button type="button" class="btn-donate-card" onclick="openDonationModal('Girls Primary & Secondary Schooling Kits', 'PKR 3,500,000', 'The Citizens Foundation')">
+                            Donate Now
+                        </button>
+                        <a href="@Url.Action("Contact", "Home")" class="btn-info-card" title="Contact NGO / Inquire">💬 Inquire</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Cause 5 -->
+            <div class="cause-card" data-category="water">
+                <div class="cause-card-banner banner-water">
+                    <span class="cause-tag">Clean Water</span>
+                    <span class="cause-org">Thar Water Initiative</span>
+                </div>
+                <div class="cause-card-content">
+                    <div class="cause-location">📍 Tharparkar & Umerkot</div>
+                    <h3 class="cause-name">Solar-Powered Reverse Osmosis Water Plants</h3>
+                    <p class="cause-desc">Installing 4 high-capacity deep-well solar RO filtration plants to supply fluoride-free drinking water to 6 remote desert villages.</p>
+                    
+                    <div class="cause-financials">
+                        <div class="progress-bar-container">
+                            <div class="progress-bar-fill" style="width: 82%;"></div>
+                        </div>
+                        <div class="funding-meta">
+                            <span class="amount-raised">PKR 1,640,000</span>
+                            <span class="amount-target">Goal: PKR 2,000,000</span>
+                        </div>
+                        <div class="funding-footer-meta">
+                            <span class="funded-pct">82% Funded</span>
+                            <span class="donors-meta">👥 275 Donors</span>
+                        </div>
+                    </div>
+
+                    <div class="cause-actions">
+                        <button type="button" class="btn-donate-card" onclick="openDonationModal('Solar-Powered Reverse Osmosis Water Plants', 'PKR 2,000,000', 'Thar Water Initiative')">
+                            Donate Now
+                        </button>
+                        <a href="@Url.Action("Contact", "Home")" class="btn-info-card" title="Contact NGO / Inquire">💬 Inquire</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Cause 6 -->
+            <div class="cause-card" data-category="relief">
+                <div class="cause-card-banner banner-microfinance">
+                    <span class="cause-tag">Livelihood</span>
+                    <span class="cause-org">Akhuwat Micro-Grants</span>
+                </div>
+                <div class="cause-card-content">
+                    <div class="cause-location">📍 Multan, Quetta & Rawalpindi</div>
+                    <h3 class="cause-name">Qarz-e-Hasna Youth Micro-Enterprise Seed Capital</h3>
+                    <p class="cause-desc">Empowering 120 young artisans, solar technicians, and women tailors with 100% interest-free micro-seed grants.</p>
+                    
+                    <div class="cause-financials">
+                        <div class="progress-bar-container">
+                            <div class="progress-bar-fill" style="width: 78%;"></div>
+                        </div>
+                        <div class="funding-meta">
+                            <span class="amount-raised">PKR 5,460,000</span>
+                            <span class="amount-target">Goal: PKR 7,000,000</span>
+                        </div>
+                        <div class="funding-footer-meta">
+                            <span class="funded-pct">78% Funded</span>
+                            <span class="donors-meta">👥 580 Donors</span>
+                        </div>
+                    </div>
+
+                    <div class="cause-actions">
+                        <button type="button" class="btn-donate-card" onclick="openDonationModal('Qarz-e-Hasna Youth Micro-Enterprise Seed Capital', 'PKR 7,000,000', 'Akhuwat Micro-Grants')">
+                            Donate Now
+                        </button>
+                        <a href="@Url.Action("Contact", "Home")" class="btn-info-card" title="Contact NGO / Inquire">💬 Inquire</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+
+<!-- =========================================================
+     HOW GIVEAID WORKS (4-STEP STREAMLINED MODEL)
+     ========================================================= -->
+<section class="how-it-works-section">
+    <div class="section-container">
+        <div class="section-header-center">
+            <span class="section-badge">Transparent Workflow</span>
+            <h2 class="section-title">How GiveAID Works</h2>
+            <p class="section-subtitle">We stripped away the red tape and opaque charity practices to build a frictionless giving experience.</p>
+        </div>
+
+        <div class="steps-grid">
+            <div class="step-card">
+                <div class="step-number-badge">01</div>
+                <div class="step-icon-wrap">🔍</div>
+                <h3>1. Discover a Verified Cause</h3>
+                <p>Browse rigorously vetted non-profit campaigns across Pakistan with transparent goal breakdowns and field reports.</p>
+            </div>
+
+            <div class="step-card">
+                <div class="step-number-badge">02</div>
+                <div class="step-icon-wrap">💳</div>
+                <h3>2. Choose How to Give</h3>
+                <p>Donate in PKR using your favorite everyday payment channels: Raast, JazzCash, SadaPay, NayaPay, or direct Bank Transfer.</p>
+            </div>
+
+            <div class="step-card">
+                <div class="step-number-badge">03</div>
+                <div class="step-icon-wrap">🛡️</div>
+                <h3>3. 100% Financial Tracking</h3>
+                <p>Every single Rupee is accounted for. Check itemized expenditure bills, contractor receipts, and NGO disbursements.</p>
+            </div>
+
+            <div class="step-card">
+                <div class="step-number-badge">04</div>
+                <div class="step-icon-wrap">🌟</div>
+                <h3>4. Witness Tangible Impact</h3>
+                <p>Receive verifiable photo receipts, beneficiary progress updates, and tax certificates directly inside your personal donor portal.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+
+<!-- =========================================================
+     WHY GIVEAID (TRUST & VALUE PILLARS)
+     ========================================================= -->
+<section class="why-giveaid-section">
+    <div class="section-container">
+        <div class="why-grid">
+            <div class="why-intro-col">
+                <span class="section-badge">Trust by Design</span>
+                <h2 class="section-title">Why Changemakers Choose GiveAID</h2>
+                <p class="section-subtitle">
+                    For decades, charitable giving in Pakistan has been hindered by a lack of audit transparency and digital friction. GiveAID solves this with verifiable, youth-led accountability.
+                </p>
+                <div class="why-cta-box">
+                    <p>Have questions about our NGO verification and safety standards?</p>
+                    <a href="@Url.Action("About", "Home")" class="btn-outline-green">Learn About Our Mission →</a>
+                </div>
+            </div>
+
+            <div class="why-features-col">
+                <div class="why-feature-card">
+                    <div class="feature-icon">🛡️</div>
+                    <div class="feature-text">
+                        <h4>100% SECP & Tax Verified NGOs</h4>
+                        <p>We do not onboard anonymous charities. Every organization submits legal registration, annual audit filings, and field verification.</p>
+                    </div>
+                </div>
+
+                <div class="why-feature-card">
+                    <div class="feature-icon">💎</div>
+                    <div class="feature-text">
+                        <h4>Zero Hidden Deductions</h4>
+                        <p>Unlike legacy charity portals that charge 10–15% management cuts, GiveAID passes 100% of your allocated funds directly to the field.</p>
+                    </div>
+                </div>
+
+                <div class="why-feature-card">
+                    <div class="feature-icon">📱</div>
+                    <div class="feature-text">
+                        <h4>Built for Gen Z & Digital Pakistan</h4>
+                        <p>A lightning-fast, mobile-first interface designed for effortless giving on mobile phones without cumbersome manual paperwork.</p>
+                    </div>
+                </div>
+
+                <div class="why-feature-card">
+                    <div class="feature-icon">📊</div>
+                    <div class="feature-text">
+                        <h4>Real-Time Donor Dashboard</h4>
+                        <p>Log in anytime to see your lifetime impact metrics, downloadable PDF receipts, and project milestone updates.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+
+<!-- =========================================================
+     NGO PARTNER ONBOARDING CALLOUT ("Are you an NGO?")
+     ========================================================= -->
+<section class="ngo-cta-section">
+    <div class="section-container">
+        <div class="ngo-banner-card">
+            <div class="ngo-banner-content">
+                <span class="ngo-pill">For Pakistani Non-Profit Organizations</span>
+                <h2 class="ngo-banner-title">Are You an NGO Driving Real Change?</h2>
+                <p class="ngo-banner-desc">
+                    Connect with tens of thousands of active donors, youth volunteers, and corporate CSR partners across Pakistan and the worldwide diaspora. Get verified, launch campaigns, and manage impact effortlessly.
+                </p>
+                <div class="ngo-banner-actions">
+                    <a href="@Url.Action("Register", "Account")" class="btn-ngo-primary">
+                        Register Your NGO Now
+                    </a>
+                    <a href="@Url.Action("Partners", "Home")" class="btn-ngo-secondary">
+                        View Partner Network
+                    </a>
+                </div>
+            </div>
+            <div class="ngo-banner-perks">
+                <div class="ngo-perk-item">
+                    <span class="perk-check">✓</span>
+                    <span>Direct Raast & Pakistani Bank Payouts</span>
+                </div>
+                <div class="ngo-perk-item">
+                    <span class="perk-check">✓</span>
+                    <span>Dedicated NGO Analytics & Donor Hub</span>
+                </div>
+                <div class="ngo-perk-item">
+                    <span class="perk-check">✓</span>
+                    <span>SECP Verification Trust Badge</span>
+                </div>
+                <div class="ngo-perk-item">
+                    <span class="perk-check">✓</span>
+                    <span>Zero Setup or Listing Fees</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+
+<!-- =========================================================
+     COMMUNITY VOICES & TESTIMONIALS
+     ========================================================= -->
+<section class="testimonials-section">
+    <div class="section-container">
+        <div class="section-header-center">
+            <span class="section-badge">Voices from the Field</span>
+            <h2 class="section-title">Trusted by Donors & Community Leaders</h2>
+            <p class="section-subtitle">Hear what Pakistani students, overseas donors, and partner NGO directors say about GiveAID.</p>
+        </div>
+
+        <div class="testimonials-grid">
+            <div class="testimonial-card">
+                <div class="stars">⭐⭐⭐⭐⭐</div>
+                <p class="testimonial-quote">"As an overseas Pakistani in Manchester, sending donations back home was always riddled with doubt about where the funds ended up. GiveAID gives me photographic proof and real-time expense sheets for every rupee."</p>
+                <div class="author-info">
+                    <div class="author-avatar">🇵🇰</div>
+                    <div>
+                        <div class="author-name">Zainab Tariq</div>
+                        <div class="author-role">Overseas Donor & Tech Lead</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="testimonial-card">
+                <div class="stars">⭐⭐⭐⭐⭐</div>
+                <p class="testimonial-quote">"GiveAID changed how our university youth chapter organizes winter clothing drives. We raised PKR 450k in 72 hours with zero friction using SadaPay and JazzCash integration!"</p>
+                <div class="author-info">
+                    <div class="author-avatar">🎓</div>
+                    <div>
+                        <div class="author-name">Hamza Bilal</div>
+                        <div class="author-role">LUMS Student Volunteer Chapter</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="testimonial-card">
+                <div class="stars">⭐⭐⭐⭐⭐</div>
+                <p class="testimonial-quote">"The onboarding verification was thorough, which gives our donors absolute confidence. GiveAID's NGO portal makes updating project milestones and receipts simple."</p>
+                <div class="author-info">
+                    <div class="author-avatar">🏥</div>
+                    <div>
+                        <div class="author-name">Dr. M. Farooq</div>
+                        <div class="author-role">Director, Rural Health Clinic Trust</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+
+<!-- =========================================================
+     FINAL CALL TO ACTION BANNER
+     ========================================================= -->
+<section class="final-cta-section">
+    <div class="section-container">
+        <div class="final-cta-box">
+            <h2 class="final-cta-title">Every Rupee Changes a Life.</h2>
+            <p class="final-cta-desc">
+                Join Pakistan's fastest growing community of youth changemakers and transparent non-profit initiatives. Start your journey today.
+            </p>
+            <div class="final-cta-buttons">
+                @if (Session["UserID"] == null && !Request.IsAuthenticated)
+                {
+                    <a href="@Url.Action("Register", "Account")" class="btn-cta-white">
+                        Create Free Account
+                    </a>
+                    <a href="@Url.Action("Login", "Account")" class="btn-cta-outline">
+                        Sign In
+                    </a>
+                }
+                else
+                {
+                    <a href="@Url.Action("Index", "Dashboard")" class="btn-cta-white">
+                        Go to My Dashboard
+                    </a>
+                    <a href="#causes" class="btn-cta-outline">
+                        Browse More Causes
+                    </a>
+                }
+            </div>
+        </div>
+    </div>
+</section>
+
+
+<!-- =========================================================
+     QUICK DONATION MODAL (INTERACTIVE UX)
+     ========================================================= -->
+<div class="donation-modal-overlay" id="donationModal" style="display: none;">
+    <div class="donation-modal-card">
+        <button type="button" class="modal-close-btn" onclick="closeDonationModal()">&times;</button>
+        <div class="modal-header">
+            <div class="modal-icon">💚</div>
+            <h3 id="modalCauseTitle">Support Cause</h3>
+            <p id="modalCauseOrg" class="text-sub">Verified Campaign</p>
+        </div>
+
+        <div class="modal-body">
+            <label class="form-label">Select Donation Amount (PKR)</label>
+            <div class="amount-presets">
+                <button type="button" class="preset-btn" onclick="setDonationAmount(1000, this)">PKR 1,000</button>
+                <button type="button" class="preset-btn active" onclick="setDonationAmount(2500, this)">PKR 2,500</button>
+                <button type="button" class="preset-btn" onclick="setDonationAmount(5000, this)">PKR 5,000</button>
+                <button type="button" class="preset-btn" onclick="setDonationAmount(10000, this)">PKR 10,000</button>
+            </div>
+
+            <div class="form-group" style="margin-top: 15px;">
+                <label class="form-label">Or Enter Custom Amount (PKR)</label>
+                <input type="number" id="customAmountInput" class="form-control" value="2500" min="100" />
+            </div>
+
+            <div class="payment-method-selector">
+                <label class="form-label">Choose Payment Rail</label>
+                <div class="rails-grid">
+                    <div class="rail-option active" onclick="selectRail(this)">
+                        <span class="rail-icon">⚡</span>
+                        <span class="rail-name">Raast / 1Link</span>
+                    </div>
+                    <div class="rail-option" onclick="selectRail(this)">
+                        <span class="rail-icon">📱</span>
+                        <span class="rail-name">JazzCash / SadaPay</span>
+                    </div>
+                    <div class="rail-option" onclick="selectRail(this)">
+                        <span class="rail-icon">💳</span>
+                        <span class="rail-name">Debit/Credit Card</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-actions" style="margin-top: 20px;">
+                @if (Session["UserID"] == null && !Request.IsAuthenticated)
+                {
+                    <a href="@Url.Action("Register", "Account")" class="auth-btn" style="text-align: center; text-decoration: none;">
+                        Proceed to Secure Giving (Sign Up / Login)
+                    </a>
+                }
+                else
+                {
+                    <a href="@Url.Action("Index", "Dashboard")" class="auth-btn" style="text-align: center; text-decoration: none;">
+                        Confirm & Process in Donor Dashboard
+                    </a>
+                }
+            </div>
+            <p class="modal-secure-note">🔒 256-bit Encrypted. 100% SECP Regulatory Compliant.</p>
+        </div>
+    </div>
+</div>
+
+
+@section Scripts {
+    <script>
+        function filterCauses(cat, btn) {
+            $('.filter-pill').removeClass('active');
+            $(btn).addClass('active');
+
+            if (cat === 'all') {
+                $('.cause-card').fadeIn(200);
+            } else {
+                $('.cause-card').hide();
+                $('.cause-card[data-category="' + cat + '"]').fadeIn(200);
+            }
+        }
+
+        function openDonationModal(title, target, org) {
+            $('#modalCauseTitle').text(title);
+            $('#modalCauseOrg').text('Organized by: ' + org + ' • Target: ' + target);
+            $('#donationModal').fadeIn(200);
+        }
+
+        function closeDonationModal() {
+            $('#donationModal').fadeOut(200);
+        }
+
+        function setDonationAmount(amt, btn) {
+            $('.preset-btn').removeClass('active');
+            $(btn).addClass('active');
+            $('#customAmountInput').val(amt);
+        }
+
+        function selectRail(el) {
+            $('.rail-option').removeClass('active');
+            $(el).addClass('active');
+        }
+
+        // Close modal when clicking outside
+        $(window).on('click', function (e) {
+            if ($(e.target).is('#donationModal')) {
+                closeDonationModal();
+            }
+        });
+    </script>
+}
