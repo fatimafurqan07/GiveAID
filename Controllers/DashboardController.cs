@@ -49,6 +49,14 @@ namespace GiveAID_Project.Controllers
             }
             if (string.Equals(role, "NGO", StringComparison.OrdinalIgnoreCase))
             {
+                int uid = GetCurrentUserId();
+                var ngoStatus = _accountRepo.GetNGOAccountStatus(uid);
+                if (ngoStatus != null && (!string.Equals(ngoStatus.ApplicationStatus, "Approved", StringComparison.OrdinalIgnoreCase) || !ngoStatus.UserIsActive))
+                {
+                    TempData["ErrorMessage"] = "Your NGO account is currently awaiting approval or is inactive.";
+                    return RedirectToAction("AccessDenied", "Account");
+                }
+
                 return RedirectToAction("NGO");
             }
 
@@ -56,7 +64,7 @@ namespace GiveAID_Project.Controllers
         }
 
         // ==========================================
-        // 1. ADMIN DASHBOARD
+        // 1. ADMIN DASHBOARD & APPROVAL ACTIONS
         // ==========================================
         [HttpGet]
         [AuthorizeRoles("Admin")]
@@ -64,6 +72,105 @@ namespace GiveAID_Project.Controllers
         {
             var model = _dashboardRepo.GetAdminDashboardData();
             return View(model);
+        }
+
+        [HttpPost]
+        [AuthorizeRoles("Admin")]
+        [ValidateAntiForgeryToken]
+        public ActionResult ApproveDonation(int donationId)
+        {
+            int adminId = GetCurrentUserId();
+            bool success = _dashboardRepo.ApproveDonation(donationId, adminId);
+
+            if (success)
+            {
+                TempData["SuccessMessage"] = $"Donation #{donationId} has been Approved successfully. Funds and status are updated.";
+            }
+            else
+            {
+                TempData["ErrorMessage"] = "Could not approve the donation. Record not found.";
+            }
+
+            return RedirectToAction("Admin");
+        }
+
+        [HttpPost]
+        [AuthorizeRoles("Admin")]
+        [ValidateAntiForgeryToken]
+        public ActionResult DenyDonation(int donationId, string remarks)
+        {
+            int adminId = GetCurrentUserId();
+            bool success = _dashboardRepo.DenyDonation(donationId, adminId, remarks);
+
+            if (success)
+            {
+                TempData["SuccessMessage"] = $"Donation #{donationId} has been Denied and preserved in history.";
+            }
+            else
+            {
+                TempData["ErrorMessage"] = "Could not deny the donation. Record not found.";
+            }
+
+            return RedirectToAction("Admin");
+        }
+
+        [HttpPost]
+        [AuthorizeRoles("Admin")]
+        [ValidateAntiForgeryToken]
+        public ActionResult ApproveNGO(int applicationId)
+        {
+            int adminId = GetCurrentUserId();
+            bool success = _dashboardRepo.ApproveNgoApplication(applicationId, adminId);
+
+            if (success)
+            {
+                TempData["SuccessMessage"] = "NGO Application approved successfully! The NGO account is now Active.";
+            }
+            else
+            {
+                TempData["ErrorMessage"] = "Could not approve the application. Please try again.";
+            }
+
+            return RedirectToAction("Admin");
+        }
+
+        [HttpPost]
+        [AuthorizeRoles("Admin")]
+        [ValidateAntiForgeryToken]
+        public ActionResult DenyNGO(int applicationId, string remarks)
+        {
+            int adminId = GetCurrentUserId();
+            bool success = _dashboardRepo.DenyNgoApplication(applicationId, adminId, remarks);
+
+            if (success)
+            {
+                TempData["SuccessMessage"] = "NGO Application has been denied.";
+            }
+            else
+            {
+                TempData["ErrorMessage"] = "Could not deny the application. Please try again.";
+            }
+
+            return RedirectToAction("Admin");
+        }
+
+        [HttpPost]
+        [AuthorizeRoles("Admin")]
+        [ValidateAntiForgeryToken]
+        public ActionResult ToggleNGOActive(int applicationId, bool isActive)
+        {
+            bool success = _dashboardRepo.SetNgoActiveStatus(applicationId, isActive);
+
+            if (success)
+            {
+                TempData["SuccessMessage"] = $"NGO account status has been updated to {(isActive ? "Active" : "Inactive")}.";
+            }
+            else
+            {
+                TempData["ErrorMessage"] = "Could not update the NGO status. Please try again.";
+            }
+
+            return RedirectToAction("Admin");
         }
 
         // ==========================================
@@ -74,6 +181,18 @@ namespace GiveAID_Project.Controllers
         public ActionResult NGO()
         {
             int userId = GetCurrentUserId();
+
+            // Verify approval & active status if user is an NGO
+            if (!User.IsInRole("Admin"))
+            {
+                var ngoStatus = _accountRepo.GetNGOAccountStatus(userId);
+                if (ngoStatus != null && (!string.Equals(ngoStatus.ApplicationStatus, "Approved", StringComparison.OrdinalIgnoreCase) || !ngoStatus.UserIsActive))
+                {
+                    TempData["ErrorMessage"] = "Your NGO account is currently awaiting approval or is inactive.";
+                    return RedirectToAction("AccessDenied", "Account");
+                }
+            }
+
             var model = _dashboardRepo.GetNgoDashboardData(userId);
             return View(model);
         }
@@ -88,6 +207,67 @@ namespace GiveAID_Project.Controllers
             int userId = GetCurrentUserId();
             var model = _dashboardRepo.GetUserDashboardData(userId);
             return View("User", model);
+        }
+
+        // ==========================================
+        // 4. DONATION DETAILS MODAL (JSON HELPER)
+        // ==========================================
+        [HttpGet]
+        public JsonResult GetDonationDetailsJson(int id)
+        {
+            var donation = _dashboardRepo.GetDonationById(id);
+            if (donation == null)
+            {
+                return Json(new { success = false, message = "Donation not found." }, JsonRequestBehavior.AllowGet);
+            }
+
+            int currentUserId = GetCurrentUserId();
+
+            // Role-based security check
+            if (!User.IsInRole("Admin"))
+            {
+                if (User.IsInRole("NGO"))
+                {
+                    var ngoStatus = _accountRepo.GetNGOAccountStatus(currentUserId);
+                    if (ngoStatus == null || ngoStatus.NGOID != donation.NGOID)
+                    {
+                        return Json(new { success = false, message = "Unauthorized access to this donation record." }, JsonRequestBehavior.AllowGet);
+                    }
+                }
+                else
+                {
+                    if (donation.UserID != currentUserId)
+                    {
+                        return Json(new { success = false, message = "Unauthorized access to this donation record." }, JsonRequestBehavior.AllowGet);
+                    }
+                }
+            }
+
+            return Json(new
+            {
+                success = true,
+                donation = new
+                {
+                    donation.DonationID,
+                    donation.PaymentReference,
+                    donation.DonorName,
+                    donation.DonorEmail,
+                    donation.NGOName,
+                    donation.CauseName,
+                    donation.ProgramName,
+                    AmountFormatted = "PKR " + donation.Amount.ToString("N0"),
+                    Amount = donation.Amount,
+                    donation.DonationStatus,
+                    donation.AdminApprovalStatus,
+                    donation.NGOApprovalStatus,
+                    donation.PaymentStatus,
+                    donation.PaymentMethod,
+                    DonationDateFormatted = donation.DonationDate.ToString("MMM dd, yyyy HH:mm"),
+                    AdminReviewedAtFormatted = donation.AdminReviewedAt.HasValue ? donation.AdminReviewedAt.Value.ToString("MMM dd, yyyy HH:mm") : "Pending Review",
+                    donation.AdminRemarks,
+                    donation.Message
+                }
+            }, JsonRequestBehavior.AllowGet);
         }
 
         // ==========================================

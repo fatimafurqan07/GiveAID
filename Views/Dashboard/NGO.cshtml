@@ -128,46 +128,76 @@
         </div>
     </div>
 
-    <!-- Split Grid: Recent Donations & Top Supporters -->
+    <!-- Split Grid: All Donations & Top Supporters -->
     <div class="dashboard-tables-grid">
-        <!-- Recent Donations -->
+        <!-- All Donations with Status -->
         <div class="dashboard-card">
-            <div class="card-header">
-                <h3>💳 Recent Donations Received</h3>
-                <span class="card-subtitle">Contributions to your programs</span>
+            <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+                <div>
+                    <h3>💳 Donations Received</h3>
+                    <span class="card-subtitle">All contributions to your programs with verification status</span>
+                </div>
+                @if (Model.PendingDonationsCount > 0)
+                {
+                    <span class="status-pill status-pending" style="font-size: 12px;">@Model.PendingDonationsCount Pending Admin Review</span>
+                }
             </div>
             <div class="table-responsive">
                 <table class="data-table">
                     <thead>
                         <tr>
+                            <th>Ref</th>
                             <th>Donor</th>
                             <th>Program</th>
                             <th>Amount</th>
                             <th>Date</th>
                             <th>Status</th>
+                            <th style="text-align: right;">Action</th>
                         </tr>
                     </thead>
                     <tbody>
-                        @if (Model.RecentDonations != null && Model.RecentDonations.Any())
+                        @if (Model.AllDonations != null && Model.AllDonations.Any())
                         {
-                            foreach (var d in Model.RecentDonations)
+                            foreach (var d in Model.AllDonations)
                             {
+                                bool dPending = d.Status.Equals("Pending", StringComparison.OrdinalIgnoreCase);
+                                bool dApproved = d.Status.Equals("Approved", StringComparison.OrdinalIgnoreCase);
+
                                 <tr>
+                                    <td><code class="ref-code">@d.PaymentReference</code></td>
                                     <td>
                                         <strong>@d.DonorName</strong>
                                         <div class="text-sub">@d.DonorEmail</div>
                                     </td>
-                                    <td>@d.ProgramName</td>
-                                    <td class="amount-cell">$@d.Amount.ToString("N2")</td>
+                                    <td>@(d.ProgramName ?? d.CauseName)</td>
+                                    <td class="amount-cell">PKR @d.Amount.ToString("N0")</td>
                                     <td>@d.DonationDate.ToString("MMM dd, yyyy")</td>
-                                    <td><span class="status-pill status-completed">@d.Status</span></td>
+                                    <td>
+                                        @if (dApproved)
+                                        {
+                                            <span class="status-pill" style="background-color: #dcfce7; color: #166534;">✓ Approved</span>
+                                        }
+                                        else if (dPending)
+                                        {
+                                            <span class="status-pill status-pending">⏳ Pending</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="status-pill" style="background-color: #fee2e2; color: #991b1b;">✕ Denied</span>
+                                        }
+                                    </td>
+                                    <td style="text-align: right;">
+                                        <button type="button" class="btn-action btn-view-details" onclick="viewNgoDonation(@d.DonationID)">
+                                            🔍 View
+                                        </button>
+                                    </td>
                                 </tr>
                             }
                         }
                         else
                         {
                             <tr>
-                                <td colspan="5" class="text-center text-muted">No recent donations.</td>
+                                <td colspan="7" class="text-center text-muted">No donations received yet.</td>
                             </tr>
                         }
                     </tbody>
@@ -202,7 +232,7 @@
                                         <div class="text-sub">@s.SupporterEmail</div>
                                     </td>
                                     <td>@s.DonationsCount gifts</td>
-                                    <td class="amount-cell">$@s.TotalDonated.ToString("N2")</td>
+                                    <td class="amount-cell">PKR @s.TotalDonated.ToString("N0")</td>
                                     <td>@s.LastDonationDate.ToString("MMM dd, yyyy")</td>
                                 </tr>
                             }
@@ -215,6 +245,72 @@
                         }
                     </tbody>
                 </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- =========================================================
+     NGO DONATION DETAIL MODAL (READ-ONLY — NO APPROVE/DENY)
+     ========================================================= -->
+<div class="donation-modal-overlay" id="ngoDonationModal" style="display: none;">
+    <div class="donation-modal-card" style="max-width: 520px;">
+        <button type="button" class="modal-close-btn" onclick="$('#ngoDonationModal').fadeOut(200)">&times;</button>
+        <div class="modal-header">
+            <div class="modal-icon">💳</div>
+            <h3 id="ngoDonTitle">Donation Details</h3>
+            <p id="ngoDonRef" class="text-sub"></p>
+        </div>
+
+        <div class="modal-body" style="font-size: 14px; color: #334155;">
+            <div class="details-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 16px;">
+                <div>
+                    <label class="form-label" style="margin-bottom: 2px;">Donor:</label>
+                    <div id="ngoDonDonor" style="font-weight: 600;"></div>
+                </div>
+                <div>
+                    <label class="form-label" style="margin-bottom: 2px;">Email:</label>
+                    <div id="ngoDonEmail" style="font-weight: 600;"></div>
+                </div>
+                <div>
+                    <label class="form-label" style="margin-bottom: 2px;">Cause:</label>
+                    <div id="ngoDonCause" style="font-weight: 600;"></div>
+                </div>
+                <div>
+                    <label class="form-label" style="margin-bottom: 2px;">Program:</label>
+                    <div id="ngoDonProgram" style="font-weight: 600;"></div>
+                </div>
+                <div>
+                    <label class="form-label" style="margin-bottom: 2px;">Payment Method:</label>
+                    <div id="ngoDonPayMethod" style="font-weight: 600;"></div>
+                </div>
+                <div>
+                    <label class="form-label" style="margin-bottom: 2px;">Date:</label>
+                    <div id="ngoDonDate" style="font-weight: 600;"></div>
+                </div>
+            </div>
+
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-top: 1px dashed #cbd5e1;">
+                <div>
+                    <label class="form-label" style="margin-bottom: 2px;">Status:</label>
+                    <span id="ngoDonStatus"></span>
+                </div>
+                <div>
+                    <span style="font-weight: 700; color: #166534; font-size: 20px;" id="ngoDonAmount"></span>
+                </div>
+            </div>
+
+            <div id="ngoDonMsgBox" style="display: none; margin-top: 14px;">
+                <label class="form-label" style="margin-bottom: 2px;">Donor Message:</label>
+                <div id="ngoDonMsg" style="background: #f8fafc; padding: 10px 14px; border-radius: 6px; border: 1px solid #e2e8f0; font-style: italic;"></div>
+            </div>
+
+            <div style="background: #fffbeb; border: 1px solid #fef3c7; border-radius: 8px; padding: 10px 14px; margin-top: 14px; font-size: 13px; color: #92400e;">
+                ℹ️ Final approval authority rests with the GiveAID Platform Administrator. You will be notified once this donation is verified.
+            </div>
+
+            <div style="text-align: right; margin-top: 20px;">
+                <button type="button" class="btn-secondary-hero" style="padding: 8px 20px;" onclick="$('#ngoDonationModal').fadeOut(200)">Close</button>
             </div>
         </div>
     </div>
@@ -236,13 +332,13 @@
                     labels: progNames,
                     datasets: [
                         {
-                            label: 'Amount Raised ($)',
+                            label: 'Amount Raised (PKR)',
                             data: progRaised,
                             backgroundColor: '#2e7d32',
                             borderRadius: 6
                         },
                         {
-                            label: 'Target Goal ($)',
+                            label: 'Target Goal (PKR)',
                             data: progTargets,
                             backgroundColor: '#e0e0e0',
                             borderRadius: 6
@@ -256,7 +352,7 @@
                         y: {
                             beginAtZero: true,
                             ticks: {
-                                callback: function (val) { return '$' + val; }
+                                callback: function (val) { return 'PKR ' + val; }
                             }
                         }
                     }
@@ -273,7 +369,7 @@
                 data: {
                     labels: monthlyLabels,
                     datasets: [{
-                        label: 'Donation Inflow ($)',
+                        label: 'Donation Inflow (PKR)',
                         data: monthlyAmounts,
                         borderColor: '#2e7d32',
                         backgroundColor: 'rgba(46, 125, 50, 0.1)',
@@ -290,12 +386,57 @@
                         y: {
                             beginAtZero: true,
                             ticks: {
-                                callback: function (val) { return '$' + val; }
+                                callback: function (val) { return 'PKR ' + val; }
                             }
                         }
                     }
                 }
             });
+        });
+
+        // Donation Detail View (Read-Only for NGO)
+        function viewNgoDonation(donationId) {
+            $.getJSON('@Url.Action("GetDonationDetailsJson", "Dashboard")', { id: donationId }, function (d) {
+                if (!d || d.error) {
+                    alert(d ? d.error : 'Could not load donation details.');
+                    return;
+                }
+                $('#ngoDonTitle').text('Donation from ' + d.DonorName);
+                $('#ngoDonRef').text('Ref: ' + d.PaymentReference);
+                $('#ngoDonDonor').text(d.DonorName);
+                $('#ngoDonEmail').text(d.DonorEmail);
+                $('#ngoDonCause').text(d.CauseName);
+                $('#ngoDonProgram').text(d.ProgramName || 'General Fund');
+                $('#ngoDonPayMethod').text(d.PaymentMethod);
+                $('#ngoDonDate').text(d.DonationDate);
+                $('#ngoDonAmount').text('PKR ' + parseFloat(d.Amount).toLocaleString());
+
+                var statusHtml = '';
+                if (d.Status === 'Approved') {
+                    statusHtml = '<span class="status-pill" style="background-color:#dcfce7;color:#166534;">✓ Approved</span>';
+                } else if (d.Status === 'Pending') {
+                    statusHtml = '<span class="status-pill status-pending">⏳ Pending Admin Approval</span>';
+                } else {
+                    statusHtml = '<span class="status-pill" style="background-color:#fee2e2;color:#991b1b;">✕ Denied</span>';
+                }
+                $('#ngoDonStatus').html(statusHtml);
+
+                if (d.Message && d.Message.trim() !== '') {
+                    $('#ngoDonMsg').text(d.Message);
+                    $('#ngoDonMsgBox').show();
+                } else {
+                    $('#ngoDonMsgBox').hide();
+                }
+
+                $('#ngoDonationModal').fadeIn(200);
+            });
+        }
+
+        // Close modals on outside click
+        $(window).on('click', function(e) {
+            if ($(e.target).is('.donation-modal-overlay')) {
+                $(e.target).fadeOut(200);
+            }
         });
     </script>
 }

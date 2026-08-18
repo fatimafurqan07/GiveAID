@@ -1,0 +1,144 @@
+@model GiveAID_Project.Models.NGORegisterModel
+
+@{
+    ViewBag.Title = "Register as NGO";
+    //Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="auth-container">
+    <div class="auth-card register-card ngo-register-card">
+        <!-- Role Selector Tabs -->
+        <div class="auth-role-tabs">
+            <a href="@Url.Action("Register", "Account")" class="auth-tab-item">👤 Register as User</a>
+            <a href="@Url.Action("NGORegister", "Account")" class="auth-tab-item active">🏢 Register as NGO</a>
+        </div>
+
+        <div class="auth-header">
+            <div class="auth-icon">🏢</div>
+            <h2>Register Your NGO Organization</h2>
+            <p>Apply to become a verified GiveAID partner non-profit in Pakistan. Applications are reviewed by our administration before activation.</p>
+        </div>
+
+        <div class="ngo-verification-notice">
+            <span class="notice-icon">ℹ️</span>
+            <div>
+                <strong>Verification Policy:</strong> To maintain donor trust, all NGO accounts are submitted with <code>Pending</code> status. Once our team verifies your registration, your account will be activated.
+            </div>
+        </div>
+
+        @using (Html.BeginForm("NGORegister", "Account", FormMethod.Post, new { @class = "auth-form", role = "form" }))
+        {
+            @Html.AntiForgeryToken()
+
+            if (!ViewData.ModelState.IsValid && ViewData.ModelState[""] != null && ViewData.ModelState[""].Errors.Count > 0)
+            {
+                @Html.ValidationSummary(true, "", new { @class = "validation-summary-errors" })
+            }
+
+            <div class="form-group">
+                @Html.LabelFor(m => m.NGOName, new { @class = "form-label" })
+                @Html.TextBoxFor(m => m.NGOName, new { @class = "form-control", placeholder = "e.g. Edhi Foundation / Saylani Welfare", autocomplete = "organization", autofocus = "autofocus" })
+                @Html.ValidationMessageFor(m => m.NGOName, "", new { @class = "field-validation-error" })
+            </div>
+
+            <div class="form-row">
+                <div class="form-group col-half">
+                    @Html.LabelFor(m => m.Email, new { @class = "form-label" })
+                    @Html.TextBoxFor(m => m.Email, new { @class = "form-control", placeholder = "official@ngo.org.pk", type = "email", autocomplete = "email" })
+                    @Html.ValidationMessageFor(m => m.Email, "", new { @class = "field-validation-error" })
+                </div>
+
+                <div class="form-group col-half">
+                    @Html.LabelFor(m => m.Phone, new { @class = "form-label" })
+                    @Html.TextBoxFor(m => m.Phone, new { @class = "form-control", placeholder = "e.g. +92 21 34567890", autocomplete = "tel" })
+                    @Html.ValidationMessageFor(m => m.Phone, "", new { @class = "field-validation-error" })
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group col-half">
+                    @Html.LabelFor(m => m.Category, new { @class = "form-label" })
+                    <select name="Category" id="Category" class="form-control form-select" required>
+                        <option value="">-- Select Primary Sector --</option>
+                        <option value="Emergency & Disaster Relief" @(Model.Category == "Emergency & Disaster Relief" ? "selected" : "")>Emergency & Disaster Relief</option>
+                        <option value="Education & Youth Literacy" @(Model.Category == "Education & Youth Literacy" ? "selected" : "")>Education & Youth Literacy</option>
+                        <option value="Healthcare & Hospitals" @(Model.Category == "Healthcare & Hospitals" ? "selected" : "")>Healthcare & Hospitals</option>
+                        <option value="Clean Drinking Water" @(Model.Category == "Clean Drinking Water" ? "selected" : "")>Clean Drinking Water</option>
+                        <option value="Orphan & Foster Care" @(Model.Category == "Orphan & Foster Care" ? "selected" : "")>Orphan & Foster Care</option>
+                        <option value="Interest-Free Microfinance" @(Model.Category == "Interest-Free Microfinance" ? "selected" : "")>Interest-Free Microfinance</option>
+                        <option value="Food Security & Dastarkhwan" @(Model.Category == "Food Security & Dastarkhwan" ? "selected" : "")>Food Security & Dastarkhwan</option>
+                        <option value="Poverty Alleviation" @(Model.Category == "Poverty Alleviation" ? "selected" : "")>Poverty Alleviation</option>
+                        <option value="Other Humanitarian Cause" @(Model.Category == "Other Humanitarian Cause" ? "selected" : "")>Other Humanitarian Cause</option>
+                    </select>
+                    @Html.ValidationMessageFor(m => m.Category, "", new { @class = "field-validation-error" })
+                </div>
+
+                <div class="form-group col-half">
+                    @Html.LabelFor(m => m.City, new { @class = "form-label" })
+                    @Html.TextBoxFor(m => m.City, new { @class = "form-control", placeholder = "e.g. Karachi / Lahore / Islamabad", autocomplete = "address-level2" })
+                    @Html.ValidationMessageFor(m => m.City, "", new { @class = "field-validation-error" })
+                </div>
+            </div>
+
+            <div class="form-group">
+                @Html.LabelFor(m => m.Address, new { @class = "form-label" })
+                @Html.TextBoxFor(m => m.Address, new { @class = "form-control", placeholder = "Headquarters / registered office street address", autocomplete = "street-address" })
+                @Html.ValidationMessageFor(m => m.Address, "", new { @class = "field-validation-error" })
+            </div>
+
+            <div class="form-row">
+                <div class="form-group col-half">
+                    @Html.LabelFor(m => m.WebsiteURL, new { @class = "form-label" })
+                    @Html.TextBoxFor(m => m.WebsiteURL, new { @class = "form-control", placeholder = "https://www.example.org.pk", type = "url" })
+                    @Html.ValidationMessageFor(m => m.WebsiteURL, "", new { @class = "field-validation-error" })
+                </div>
+
+                <div class="form-group col-half">
+                    @Html.LabelFor(m => m.RegistrationNumber, new { @class = "form-label" })
+                    @Html.TextBoxFor(m => m.RegistrationNumber, new { @class = "form-control", placeholder = "SECP / Societies Act Registration No." })
+                    @Html.ValidationMessageFor(m => m.RegistrationNumber, "", new { @class = "field-validation-error" })
+                </div>
+            </div>
+
+            <div class="form-group">
+                @Html.LabelFor(m => m.Description, new { @class = "form-label" })
+                @Html.TextAreaFor(m => m.Description, new { @class = "form-control", rows = 4, placeholder = "Briefly describe your NGO's mission, ongoing projects, and humanitarian impact in Pakistan..." })
+                @Html.ValidationMessageFor(m => m.Description, "", new { @class = "field-validation-error" })
+            </div>
+
+            <div class="form-row">
+                <div class="form-group col-half">
+                    @Html.LabelFor(m => m.Password, new { @class = "form-label" })
+                    @Html.PasswordFor(m => m.Password, new { @class = "form-control", placeholder = "Minimum 6 characters", autocomplete = "new-password" })
+                    @Html.ValidationMessageFor(m => m.Password, "", new { @class = "field-validation-error" })
+                </div>
+
+                <div class="form-group col-half">
+                    @Html.LabelFor(m => m.ConfirmPassword, new { @class = "form-label" })
+                    @Html.PasswordFor(m => m.ConfirmPassword, new { @class = "form-control", placeholder = "Re-enter password", autocomplete = "new-password" })
+                    @Html.ValidationMessageFor(m => m.ConfirmPassword, "", new { @class = "field-validation-error" })
+                </div>
+            </div>
+
+            <button type="submit" class="auth-btn btn-ngo-register">
+                Submit NGO Application for Verification →
+            </button>
+        }
+
+        <div class="auth-footer">
+            <p>Already have an approved NGO account? <a href="@Url.Action("Login", "Account")">Sign in here</a></p>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            $('form.auth-form').on('submit', function () {
+                if ($(this).valid()) {
+                    $(this).find('button[type="submit"]').prop('disabled', true).text('Submitting NGO Application...');
+                }
+            });
+        });
+    </script>
+}

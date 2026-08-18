@@ -23,7 +23,7 @@ namespace GiveAID_Project.Controllers
         }
 
         // ==========================================
-        // REGISTER
+        // REGISTER (NORMAL USER)
         // ==========================================
 
         [HttpGet]
@@ -78,6 +78,64 @@ namespace GiveAID_Project.Controllers
         }
 
         // ==========================================
+        // NGO REGISTRATION (APPLICATION FOR APPROVAL)
+        // ==========================================
+
+        [HttpGet]
+        [AllowAnonymous]
+        public ActionResult NGORegister()
+        {
+            if (User.Identity.IsAuthenticated || Session["UserID"] != null)
+            {
+                return RedirectToAction("Index", "Home");
+            }
+
+            return View(new NGORegisterModel());
+        }
+
+        [HttpPost]
+        [AllowAnonymous]
+        [ValidateAntiForgeryToken]
+        public ActionResult NGORegister(NGORegisterModel model)
+        {
+            if (User.Identity.IsAuthenticated || Session["UserID"] != null)
+            {
+                return RedirectToAction("Index", "Home");
+            }
+
+            if (!ModelState.IsValid)
+            {
+                return View(model);
+            }
+
+            try
+            {
+                if (_accountRepo.EmailExists(model.Email))
+                {
+                    ModelState.AddModelError("Email", "An account with this email address already exists. Please log in or use a different email.");
+                    return View(model);
+                }
+
+                if (_accountRepo.NGONameExists(model.NGOName))
+                {
+                    ModelState.AddModelError("NGOName", "An NGO with this name is already registered or has an application on file.");
+                    return View(model);
+                }
+
+                // Create NGO Application (Inactive pending admin approval)
+                _accountRepo.CreateNGOApplication(model);
+
+                TempData["SuccessMessage"] = "Your NGO registration application has been submitted successfully! It is currently awaiting review and approval by the platform administrator.";
+                return RedirectToAction("Login", "Account");
+            }
+            catch (Exception ex)
+            {
+                ModelState.AddModelError("", "An unexpected error occurred while submitting your NGO application. Please try again. (" + ex.Message + ")");
+                return View(model);
+            }
+        }
+
+        // ==========================================
         // LOGIN
         // ==========================================
 
@@ -119,16 +177,47 @@ namespace GiveAID_Project.Controllers
                     return View(model);
                 }
 
-                if (!user.IsActive)
-                {
-                    ModelState.AddModelError("", "Your account has been deactivated. Please contact support.");
-                    return View(model);
-                }
-
                 if (user.IsBanned)
                 {
                     ModelState.AddModelError("", "Your account has been suspended due to policy violations.");
                     return View(model);
+                }
+
+                // Check role-specific constraints for NGOs
+                var roles = user.Roles ?? new List<string>();
+                if (roles.Contains("NGO"))
+                {
+                    var ngoStatus = _accountRepo.GetNGOAccountStatus(user.UserID);
+                    if (ngoStatus != null)
+                    {
+                        if (string.Equals(ngoStatus.ApplicationStatus, "Pending", StringComparison.OrdinalIgnoreCase))
+                        {
+                            ModelState.AddModelError("", "Your NGO application is currently awaiting admin approval.");
+                            return View(model);
+                        }
+
+                        if (string.Equals(ngoStatus.ApplicationStatus, "Rejected", StringComparison.OrdinalIgnoreCase) ||
+                            string.Equals(ngoStatus.ApplicationStatus, "Denied", StringComparison.OrdinalIgnoreCase))
+                        {
+                            string reason = !string.IsNullOrWhiteSpace(ngoStatus.AdminRemarks) ? $" (Reason: {ngoStatus.AdminRemarks})" : "";
+                            ModelState.AddModelError("", "Your NGO application was not approved." + reason);
+                            return View(model);
+                        }
+
+                        if (!user.IsActive || !string.Equals(ngoStatus.NGOStatus, "Active", StringComparison.OrdinalIgnoreCase))
+                        {
+                            ModelState.AddModelError("", "Your NGO account is currently inactive. Please contact the administrator.");
+                            return View(model);
+                        }
+                    }
+                }
+                else
+                {
+                    if (!user.IsActive)
+                    {
+                        ModelState.AddModelError("", "Your account has been deactivated. Please contact support.");
+                        return View(model);
+                    }
                 }
 
                 // Update last login timestamp

@@ -59,6 +59,14 @@
                 <div class="stat-label">Pending NGO Reviews</div>
             </div>
         </div>
+
+        <div class="stat-card">
+            <div class="stat-icon" style="background: #fffbeb; color: #d97706;">💳</div>
+            <div class="stat-info">
+                <div class="stat-value">@(Model.PendingDonationsCount)</div>
+                <div class="stat-label">Pending Donations</div>
+            </div>
+        </div>
     </div>
 
     <!-- Charts Section -->
@@ -84,111 +92,480 @@
         </div>
     </div>
 
-    <!-- Tables Grid -->
-    <div class="dashboard-tables-grid">
-        <!-- Recent Donations -->
-        <div class="dashboard-card">
-            <div class="card-header">
-                <h3>💳 Recent Platform Donations</h3>
-                <span class="card-subtitle">Latest incoming contributions</span>
+    <!-- =========================================================
+         DONATION REQUESTS & VERIFICATION MANAGEMENT
+         ========================================================= -->
+    <div class="dashboard-card mb-4" id="donation-management-section">
+        <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
+            <div>
+                <h3>💳 Donation Requests & Verification Management</h3>
+                <span class="card-subtitle">Review incoming donations, approve or deny with full audit trail</span>
             </div>
-            <div class="table-responsive">
-                <table class="data-table">
-                    <thead>
-                        <tr>
-                            <th>Ref</th>
-                            <th>Donor</th>
-                            <th>NGO & Program</th>
-                            <th>Amount</th>
-                            <th>Date</th>
-                            <th>Status</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @if (Model.RecentDonations != null && Model.RecentDonations.Any())
-                        {
-                            foreach (var item in Model.RecentDonations)
-                            {
-                                <tr>
-                                    <td><code class="ref-code">@item.PaymentReference</code></td>
-                                    <td>
-                                        <strong>@item.DonorName</strong>
-                                        <div class="text-sub">@item.DonorEmail</div>
-                                    </td>
-                                    <td>
-                                        <strong>@item.NGOName</strong>
-                                        <div class="text-sub">@item.ProgramName</div>
-                                    </td>
-                                    <td class="amount-cell">$@item.Amount.ToString("N2")</td>
-                                    <td>@item.DonationDate.ToString("MMM dd, yyyy")</td>
-                                    <td><span class="status-pill status-completed">@item.Status</span></td>
-                                </tr>
-                            }
-                        }
-                        else
-                        {
-                            <tr>
-                                <td colspan="6" class="text-center text-muted">No donations recorded yet.</td>
-                            </tr>
-                        }
-                    </tbody>
-                </table>
+            <div class="app-filter-pills">
+                @{
+                    int allDonCount = Model.AllDonations?.Count ?? 0;
+                    int pendingDonCount = Model.AllDonations?.Count(d => d.Status.Equals("Pending", StringComparison.OrdinalIgnoreCase)) ?? 0;
+                    int approvedDonCount = Model.AllDonations?.Count(d => d.Status.Equals("Approved", StringComparison.OrdinalIgnoreCase)) ?? 0;
+                    int deniedDonCount = Model.AllDonations?.Count(d => d.Status.Equals("Denied", StringComparison.OrdinalIgnoreCase)) ?? 0;
+                }
+                <button type="button" class="filter-pill active" onclick="filterDonRows('all', this)">All (@allDonCount)</button>
+                <button type="button" class="filter-pill" onclick="filterDonRows('pending', this)">Pending (@pendingDonCount)</button>
+                <button type="button" class="filter-pill" onclick="filterDonRows('approved', this)">Approved (@approvedDonCount)</button>
+                <button type="button" class="filter-pill" onclick="filterDonRows('denied', this)">Denied (@deniedDonCount)</button>
             </div>
         </div>
 
-        <!-- Pending & Recent NGO Applications -->
-        <div class="dashboard-card">
-            <div class="card-header">
-                <h3>📋 NGO Applications</h3>
-                <span class="card-subtitle">Partner onboarding requests</span>
-            </div>
-            <div class="table-responsive">
-                <table class="data-table">
-                    <thead>
-                        <tr>
-                            <th>NGO Name</th>
-                            <th>Applicant</th>
-                            <th>Location</th>
-                            <th>Submitted</th>
-                            <th>Status</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @if (Model.RecentApplications != null && Model.RecentApplications.Any())
+        <div class="table-responsive">
+            <table class="data-table donations-mgmt-table">
+                <thead>
+                    <tr>
+                        <th>Ref</th>
+                        <th>Donor</th>
+                        <th>NGO & Cause</th>
+                        <th>Amount</th>
+                        <th>Date</th>
+                        <th>Status</th>
+                        <th style="text-align: right;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model.AllDonations != null && Model.AllDonations.Any())
+                    {
+                        foreach (var don in Model.AllDonations)
                         {
-                            foreach (var app in Model.RecentApplications)
-                            {
-                                <tr>
-                                    <td><strong>@app.NGOName</strong></td>
-                                    <td>
-                                        @app.ApplicantName
-                                        <div class="text-sub">@app.ApplicantEmail</div>
-                                    </td>
-                                    <td>@app.City</td>
-                                    <td>@app.SubmittedAt.ToString("MMM dd, yyyy")</td>
-                                    <td>
-                                        @if (app.Status == "Approved")
+                            bool donIsPending = don.Status.Equals("Pending", StringComparison.OrdinalIgnoreCase);
+                            bool donIsApproved = don.Status.Equals("Approved", StringComparison.OrdinalIgnoreCase);
+                            bool donIsDenied = don.Status.Equals("Denied", StringComparison.OrdinalIgnoreCase);
+                            string donFilterClass = donIsPending ? "don-filter-pending" : (donIsApproved ? "don-filter-approved" : "don-filter-denied");
+
+                            <tr class="don-row @donFilterClass">
+                                <td><code class="ref-code">@don.PaymentReference</code></td>
+                                <td>
+                                    <strong>@don.DonorName</strong>
+                                    <div class="text-sub">@don.DonorEmail</div>
+                                </td>
+                                <td>
+                                    <strong>@don.NGOName</strong>
+                                    <div class="text-sub">@don.CauseName</div>
+                                </td>
+                                <td class="amount-cell">PKR @don.Amount.ToString("N0")</td>
+                                <td>@don.DonationDate.ToString("MMM dd, yyyy")</td>
+                                <td>
+                                    @if (donIsApproved)
+                                    {
+                                        <span class="status-pill" style="background-color: #dcfce7; color: #166534;">✓ Approved</span>
+                                    }
+                                    else if (donIsPending)
+                                    {
+                                        <span class="status-pill status-pending">⏳ Pending</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="status-pill" style="background-color: #fee2e2; color: #991b1b;">✕ Denied</span>
+                                    }
+                                </td>
+                                <td style="text-align: right;">
+                                    <div class="admin-actions-group">
+                                        <button type="button" class="btn-action btn-view-details" onclick="viewDonationDetails(@don.DonationID)">
+                                            🔍 View
+                                        </button>
+
+                                        @if (donIsPending)
                                         {
-                                            <span class="status-pill status-completed">Approved</span>
+                                            using (Html.BeginForm("ApproveDonation", "Dashboard", FormMethod.Post, new { style = "display: inline-block;" }))
+                                            {
+                                                @Html.AntiForgeryToken()
+                                                <input type="hidden" name="donationId" value="@don.DonationID" />
+                                                <button type="submit" class="btn-action btn-approve" onclick="return confirm('Approve this PKR @don.Amount.ToString("N0") donation to @don.NGOName?');">
+                                                    ✓ Approve
+                                                </button>
+                                            }
+
+                                            <button type="button" class="btn-action btn-deny" onclick="openDenyDonationModal(@don.DonationID, '@Html.Raw(HttpUtility.JavaScriptStringEncode(don.DonorName))', 'PKR @don.Amount.ToString("N0")')">
+                                                ✕ Deny
+                                            </button>
+                                        }
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="7" class="text-center text-muted" style="padding: 30px;">No donations recorded yet.</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- =========================================================
+         FULL NGO APPLICATIONS MANAGEMENT SECTION
+         ========================================================= -->
+    <div class="dashboard-card mb-4" id="ngo-applications-section">
+        <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
+            <div>
+                <h3>📋 NGO Partner Applications & Verification</h3>
+                <span class="card-subtitle">Review incoming non-profit registration requests, approve/deny applications, and manage active status</span>
+            </div>
+            <div class="app-filter-pills">
+                <button type="button" class="filter-pill active" onclick="filterAppRows('all', this)">All (@(Model.AllNgoApplications?.Count ?? 0))</button>
+                <button type="button" class="filter-pill" onclick="filterAppRows('pending', this)">Pending (@(Model.AllNgoApplications?.Count(a => a.ApplicationStatus.Equals("Pending", StringComparison.OrdinalIgnoreCase)) ?? 0))</button>
+                <button type="button" class="filter-pill" onclick="filterAppRows('approved', this)">Approved (@(Model.AllNgoApplications?.Count(a => a.ApplicationStatus.Equals("Approved", StringComparison.OrdinalIgnoreCase)) ?? 0))</button>
+                <button type="button" class="filter-pill" onclick="filterAppRows('denied', this)">Denied (@(Model.AllNgoApplications?.Count(a => !a.ApplicationStatus.Equals("Pending", StringComparison.OrdinalIgnoreCase) && !a.ApplicationStatus.Equals("Approved", StringComparison.OrdinalIgnoreCase)) ?? 0))</button>
+            </div>
+        </div>
+
+        <div class="table-responsive">
+            <table class="data-table ngo-apps-table">
+                <thead>
+                    <tr>
+                        <th>NGO Name</th>
+                        <th>Contact Email & Phone</th>
+                        <th>City / Location</th>
+                        <th>Application Date</th>
+                        <th>Application Status</th>
+                        <th>Account Active</th>
+                        <th style="text-align: right;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model.AllNgoApplications != null && Model.AllNgoApplications.Any())
+                    {
+                        foreach (var app in Model.AllNgoApplications)
+                        {
+                            bool isPending = string.Equals(app.ApplicationStatus, "Pending", StringComparison.OrdinalIgnoreCase);
+                            bool isApproved = string.Equals(app.ApplicationStatus, "Approved", StringComparison.OrdinalIgnoreCase);
+                            bool isDenied = !isPending && !isApproved;
+                            string rowFilterClass = isPending ? "filter-pending" : (isApproved ? "filter-approved" : "filter-denied");
+
+                            <tr class="app-row @rowFilterClass">
+                                <td>
+                                    <strong>@app.NGOName</strong>
+                                    <div class="text-sub">Applicant: @app.ApplicantName</div>
+                                </td>
+                                <td>
+                                    <div>@app.Email</div>
+                                    <div class="text-sub">@app.Phone</div>
+                                </td>
+                                <td>
+                                    <div>@app.City</div>
+                                    <div class="text-sub">@(app.Address?.Length > 30 ? app.Address.Substring(0, 27) + "..." : app.Address)</div>
+                                </td>
+                                <td>@app.SubmittedAt.ToString("MMM dd, yyyy")</td>
+                                <td>
+                                    @if (isApproved)
+                                    {
+                                        <span class="status-pill status-completed">Approved</span>
+                                    }
+                                    else if (isPending)
+                                    {
+                                        <span class="status-pill status-pending">Pending Review</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="status-pill" style="background-color: #fee2e2; color: #991b1b;">Denied</span>
+                                    }
+                                </td>
+                                <td>
+                                    @if (isApproved)
+                                    {
+                                        if (app.IsActive)
+                                        {
+                                            <span class="status-pill" style="background-color: #dcfce7; color: #166534;">Active</span>
                                         }
                                         else
                                         {
-                                            <span class="status-pill status-pending">Pending Review</span>
+                                            <span class="status-pill" style="background-color: #f1f5f9; color: #64748b;">Inactive</span>
                                         }
-                                    </td>
-                                </tr>
-                            }
-                        }
-                        else
-                        {
-                            <tr>
-                                <td colspan="5" class="text-center text-muted">No applications found.</td>
+                                    }
+                                    else
+                                    {
+                                        <span class="status-pill" style="background-color: #f1f5f9; color: #94a3b8;">Inactive</span>
+                                    }
+                                </td>
+                                <td style="text-align: right;">
+                                    <div class="admin-actions-group">
+                                        <!-- View Details Button -->
+                                        <button type="button" class="btn-action btn-view-details" 
+                                                onclick="viewNgoDetails('@app.ApplicationID', '@Html.Raw(HttpUtility.JavaScriptStringEncode(app.NGOName))', '@Html.Raw(HttpUtility.JavaScriptStringEncode(app.ApplicantName))', '@app.Email', '@app.Phone', '@Html.Raw(HttpUtility.JavaScriptStringEncode(app.City))', '@Html.Raw(HttpUtility.JavaScriptStringEncode(app.Address))', '@Html.Raw(HttpUtility.JavaScriptStringEncode(app.Description))', '@app.WebsiteURL', '@app.ApplicationStatus', '@(app.IsActive ? "Yes" : "No")', '@app.SubmittedAt.ToString("MMM dd, yyyy HH:mm")', '@(app.ReviewedAt.HasValue ? app.ReviewedAt.Value.ToString("MMM dd, yyyy") : "N/A")', '@Html.Raw(HttpUtility.JavaScriptStringEncode(app.AdminRemarks ?? ""))')">
+                                            🔍 View
+                                        </button>
+
+                                        @if (isPending)
+                                        {
+                                            <!-- Approve Form -->
+                                            using (Html.BeginForm("ApproveNGO", "Dashboard", FormMethod.Post, new { style = "display: inline-block;" }))
+                                            {
+                                                @Html.AntiForgeryToken()
+                                                <input type="hidden" name="applicationId" value="@app.ApplicationID" />
+                                                <button type="submit" class="btn-action btn-approve" onclick="return confirm('Approve NGO @app.NGOName and activate their account?');">
+                                                    ✓ Approve
+                                                </button>
+                                            }
+
+                                            <!-- Deny Button -->
+                                            <button type="button" class="btn-action btn-deny" onclick="openDenyModal('@app.ApplicationID', '@Html.Raw(HttpUtility.JavaScriptStringEncode(app.NGOName))')">
+                                                ✕ Deny
+                                            </button>
+                                        }
+                                        else if (isApproved)
+                                        {
+                                            if (app.IsActive)
+                                            {
+                                                <!-- Deactivate Form -->
+                                                using (Html.BeginForm("ToggleNGOActive", "Dashboard", FormMethod.Post, new { style = "display: inline-block;" }))
+                                                {
+                                                    @Html.AntiForgeryToken()
+                                                    <input type="hidden" name="applicationId" value="@app.ApplicationID" />
+                                                    <input type="hidden" name="isActive" value="false" />
+                                                    <button type="submit" class="btn-action btn-deactivate" onclick="return confirm('Deactivate NGO @app.NGOName? They will not be able to log in.');">
+                                                        ⏸ Deactivate
+                                                    </button>
+                                                }
+                                            }
+                                            else
+                                            {
+                                                <!-- Activate Form -->
+                                                using (Html.BeginForm("ToggleNGOActive", "Dashboard", FormMethod.Post, new { style = "display: inline-block;" }))
+                                                {
+                                                    @Html.AntiForgeryToken()
+                                                    <input type="hidden" name="applicationId" value="@app.ApplicationID" />
+                                                    <input type="hidden" name="isActive" value="true" />
+                                                    <button type="submit" class="btn-action btn-activate" onclick="return confirm('Re-activate NGO @app.NGOName?');">
+                                                        ▶ Activate
+                                                    </button>
+                                                }
+                                            }
+                                        }
+                                        else
+                                        {
+                                            <!-- Re-approve option for previously denied application -->
+                                            using (Html.BeginForm("ApproveNGO", "Dashboard", FormMethod.Post, new { style = "display: inline-block;" }))
+                                            {
+                                                @Html.AntiForgeryToken()
+                                                <input type="hidden" name="applicationId" value="@app.ApplicationID" />
+                                                <button type="submit" class="btn-action btn-approve" onclick="return confirm('Re-evaluate and Approve NGO @app.NGOName?');">
+                                                    ✓ Approve
+                                                </button>
+                                            }
+                                        }
+                                    </div>
+                                </td>
                             </tr>
                         }
-                    </tbody>
-                </table>
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="7" class="text-center text-muted" style="padding: 30px;">No NGO applications found.</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- =========================================================
+     DONATION DETAIL VIEW MODAL
+     ========================================================= -->
+<div class="donation-modal-overlay" id="donationDetailModal" style="display: none;">
+    <div class="donation-modal-card" style="max-width: 560px;">
+        <button type="button" class="modal-close-btn" onclick="$('#donationDetailModal').fadeOut(200)">&times;</button>
+        <div class="modal-header">
+            <div class="modal-icon">💳</div>
+            <h3 id="donDetailTitle">Donation Details</h3>
+            <p id="donDetailRef" class="text-sub"></p>
+        </div>
+
+        <div class="modal-body" style="font-size: 14px; color: #334155;">
+            <div class="details-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 16px;">
+                <div>
+                    <label class="form-label" style="margin-bottom: 2px;">Donor Name:</label>
+                    <div id="donDetailDonor" style="font-weight: 600;"></div>
+                </div>
+                <div>
+                    <label class="form-label" style="margin-bottom: 2px;">Donor Email:</label>
+                    <div id="donDetailEmail" style="font-weight: 600;"></div>
+                </div>
+                <div>
+                    <label class="form-label" style="margin-bottom: 2px;">Partner NGO:</label>
+                    <div id="donDetailNgo" style="font-weight: 600;"></div>
+                </div>
+                <div>
+                    <label class="form-label" style="margin-bottom: 2px;">Cause:</label>
+                    <div id="donDetailCause" style="font-weight: 600;"></div>
+                </div>
+                <div>
+                    <label class="form-label" style="margin-bottom: 2px;">Program:</label>
+                    <div id="donDetailProgram" style="font-weight: 600;"></div>
+                </div>
+                <div>
+                    <label class="form-label" style="margin-bottom: 2px;">Payment Method:</label>
+                    <div id="donDetailPayMethod" style="font-weight: 600;"></div>
+                </div>
+                <div>
+                    <label class="form-label" style="margin-bottom: 2px;">Date:</label>
+                    <div id="donDetailDate" style="font-weight: 600;"></div>
+                </div>
+                <div>
+                    <label class="form-label" style="margin-bottom: 2px;">Amount:</label>
+                    <div id="donDetailAmount" style="font-weight: 700; color: #166534; font-size: 18px;"></div>
+                </div>
+            </div>
+
+            <div>
+                <label class="form-label" style="margin-bottom: 2px;">Status:</label>
+                <span id="donDetailStatus"></span>
+            </div>
+
+            <div id="donDetailMsgBox" style="display: none; margin-top: 14px;">
+                <label class="form-label" style="margin-bottom: 2px;">Donor Message:</label>
+                <div id="donDetailMsg" style="background: #f8fafc; padding: 10px 14px; border-radius: 6px; border: 1px solid #e2e8f0; font-style: italic;"></div>
+            </div>
+
+            <div id="donDetailRemarksBox" style="display: none; margin-top: 14px;">
+                <label class="form-label" style="margin-bottom: 2px; color: #dc2626;">Admin Remarks:</label>
+                <div id="donDetailRemarks" style="background: #fef2f2; color: #991b1b; padding: 10px 14px; border-radius: 6px; border: 1px solid #fecaca;"></div>
+            </div>
+
+            <div style="text-align: right; margin-top: 20px;">
+                <button type="button" class="btn-secondary-hero" style="padding: 8px 20px;" onclick="$('#donationDetailModal').fadeOut(200)">Close</button>
             </div>
         </div>
+    </div>
+</div>
+
+<!-- =========================================================
+     DENY DONATION MODAL
+     ========================================================= -->
+<div class="donation-modal-overlay" id="denyDonationModal" style="display: none;">
+    <div class="donation-modal-card" style="max-width: 480px;">
+        <button type="button" class="modal-close-btn" onclick="$('#denyDonationModal').fadeOut(200)">&times;</button>
+        <div class="modal-header">
+            <div class="modal-icon" style="color: #dc2626;">⚠️</div>
+            <h3 id="denyDonModalTitle">Deny Donation</h3>
+            <p class="text-sub">Please provide a reason for denying this donation.</p>
+        </div>
+
+        @using (Html.BeginForm("DenyDonation", "Dashboard", FormMethod.Post, new { id = "denyDonationForm" }))
+        {
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="donationId" id="denyDonId" value="" />
+
+            <div class="form-group">
+                <label class="form-label" for="denyDonRemarks">Reason / Admin Remarks *</label>
+                <textarea id="denyDonRemarks" name="remarks" class="form-control" rows="4" placeholder="e.g. Suspicious amount, duplicate transaction, unverifiable payment..." required style="min-height: 90px;"></textarea>
+            </div>
+
+            <div style="display: flex; gap: 12px; margin-top: 20px;">
+                <button type="submit" class="auth-btn" style="background-color: #dc2626;">
+                    Confirm Denial
+                </button>
+                <button type="button" class="btn-secondary-hero" style="padding: 10px 20px;" onclick="$('#denyDonationModal').fadeOut(200)">
+                    Cancel
+                </button>
+            </div>
+        }
+    </div>
+</div>
+
+<!-- =========================================================
+     NGO APPLICATION DETAILS MODAL
+     ========================================================= -->
+<div class="donation-modal-overlay" id="ngoDetailsModal" style="display: none;">
+    <div class="donation-modal-card" style="max-width: 600px;">
+        <button type="button" class="modal-close-btn" onclick="closeNgoDetailsModal()">&times;</button>
+        <div class="modal-header">
+            <div class="modal-icon">🏢</div>
+            <h3 id="modalNgoName">NGO Details</h3>
+            <p id="modalNgoStatus" class="text-sub">Status</p>
+        </div>
+
+        <div class="modal-body" style="font-size: 14px; color: #334155;">
+            <div class="details-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 16px;">
+                <div>
+                    <label class="form-label" style="margin-bottom: 2px;">Official Email:</label>
+                    <div id="modalNgoEmail" style="font-weight: 600;"></div>
+                </div>
+                <div>
+                    <label class="form-label" style="margin-bottom: 2px;">Contact Phone:</label>
+                    <div id="modalNgoPhone" style="font-weight: 600;"></div>
+                </div>
+                <div>
+                    <label class="form-label" style="margin-bottom: 2px;">Location:</label>
+                    <div id="modalNgoLocation" style="font-weight: 600;"></div>
+                </div>
+                <div>
+                    <label class="form-label" style="margin-bottom: 2px;">Website:</label>
+                    <div id="modalNgoWebsite" style="font-weight: 600;"></div>
+                </div>
+                <div>
+                    <label class="form-label" style="margin-bottom: 2px;">Submitted At:</label>
+                    <div id="modalNgoSubmitted" style="font-weight: 600;"></div>
+                </div>
+                <div>
+                    <label class="form-label" style="margin-bottom: 2px;">Account Active:</label>
+                    <div id="modalNgoActive" style="font-weight: 600;"></div>
+                </div>
+            </div>
+
+            <div style="margin-bottom: 16px;">
+                <label class="form-label" style="margin-bottom: 2px;">Office Address:</label>
+                <div id="modalNgoAddress" style="background: #f8fafc; padding: 8px 12px; border-radius: 6px; border: 1px solid #e2e8f0;"></div>
+            </div>
+
+            <div style="margin-bottom: 16px;">
+                <label class="form-label" style="margin-bottom: 2px;">Description & Mission:</label>
+                <div id="modalNgoDesc" style="background: #f8fafc; padding: 12px; border-radius: 6px; border: 1px solid #e2e8f0; line-height: 1.5; max-height: 140px; overflow-y: auto;"></div>
+            </div>
+
+            <div id="modalRemarksBox" style="display: none; margin-bottom: 16px;">
+                <label class="form-label" style="margin-bottom: 2px; color: #dc2626;">Admin Remarks:</label>
+                <div id="modalNgoRemarks" style="background: #fef2f2; color: #991b1b; padding: 8px 12px; border-radius: 6px; border: 1px solid #fecaca;"></div>
+            </div>
+
+            <div style="text-align: right; margin-top: 20px;">
+                <button type="button" class="btn-secondary-hero" style="padding: 8px 20px;" onclick="closeNgoDetailsModal()">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- =========================================================
+     DENY NGO MODAL (WITH REMARKS)
+     ========================================================= -->
+<div class="donation-modal-overlay" id="denyNgoModal" style="display: none;">
+    <div class="donation-modal-card" style="max-width: 480px;">
+        <button type="button" class="modal-close-btn" onclick="closeDenyModal()">&times;</button>
+        <div class="modal-header">
+            <div class="modal-icon" style="color: #dc2626;">⚠️</div>
+            <h3 id="denyModalNgoName">Deny NGO Application</h3>
+            <p class="text-sub">Please provide a reason for denying this application.</p>
+        </div>
+
+        @using (Html.BeginForm("DenyNGO", "Dashboard", FormMethod.Post, new { id = "denyForm" }))
+        {
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="applicationId" id="denyAppId" value="" />
+
+            <div class="form-group">
+                <label class="form-label" for="denyRemarks">Rejection Reason / Admin Remarks *</label>
+                <textarea id="denyRemarks" name="remarks" class="form-control" rows="4" placeholder="e.g. Incomplete SECP documentation or invalid contact credentials..." required style="min-height: 90px;"></textarea>
+            </div>
+
+            <div style="display: flex; gap: 12px; margin-top: 20px;">
+                <button type="submit" class="auth-btn" style="background-color: #dc2626;">
+                    Confirm Denial
+                </button>
+                <button type="button" class="btn-secondary-hero" style="padding: 10px 20px;" onclick="closeDenyModal()">
+                    Cancel
+                </button>
+            </div>
+        }
     </div>
 </div>
 
@@ -250,6 +627,146 @@
                     }
                 }
             });
+        });
+
+        // ===== DONATION MANAGEMENT FUNCTIONS =====
+        function filterDonRows(type, btn) {
+            $('#donation-management-section .app-filter-pills .filter-pill').removeClass('active');
+            $(btn).addClass('active');
+
+            if (type === 'all') {
+                $('.donations-mgmt-table .don-row').show();
+            } else if (type === 'pending') {
+                $('.donations-mgmt-table .don-row').hide();
+                $('.donations-mgmt-table .don-row.don-filter-pending').show();
+            } else if (type === 'approved') {
+                $('.donations-mgmt-table .don-row').hide();
+                $('.donations-mgmt-table .don-row.don-filter-approved').show();
+            } else if (type === 'denied') {
+                $('.donations-mgmt-table .don-row').hide();
+                $('.donations-mgmt-table .don-row.don-filter-denied').show();
+            }
+        }
+
+        function viewDonationDetails(donationId) {
+            $.getJSON('@Url.Action("GetDonationDetailsJson", "Dashboard")', { id: donationId }, function (d) {
+                if (!d || d.error) {
+                    alert(d ? d.error : 'Could not load donation details.');
+                    return;
+                }
+                $('#donDetailTitle').text('Donation from ' + d.DonorName);
+                $('#donDetailRef').text('Ref: ' + d.PaymentReference);
+                $('#donDetailDonor').text(d.DonorName);
+                $('#donDetailEmail').text(d.DonorEmail);
+                $('#donDetailNgo').text(d.NGOName);
+                $('#donDetailCause').text(d.CauseName);
+                $('#donDetailProgram').text(d.ProgramName || 'General Fund');
+                $('#donDetailPayMethod').text(d.PaymentMethod);
+                $('#donDetailDate').text(d.DonationDate);
+                $('#donDetailAmount').text('PKR ' + parseFloat(d.Amount).toLocaleString());
+
+                var statusHtml = '';
+                if (d.Status === 'Approved') {
+                    statusHtml = '<span class="status-pill" style="background-color:#dcfce7;color:#166534;">✓ Approved</span>';
+                } else if (d.Status === 'Pending') {
+                    statusHtml = '<span class="status-pill status-pending">⏳ Pending</span>';
+                } else {
+                    statusHtml = '<span class="status-pill" style="background-color:#fee2e2;color:#991b1b;">✕ Denied</span>';
+                }
+                $('#donDetailStatus').html(statusHtml);
+
+                if (d.Message && d.Message.trim() !== '') {
+                    $('#donDetailMsg').text(d.Message);
+                    $('#donDetailMsgBox').show();
+                } else {
+                    $('#donDetailMsgBox').hide();
+                }
+
+                if (d.AdminRemarks && d.AdminRemarks.trim() !== '') {
+                    $('#donDetailRemarks').text(d.AdminRemarks);
+                    $('#donDetailRemarksBox').show();
+                } else {
+                    $('#donDetailRemarksBox').hide();
+                }
+
+                $('#donationDetailModal').fadeIn(200);
+            });
+        }
+
+        function openDenyDonationModal(donationId, donorName, amount) {
+            $('#denyDonId').val(donationId);
+            $('#denyDonModalTitle').text('Deny Donation: ' + donorName + ' (' + amount + ')');
+            $('#denyDonRemarks').val('');
+            $('#denyDonationModal').fadeIn(200);
+        }
+
+        // ===== NGO APPLICATION FUNCTIONS =====
+        function filterAppRows(type, btn) {
+            $('#ngo-applications-section .app-filter-pills .filter-pill').removeClass('active');
+            $(btn).addClass('active');
+
+            if (type === 'all') {
+                $('.ngo-apps-table .app-row').show();
+            } else if (type === 'pending') {
+                $('.ngo-apps-table .app-row').hide();
+                $('.ngo-apps-table .app-row.filter-pending').show();
+            } else if (type === 'approved') {
+                $('.ngo-apps-table .app-row').hide();
+                $('.ngo-apps-table .app-row.filter-approved').show();
+            } else if (type === 'denied') {
+                $('.ngo-apps-table .app-row').hide();
+                $('.ngo-apps-table .app-row.filter-denied').show();
+            }
+        }
+
+        function viewNgoDetails(id, name, applicant, email, phone, city, address, desc, website, status, isActive, submitted, reviewed, remarks) {
+            $('#modalNgoName').text(name);
+            $('#modalNgoStatus').text('Application Status: ' + status);
+            $('#modalNgoEmail').text(email || 'N/A');
+            $('#modalNgoPhone').text(phone || 'N/A');
+            $('#modalNgoLocation').text(city || 'N/A');
+            
+            if (website && website !== '') {
+                $('#modalNgoWebsite').html('<a href="' + website + '" target="_blank" rel="noopener">' + website + '</a>');
+            } else {
+                $('#modalNgoWebsite').text('None provided');
+            }
+
+            $('#modalNgoSubmitted').text(submitted);
+            $('#modalNgoActive').html(isActive === 'Yes' ? '<span style="color: #166534; font-weight: bold;">✓ Active</span>' : '<span style="color: #64748b;">✕ Inactive</span>');
+            $('#modalNgoAddress').text(address || 'N/A');
+            $('#modalNgoDesc').text(desc || 'No description provided.');
+
+            if (remarks && remarks.trim() !== '') {
+                $('#modalNgoRemarks').text(remarks);
+                $('#modalRemarksBox').show();
+            } else {
+                $('#modalRemarksBox').hide();
+            }
+
+            $('#ngoDetailsModal').fadeIn(200);
+        }
+
+        function closeNgoDetailsModal() {
+            $('#ngoDetailsModal').fadeOut(200);
+        }
+
+        function openDenyModal(appId, name) {
+            $('#denyAppId').val(appId);
+            $('#denyModalNgoName').text('Deny Application: ' + name);
+            $('#denyRemarks').val('');
+            $('#denyNgoModal').fadeIn(200);
+        }
+
+        function closeDenyModal() {
+            $('#denyNgoModal').fadeOut(200);
+        }
+
+        // Close modals on outside click
+        $(window).on('click', function(e) {
+            if ($(e.target).is('.donation-modal-overlay')) {
+                $(e.target).fadeOut(200);
+            }
         });
     </script>
 }

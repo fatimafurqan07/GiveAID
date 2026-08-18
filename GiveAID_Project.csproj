@@ -124,6 +124,7 @@
     <Compile Include="App_Start\RouteConfig.cs" />
     <Compile Include="Controllers\AccountController.cs" />
     <Compile Include="Controllers\DashboardController.cs" />
+    <Compile Include="Controllers\DonationController.cs" />
     <Compile Include="Controllers\HomeController.cs" />
     <Compile Include="Global.asax.cs">
       <DependentUpon>Global.asax</DependentUpon>
@@ -132,7 +133,9 @@
     <Compile Include="Models\AuthorizeRolesAttribute.cs" />
     <Compile Include="Models\DashboardRepository.cs" />
     <Compile Include="Models\DashboardViewModels.cs" />
+    <Compile Include="Models\DonationViewModels.cs" />
     <Compile Include="Models\LoginModel.cs" />
+    <Compile Include="Models\NGORegisterModel.cs" />
     <Compile Include="Models\PasswordSecurity.cs" />
     <Compile Include="Models\RegisterModel.cs" />
     <Compile Include="Models\UserAccount.cs" />
@@ -192,12 +195,15 @@
     <Content Include="Views\Home\Index.cshtml" />
     <Content Include="Views\Home\Partners.cshtml" />
     <Content Include="Views\Account\Register.cshtml" />
+    <Content Include="Views\Account\NGORegister.cshtml" />
     <Content Include="Views\Account\Login.cshtml" />
     <Content Include="Views\Account\Logout.cshtml" />
     <Content Include="Views\Account\AccessDenied.cshtml" />
     <Content Include="Views\Dashboard\Admin.cshtml" />
     <Content Include="Views\Dashboard\NGO.cshtml" />
     <Content Include="Views\Dashboard\User.cshtml" />
+    <Content Include="Views\Donation\Create.cshtml" />
+    <Content Include="Views\Donation\Success.cshtml" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="App_Data\" />

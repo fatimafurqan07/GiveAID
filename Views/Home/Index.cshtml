@@ -625,19 +625,47 @@
 
 
 <!-- =========================================================
-     QUICK DONATION MODAL (INTERACTIVE UX)
+     QUICK DONATION MODAL (FUNCTIONAL AJAX FORM)
      ========================================================= -->
 <div class="donation-modal-overlay" id="donationModal" style="display: none;">
-    <div class="donation-modal-card">
+    <div class="donation-modal-card" style="max-width: 520px;">
         <button type="button" class="modal-close-btn" onclick="closeDonationModal()">&times;</button>
         <div class="modal-header">
             <div class="modal-icon">💚</div>
-            <h3 id="modalCauseTitle">Support Cause</h3>
+            <h3 id="modalCauseTitle">Support a Cause</h3>
             <p id="modalCauseOrg" class="text-sub">Verified Campaign</p>
         </div>
 
         <div class="modal-body">
-            <label class="form-label">Select Donation Amount (PKR)</label>
+            <!-- Validation Error Box -->
+            <div id="modalErrorBox" style="display: none; background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; border-radius: 8px; padding: 10px 14px; margin-bottom: 14px; font-size: 13px;"></div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                <div class="form-group">
+                    <label class="form-label">Your Name *</label>
+                    <input type="text" id="modalDonorName" class="form-control" placeholder="Full Name" value="@(Session["UserName"] ?? "")" />
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Your Email *</label>
+                    <input type="email" id="modalDonorEmail" class="form-control" placeholder="email@example.com" value="@(Session["UserEmail"] ?? "")" />
+                </div>
+            </div>
+
+            <div class="form-group" style="margin-top: 12px;">
+                <label class="form-label">Select NGO *</label>
+                <select id="modalNgoSelect" class="form-control">
+                    <option value="">— Choose an NGO —</option>
+                </select>
+            </div>
+
+            <div class="form-group" style="margin-top: 12px;">
+                <label class="form-label">Select Cause *</label>
+                <select id="modalCauseSelect" class="form-control">
+                    <option value="">— Choose a Cause —</option>
+                </select>
+            </div>
+
+            <label class="form-label" style="margin-top: 14px;">Select Donation Amount (PKR)</label>
             <div class="amount-presets">
                 <button type="button" class="preset-btn" onclick="setDonationAmount(1000, this)">PKR 1,000</button>
                 <button type="button" class="preset-btn active" onclick="setDonationAmount(2500, this)">PKR 2,500</button>
@@ -645,7 +673,7 @@
                 <button type="button" class="preset-btn" onclick="setDonationAmount(10000, this)">PKR 10,000</button>
             </div>
 
-            <div class="form-group" style="margin-top: 15px;">
+            <div class="form-group" style="margin-top: 12px;">
                 <label class="form-label">Or Enter Custom Amount (PKR)</label>
                 <input type="number" id="customAmountInput" class="form-control" value="2500" min="100" />
             </div>
@@ -653,34 +681,30 @@
             <div class="payment-method-selector">
                 <label class="form-label">Choose Payment Rail</label>
                 <div class="rails-grid">
-                    <div class="rail-option active" onclick="selectRail(this)">
+                    <div class="rail-option active" data-rail="Raast / 1Link" onclick="selectRail(this)">
                         <span class="rail-icon">⚡</span>
                         <span class="rail-name">Raast / 1Link</span>
                     </div>
-                    <div class="rail-option" onclick="selectRail(this)">
+                    <div class="rail-option" data-rail="JazzCash / SadaPay" onclick="selectRail(this)">
                         <span class="rail-icon">📱</span>
                         <span class="rail-name">JazzCash / SadaPay</span>
                     </div>
-                    <div class="rail-option" onclick="selectRail(this)">
+                    <div class="rail-option" data-rail="Debit/Credit Card" onclick="selectRail(this)">
                         <span class="rail-icon">💳</span>
                         <span class="rail-name">Debit/Credit Card</span>
                     </div>
                 </div>
             </div>
 
+            <div class="form-group" style="margin-top: 12px;">
+                <label class="form-label">Message (optional)</label>
+                <textarea id="modalDonorMessage" class="form-control" rows="2" placeholder="Leave a note for the NGO..." style="min-height: 50px;"></textarea>
+            </div>
+
             <div class="modal-actions" style="margin-top: 20px;">
-                @if (Session["UserID"] == null && !Request.IsAuthenticated)
-                {
-                    <a href="@Url.Action("Register", "Account")" class="auth-btn" style="text-align: center; text-decoration: none;">
-                        Proceed to Secure Giving (Sign Up / Login)
-                    </a>
-                }
-                else
-                {
-                    <a href="@Url.Action("Index", "Dashboard")" class="auth-btn" style="text-align: center; text-decoration: none;">
-                        Confirm & Process in Donor Dashboard
-                    </a>
-                }
+                <button type="button" id="modalSubmitBtn" class="auth-btn" style="width: 100%; text-align: center;" onclick="submitQuickDonation()">
+                    💚 Submit Donation
+                </button>
             </div>
             <p class="modal-secure-note">🔒 256-bit Encrypted. 100% SECP Regulatory Compliant.</p>
         </div>
@@ -690,6 +714,27 @@
 
 @section Scripts {
     <script>
+        var _modalNgos = [];
+        var _modalCauses = [];
+
+        // Load NGO and Cause dropdowns on page load
+        $(document).ready(function () {
+            $.getJSON('@Url.Action("GetFormData", "Donation")', function (data) {
+                _modalNgos = data.ngos || [];
+                _modalCauses = data.causes || [];
+
+                var ngoSel = $('#modalNgoSelect');
+                $.each(_modalNgos, function (i, n) {
+                    ngoSel.append('<option value="' + n.Id + '">' + n.Name + '</option>');
+                });
+
+                var causeSel = $('#modalCauseSelect');
+                $.each(_modalCauses, function (i, c) {
+                    causeSel.append('<option value="' + c.Id + '">' + c.Name + '</option>');
+                });
+            });
+        });
+
         function filterCauses(cat, btn) {
             $('.filter-pill').removeClass('active');
             $(btn).addClass('active');
@@ -705,6 +750,7 @@
         function openDonationModal(title, target, org) {
             $('#modalCauseTitle').text(title);
             $('#modalCauseOrg').text('Organized by: ' + org + ' • Target: ' + target);
+            $('#modalErrorBox').hide().text('');
             $('#donationModal').fadeIn(200);
         }
 
@@ -721,6 +767,63 @@
         function selectRail(el) {
             $('.rail-option').removeClass('active');
             $(el).addClass('active');
+        }
+
+        function submitQuickDonation() {
+            var errBox = $('#modalErrorBox');
+            errBox.hide().text('');
+
+            var name = $('#modalDonorName').val().trim();
+            var email = $('#modalDonorEmail').val().trim();
+            var ngoId = $('#modalNgoSelect').val();
+            var causeId = $('#modalCauseSelect').val();
+            var amount = parseFloat($('#customAmountInput').val());
+            var paymentMethod = $('.rail-option.active').data('rail') || 'Raast / 1Link';
+            var message = $('#modalDonorMessage').val().trim();
+
+            // Client-side validation
+            var errors = [];
+            if (!name) errors.push('Donor name is required.');
+            if (!email) errors.push('Email address is required.');
+            if (!ngoId) errors.push('Please select an NGO.');
+            if (!causeId) errors.push('Please select a Cause.');
+            if (!amount || amount < 100) errors.push('Minimum donation is PKR 100.');
+
+            if (errors.length > 0) {
+                errBox.html(errors.join('<br/>')).fadeIn(200);
+                return;
+            }
+
+            var btn = $('#modalSubmitBtn');
+            btn.prop('disabled', true).text('Processing...');
+
+            $.ajax({
+                url: '@Url.Action("Create", "Donation")',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({
+                    DonorName: name,
+                    DonorEmail: email,
+                    NGOID: parseInt(ngoId),
+                    CauseID: parseInt(causeId),
+                    ProgramID: null,
+                    Amount: amount,
+                    PaymentMethod: paymentMethod,
+                    Message: message
+                }),
+                success: function (resp) {
+                    if (resp.success && resp.donationId) {
+                        window.location.href = '@Url.Action("Success", "Donation")/' + resp.donationId;
+                    } else {
+                        errBox.text(resp.message || 'Something went wrong. Please try again.').fadeIn(200);
+                        btn.prop('disabled', false).text('💚 Submit Donation');
+                    }
+                },
+                error: function () {
+                    errBox.text('Server error. Please try again later.').fadeIn(200);
+                    btn.prop('disabled', false).text('💚 Submit Donation');
+                }
+            });
         }
 
         // Close modal when clicking outside

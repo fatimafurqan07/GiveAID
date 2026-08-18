@@ -7,10 +7,16 @@
 
 <div class="auth-container">
     <div class="auth-card register-card">
+        <!-- Role Selector Tabs -->
+        <div class="auth-role-tabs">
+            <a href="@Url.Action("Register", "Account")" class="auth-tab-item active">👤 Register as User</a>
+            <a href="@Url.Action("NGORegister", "Account")" class="auth-tab-item">🏢 Register as NGO</a>
+        </div>
+
         <div class="auth-header">
             <div class="auth-icon">🤝</div>
             <h2>Join Give-AID</h2>
-            <p>Create your account to start donating, volunteering, and making a real difference.</p>
+            <p>Create your donor / volunteer account to start supporting verified causes across Pakistan.</p>
         </div>
 
         @using (Html.BeginForm("Register", "Account", FormMethod.Post, new { @class = "auth-form", role = "form" }))

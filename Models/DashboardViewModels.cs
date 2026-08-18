@@ -11,14 +11,44 @@ namespace GiveAID_Project.Models
     {
         public int DonationID { get; set; }
         public string PaymentReference { get; set; }
+        public int UserID { get; set; }
         public string DonorName { get; set; }
         public string DonorEmail { get; set; }
+        public int NGOID { get; set; }
         public string NGOName { get; set; }
+        public int? ProgramID { get; set; }
         public string ProgramName { get; set; }
+        public int CauseID { get; set; }
         public string CauseName { get; set; }
         public decimal Amount { get; set; }
         public DateTime DonationDate { get; set; }
-        public string Status { get; set; }
+        public string Status { get; set; } // Pending, Approved, Denied, Completed
+        public string AdminApprovalStatus { get; set; }
+        public string NGOApprovalStatus { get; set; }
+        public string Message { get; set; }
+        public string AdminRemarks { get; set; }
+        public DateTime? AdminReviewedAt { get; set; }
+    }
+
+    public class AdminNgoApplicationItem
+    {
+        public int ApplicationID { get; set; }
+        public int ApplicantUserID { get; set; }
+        public int? NGOID { get; set; }
+        public string NGOName { get; set; }
+        public string ApplicantName { get; set; }
+        public string Email { get; set; }
+        public string Phone { get; set; }
+        public string City { get; set; }
+        public string Address { get; set; }
+        public string Category { get; set; }
+        public string Description { get; set; }
+        public string WebsiteURL { get; set; }
+        public string ApplicationStatus { get; set; } // Pending, Approved, Rejected/Denied
+        public bool IsActive { get; set; } // from Users/NGOs
+        public DateTime SubmittedAt { get; set; }
+        public DateTime? ReviewedAt { get; set; }
+        public string AdminRemarks { get; set; }
     }
 
     public class RecentApplicationItem
@@ -29,6 +59,7 @@ namespace GiveAID_Project.Models
         public string ApplicantEmail { get; set; }
         public string City { get; set; }
         public string Status { get; set; }
+        public bool IsActive { get; set; }
         public DateTime SubmittedAt { get; set; }
     }
 
@@ -104,6 +135,7 @@ namespace GiveAID_Project.Models
         public int TotalDonationsCount { get; set; }
         public decimal TotalFundsRaised { get; set; }
         public int PendingApplicationsCount { get; set; }
+        public int PendingDonationsCount { get; set; }
 
         // Chart Data
         public List<string> MonthlyLabels { get; set; } = new List<string>();
@@ -117,7 +149,9 @@ namespace GiveAID_Project.Models
 
         // Lists
         public List<RecentDonationItem> RecentDonations { get; set; } = new List<RecentDonationItem>();
+        public List<RecentDonationItem> AllDonations { get; set; } = new List<RecentDonationItem>();
         public List<RecentApplicationItem> RecentApplications { get; set; } = new List<RecentApplicationItem>();
+        public List<AdminNgoApplicationItem> AllNgoApplications { get; set; } = new List<AdminNgoApplicationItem>();
         public List<RecentUserItem> RecentUsers { get; set; } = new List<RecentUserItem>();
     }
 
@@ -139,6 +173,7 @@ namespace GiveAID_Project.Models
         public int TotalDonorsCount { get; set; }
         public int TotalProgramsCount { get; set; }
         public int TotalInterestedUsersCount { get; set; }
+        public int PendingDonationsCount { get; set; }
 
         // Chart Data
         public List<string> ProgramNames { get; set; } = new List<string>();
@@ -151,6 +186,7 @@ namespace GiveAID_Project.Models
         // Lists
         public List<NgoProgramItem> Programs { get; set; } = new List<NgoProgramItem>();
         public List<RecentDonationItem> RecentDonations { get; set; } = new List<RecentDonationItem>();
+        public List<RecentDonationItem> AllDonations { get; set; } = new List<RecentDonationItem>();
         public List<NgoSupporterItem> TopSupporters { get; set; } = new List<NgoSupporterItem>();
     }
 

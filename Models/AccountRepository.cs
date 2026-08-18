@@ -51,6 +51,24 @@ namespace GiveAID_Project.Models
             }
         }
 
+        public bool NGONameExists(string ngoName)
+        {
+            if (string.IsNullOrWhiteSpace(ngoName))
+                return false;
+
+            using (var conn = GetConnection())
+            {
+                conn.Open();
+                const string query = "SELECT COUNT(1) FROM NGOs WHERE LOWER(NGOName) = LOWER(@NGOName)";
+                using (var cmd = new SqlCommand(query, conn))
+                {
+                    cmd.Parameters.AddWithValue("@NGOName", ngoName.Trim());
+                    int count = Convert.ToInt32(cmd.ExecuteScalar());
+                    return count > 0;
+                }
+            }
+        }
+
         public int GetOrCreateRoleId(SqlConnection conn, SqlTransaction trans, string roleName = "User")
         {
             const string findQuery = "SELECT RoleID FROM Roles WHERE LOWER(RoleName) = LOWER(@RoleName)";
@@ -146,6 +164,185 @@ namespace GiveAID_Project.Models
                     }
                 }
             }
+        }
+
+        public UserAccount CreateNGOApplication(NGORegisterModel model)
+        {
+            if (model == null)
+                throw new ArgumentNullException(nameof(model));
+
+            string passwordHash = PasswordSecurity.HashPassword(model.Password);
+
+            using (var conn = GetConnection())
+            {
+                conn.Open();
+                using (var trans = conn.BeginTransaction())
+                {
+                    try
+                    {
+                        // 1. Insert into Users table with IsActive = 0 (Requires Admin Approval)
+                        const string insertUserQuery = @"
+                            INSERT INTO Users (FullName, Email, PasswordHash, Phone, Address, City, IsActive, IsBanned, CreatedAt)
+                            VALUES (@FullName, @Email, @PasswordHash, @Phone, @Address, @City, 0, 0, GETDATE());
+                            SELECT CAST(SCOPE_IDENTITY() AS INT);";
+
+                        int newUserId;
+                        using (var cmd = new SqlCommand(insertUserQuery, conn, trans))
+                        {
+                            cmd.Parameters.AddWithValue("@FullName", model.NGOName.Trim());
+                            cmd.Parameters.AddWithValue("@Email", model.Email.Trim().ToLowerInvariant());
+                            cmd.Parameters.AddWithValue("@PasswordHash", passwordHash);
+                            cmd.Parameters.AddWithValue("@Phone", (object)model.Phone?.Trim() ?? DBNull.Value);
+                            cmd.Parameters.AddWithValue("@Address", (object)model.Address?.Trim() ?? DBNull.Value);
+                            cmd.Parameters.AddWithValue("@City", (object)model.City?.Trim() ?? DBNull.Value);
+
+                            newUserId = (int)cmd.ExecuteScalar();
+                        }
+
+                        // 2. Resolve RoleID for 'NGO'
+                        int roleId = GetOrCreateRoleId(conn, trans, "NGO");
+
+                        // 3. Assign role in UserRoles table
+                        const string insertUserRoleQuery = @"
+                            INSERT INTO UserRoles (UserID, RoleID, AssignedAt)
+                            VALUES (@UserID, @RoleID, GETDATE());";
+
+                        using (var cmd = new SqlCommand(insertUserRoleQuery, conn, trans))
+                        {
+                            cmd.Parameters.AddWithValue("@UserID", newUserId);
+                            cmd.Parameters.AddWithValue("@RoleID", roleId);
+                            cmd.ExecuteNonQuery();
+                        }
+
+                        // 4. Combine Category & Reg Number into description if needed
+                        string fullDescription = model.Description?.Trim();
+                        if (!string.IsNullOrWhiteSpace(model.Category))
+                        {
+                            fullDescription = $"[Category: {model.Category.Trim()}] " + fullDescription;
+                        }
+                        if (!string.IsNullOrWhiteSpace(model.RegistrationNumber))
+                        {
+                            fullDescription += $" [Reg No: {model.RegistrationNumber.Trim()}]";
+                        }
+
+                        // 5. Insert into NGOs table with Status = 'Pending'
+                        const string insertNgoQuery = @"
+                            INSERT INTO NGOs (NGOName, Description, Address, City, Phone, Email, WebsiteURL, Status, CreatedAt)
+                            VALUES (@NGOName, @Description, @Address, @City, @Phone, @Email, @WebsiteURL, 'Pending', GETDATE());
+                            SELECT CAST(SCOPE_IDENTITY() AS INT);";
+
+                        int newNgoId;
+                        using (var cmd = new SqlCommand(insertNgoQuery, conn, trans))
+                        {
+                            cmd.Parameters.AddWithValue("@NGOName", model.NGOName.Trim());
+                            cmd.Parameters.AddWithValue("@Description", (object)fullDescription ?? DBNull.Value);
+                            cmd.Parameters.AddWithValue("@Address", (object)model.Address?.Trim() ?? DBNull.Value);
+                            cmd.Parameters.AddWithValue("@City", (object)model.City?.Trim() ?? DBNull.Value);
+                            cmd.Parameters.AddWithValue("@Phone", (object)model.Phone?.Trim() ?? DBNull.Value);
+                            cmd.Parameters.AddWithValue("@Email", (object)model.Email?.Trim() ?? DBNull.Value);
+                            cmd.Parameters.AddWithValue("@WebsiteURL", (object)model.WebsiteURL?.Trim() ?? DBNull.Value);
+
+                            newNgoId = (int)cmd.ExecuteScalar();
+                        }
+
+                        // 6. Insert into NGOAccounts table linking User and NGO
+                        const string insertNgoAccountQuery = @"
+                            INSERT INTO NGOAccounts (NGOID, UserID, CreatedAt)
+                            VALUES (@NGOID, @UserID, GETDATE());";
+
+                        using (var cmd = new SqlCommand(insertNgoAccountQuery, conn, trans))
+                        {
+                            cmd.Parameters.AddWithValue("@NGOID", newNgoId);
+                            cmd.Parameters.AddWithValue("@UserID", newUserId);
+                            cmd.ExecuteNonQuery();
+                        }
+
+                        // 7. Insert into NGOApplications table with ApplicationStatus = 'Pending'
+                        const string insertAppQuery = @"
+                            INSERT INTO NGOApplications (ApplicantUserID, NGOName, Description, Address, City, Phone, Email, ApplicationStatus, SubmittedAt)
+                            VALUES (@ApplicantUserID, @NGOName, @Description, @Address, @City, @Phone, @Email, 'Pending', GETDATE());";
+
+                        using (var cmd = new SqlCommand(insertAppQuery, conn, trans))
+                        {
+                            cmd.Parameters.AddWithValue("@ApplicantUserID", newUserId);
+                            cmd.Parameters.AddWithValue("@NGOName", model.NGOName.Trim());
+                            cmd.Parameters.AddWithValue("@Description", (object)fullDescription ?? DBNull.Value);
+                            cmd.Parameters.AddWithValue("@Address", (object)model.Address?.Trim() ?? DBNull.Value);
+                            cmd.Parameters.AddWithValue("@City", (object)model.City?.Trim() ?? DBNull.Value);
+                            cmd.Parameters.AddWithValue("@Phone", (object)model.Phone?.Trim() ?? DBNull.Value);
+                            cmd.Parameters.AddWithValue("@Email", (object)model.Email?.Trim() ?? DBNull.Value);
+
+                            cmd.ExecuteNonQuery();
+                        }
+
+                        trans.Commit();
+
+                        return new UserAccount
+                        {
+                            UserID = newUserId,
+                            FullName = model.NGOName.Trim(),
+                            Email = model.Email.Trim().ToLowerInvariant(),
+                            PasswordHash = passwordHash,
+                            Phone = model.Phone?.Trim(),
+                            Address = model.Address?.Trim(),
+                            City = model.City?.Trim(),
+                            IsActive = false,
+                            IsBanned = false,
+                            CreatedAt = DateTime.UtcNow,
+                            Roles = new List<string> { "NGO" }
+                        };
+                    }
+                    catch
+                    {
+                        trans.Rollback();
+                        throw;
+                    }
+                }
+            }
+        }
+
+        public NGOAccountStatusInfo GetNGOAccountStatus(int userId)
+        {
+            using (var conn = GetConnection())
+            {
+                conn.Open();
+                const string query = @"
+                    SELECT TOP 1 
+                           ISNULL(n.NGOID, 0) AS NGOID, 
+                           ISNULL(n.NGOName, '') AS NGOName, 
+                           ISNULL(n.Status, 'Pending') AS NGOStatus,
+                           ISNULL(a.ApplicationStatus, 'Pending') AS ApplicationStatus,
+                           u.IsActive AS UserIsActive,
+                           a.AdminRemarks
+                    FROM Users u
+                    LEFT JOIN NGOAccounts na ON u.UserID = na.UserID
+                    LEFT JOIN NGOs n ON na.NGOID = n.NGOID
+                    LEFT JOIN NGOApplications a ON u.UserID = a.ApplicantUserID
+                    WHERE u.UserID = @UserID
+                    ORDER BY a.SubmittedAt DESC";
+
+                using (var cmd = new SqlCommand(query, conn))
+                {
+                    cmd.Parameters.AddWithValue("@UserID", userId);
+                    using (var reader = cmd.ExecuteReader())
+                    {
+                        if (reader.Read())
+                        {
+                            return new NGOAccountStatusInfo
+                            {
+                                NGOID = reader.GetInt32(0),
+                                NGOName = reader.GetString(1),
+                                NGOStatus = reader.GetString(2),
+                                ApplicationStatus = reader.GetString(3),
+                                UserIsActive = reader.GetBoolean(4),
+                                AdminRemarks = reader.IsDBNull(5) ? null : reader.GetString(5)
+                            };
+                        }
+                    }
+                }
+            }
+
+            return null;
         }
 
         public UserAccount GetUserByEmail(string email)
