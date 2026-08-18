@@ -1,0 +1,232 @@
+@model GiveAID_Project.Models.CauseListViewModel
+
+@{
+    ViewBag.Title = "Explore Causes - Humanitarian Sectors in Pakistan | GiveAID";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<!-- =========================================================
+     CAUSES DISCOVERY HERO SECTION
+     ========================================================= -->
+<section class="causes-hero-section">
+    <div class="section-container">
+        <div class="causes-hero-content">
+            <div class="hero-pill">
+                <span class="pulse-dot"></span>
+                <span>Transparent Humanitarian Focus Areas</span>
+            </div>
+            <h1 class="causes-hero-title">Explore Causes</h1>
+            <p class="causes-hero-subtitle">
+                Support the issues that matter to you. From emergency flood response and clean drinking water to youth education and healthcare.
+            </p>
+        </div>
+    </div>
+</section>
+
+<!-- =========================================================
+     SEARCH & CATEGORY TABS
+     ========================================================= -->
+<section class="causes-search-section">
+    <div class="section-container">
+        <div class="causes-filter-card">
+            @using (Html.BeginForm("Index", "Causes", FormMethod.Get, new { id = "causesFilterForm", @class = "causes-filter-form" }))
+            {
+                <!-- Search Bar -->
+                <div class="causes-search-bar-row">
+                    <div class="input-icon-wrap search-input-flex">
+                        <span class="input-icon">🔍</span>
+                        <input type="text" 
+                               id="causeSearchInput" 
+                               name="search" 
+                               class="filter-input filter-input-lg" 
+                               placeholder="Search causes (e.g. Education, Healthcare, Water, Food, Climate, Disability, Poverty...)" 
+                               value="@Model.SearchQuery" 
+                               autocomplete="off" />
+                    </div>
+                    <button type="submit" class="btn-filter-submit">
+                        <span>Search</span>
+                    </button>
+                    @if (!string.IsNullOrEmpty(Model.SearchQuery) || !string.IsNullOrEmpty(Model.SelectedCategory))
+                    {
+                        <a href="@Url.Action("Index", "Causes")" class="btn-filter-reset" title="Clear all filters">
+                            <span>✕ Clear</span>
+                        </a>
+                    }
+                </div>
+
+                <!-- Category Chips -->
+                <div class="quick-chips-row" style="margin-top: 16px;">
+                    <span class="chips-label">Quick Sectors:</span>
+                    <button type="button" class="quick-chip @(string.IsNullOrEmpty(Model.SelectedCategory) ? "active" : "")" onclick="setCauseCategory('')">All</button>
+                    <button type="button" class="quick-chip @(Model.SelectedCategory == "Education" ? "active" : "")" onclick="setCauseCategory('Education')">📚 Education</button>
+                    <button type="button" class="quick-chip @(Model.SelectedCategory == "Healthcare" ? "active" : "")" onclick="setCauseCategory('Healthcare')">🩺 Healthcare</button>
+                    <button type="button" class="quick-chip @(Model.SelectedCategory == "Water" ? "active" : "")" onclick="setCauseCategory('Water')">💧 Clean Water</button>
+                    <button type="button" class="quick-chip @(Model.SelectedCategory == "Food" ? "active" : "")" onclick="setCauseCategory('Food')">🍲 Food Security</button>
+                    <button type="button" class="quick-chip @(Model.SelectedCategory == "Climate" ? "active" : "")" onclick="setCauseCategory('Climate')">🌲 Environment</button>
+                    <button type="button" class="quick-chip @(Model.SelectedCategory == "Disability" ? "active" : "")" onclick="setCauseCategory('Disability')">♿ Disability</button>
+                    <button type="button" class="quick-chip @(Model.SelectedCategory == "Poverty" ? "active" : "")" onclick="setCauseCategory('Poverty')">💼 Livelihood</button>
+                    <button type="button" class="quick-chip @(Model.SelectedCategory == "Relief" ? "active" : "")" onclick="setCauseCategory('Relief')">🚨 Relief</button>
+                </div>
+                <input type="hidden" id="selectedCauseCategoryInput" name="category" value="@Model.SelectedCategory" />
+            }
+        </div>
+    </div>
+</section>
+
+<!-- =========================================================
+     CAUSES GRID SECTION
+     ========================================================= -->
+<section class="causes-grid-section">
+    <div class="section-container">
+        <!-- Results Header -->
+        <div class="results-header-bar">
+            <div class="results-count">
+                Showing <strong id="causesResultsCount">@Model.TotalCausesCount</strong> Humanitarian @(Model.TotalCausesCount == 1 ? "Sector" : "Sectors")
+            </div>
+            <div class="directory-view-badges">
+                <span class="compliance-badge">🛡️ SECP Audited Projects</span>
+                <span class="compliance-badge">📊 100% Fund Traceability</span>
+            </div>
+        </div>
+
+        <!-- Live Loading Indicator -->
+        <div id="causeLoadingIndicator" class="live-loading-state" style="display: none;">
+            <div class="spinner-dot"></div>
+            <span>Filtering causes...</span>
+        </div>
+
+        @if (Model.Causes != null && Model.Causes.Count > 0)
+        {
+            <div class="causes-directory-grid" id="causesCardsContainer">
+                @foreach (var cause in Model.Causes)
+                {
+                    <div class="cause-directory-card" 
+                         data-cause-name="@cause.CauseName.ToLower()" 
+                         data-cause-desc="@cause.Description.ToLower()">
+                        
+                        <!-- Top Banner / Icon -->
+                        <div class="cause-card-top-banner">
+                            <div class="cause-card-icon-bubble">@cause.Icon</div>
+                            <div class="cause-top-stats">
+                                <span class="badge-ngo-count">🛡️ @cause.ActiveNGOsCount @(cause.ActiveNGOsCount == 1 ? "NGO" : "NGOs")</span>
+                                <span class="badge-prog-count">📋 @cause.ActiveProgramsCount @(cause.ActiveProgramsCount == 1 ? "Program" : "Programs")</span>
+                            </div>
+                        </div>
+
+                        <!-- Card Body: Title, Description, Metrics -->
+                        <div class="cause-card-main-body">
+                            <h3 class="cause-dir-title">
+                                <a href="@Url.Action("Details", "Causes", new { id = cause.CauseID })">@cause.CauseName</a>
+                            </h3>
+
+                            <p class="cause-dir-desc">
+                                @(!string.IsNullOrEmpty(cause.Description) ? (cause.Description.Length > 120 ? cause.Description.Substring(0, 120) + "..." : cause.Description) : "Supporting high-impact humanitarian interventions and community development across Pakistan.")
+                            </p>
+
+                            <!-- Stats Row (NGOs & Programs) -->
+                            <div class="cause-summary-metric-bar">
+                                <div class="cause-metric-pill">
+                                    <span class="metric-icon">🏢</span>
+                                    <span><strong>@cause.ActiveNGOsCount</strong> Verified @(cause.ActiveNGOsCount == 1 ? "NGO" : "NGOs")</span>
+                                </div>
+                                <div class="cause-metric-pill">
+                                    <span class="metric-icon">📋</span>
+                                    <span><strong>@cause.ActiveProgramsCount</strong> @(cause.ActiveProgramsCount == 1 ? "Program" : "Programs")</span>
+                                </div>
+                            </div>
+
+                            @if (cause.TotalRaised > 0)
+                            {
+                                <div class="cause-raised-badge">
+                                    <span>Mobilized: <strong>PKR @cause.TotalRaised.ToString("N0")</strong></span>
+                                </div>
+                            }
+                        </div>
+
+                        <!-- Card Footer Actions -->
+                        <div class="cause-card-footer-actions">
+                            <a href="@Url.Action("Details", "Causes", new { id = cause.CauseID })" class="btn-cause-details">
+                                <span>Explore Cause</span>
+                                <span class="btn-arrow">→</span>
+                            </a>
+                            <a href="@Url.Action("Create", "Donation", new { causeId = cause.CauseID })" class="btn-cause-donate" title="Support @cause.CauseName">
+                                <span>Support Cause 💚</span>
+                            </a>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+        else
+        {
+            <div class="ngo-empty-state">
+                <div class="empty-state-icon">🎯</div>
+                <h3>No causes found</h3>
+                <p>Try changing your search or filters to find humanitarian sectors.</p>
+                <a href="@Url.Action("Index", "Causes")" class="btn-filter-submit" style="margin-top: 16px; text-decoration: none;">
+                    <span>Clear Filters</span>
+                </a>
+            </div>
+        }
+
+        <!-- Client-Side Instant Filter Empty State (Hidden by default) -->
+        <div id="causeClientEmptyState" class="ngo-empty-state" style="display: none;">
+            <div class="empty-state-icon">🎯</div>
+            <h3>No causes found</h3>
+            <p>Try changing your search or filters.</p>
+            <button type="button" class="btn-filter-submit" onclick="resetCauseFilters()" style="margin-top: 16px;">
+                <span>Clear Filters</span>
+            </button>
+        </div>
+    </div>
+</section>
+
+@section Scripts {
+    <script>
+        function setCauseCategory(cat) {
+            document.getElementById('selectedCauseCategoryInput').value = cat;
+            document.getElementById('causesFilterForm').submit();
+        }
+
+        function resetCauseFilters() {
+            $('#causeSearchInput').val('');
+            $('#selectedCauseCategoryInput').val('');
+            document.getElementById('causesFilterForm').submit();
+        }
+
+        // Live client-side instant filter with loading state
+        $(document).ready(function () {
+            var searchTimeout = null;
+            $('#causeSearchInput').on('input', function () {
+                clearTimeout(searchTimeout);
+                var q = $(this).val().toLowerCase().trim();
+
+                $('#causeLoadingIndicator').show();
+
+                searchTimeout = setTimeout(function () {
+                    var visibleCount = 0;
+                    $('.cause-directory-card').each(function () {
+                        var name = $(this).data('cause-name') || '';
+                        var desc = $(this).data('cause-desc') || '';
+
+                        if (!q || name.indexOf(q) !== -1 || desc.indexOf(q) !== -1) {
+                            $(this).show();
+                            visibleCount++;
+                        } else {
+                            $(this).hide();
+                        }
+                    });
+
+                    $('#causeLoadingIndicator').hide();
+                    $('#causesResultsCount').text(visibleCount);
+
+                    if (visibleCount === 0) {
+                        $('#causeClientEmptyState').show();
+                    } else {
+                        $('#causeClientEmptyState').hide();
+                    }
+                }, 120);
+            });
+        });
+    </script>
+}

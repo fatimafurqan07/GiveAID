@@ -23,20 +23,17 @@
             </p>
 
             <div class="hero-cta-group">
-                <a href="#causes" class="btn-primary-hero">
+                <a href="@Url.Action("Index", "Causes")" class="btn-primary-hero">
                     <span>Explore Causes</span>
                     <span class="btn-arrow">→</span>
                 </a>
-                @if (Session["UserID"] == null && !Request.IsAuthenticated)
+                <a href="@Url.Action("Index", "NGO")" class="btn-secondary-hero">
+                    <span>Discover NGOs</span>
+                </a>
+                @if (Session["UserID"] != null || Request.IsAuthenticated)
                 {
-                    <a href="@Url.Action("Register", "Account")" class="btn-secondary-hero">
-                        <span>Join GiveAID</span>
-                    </a>
-                }
-                else
-                {
-                    <a href="@Url.Action("Index", "Dashboard")" class="btn-secondary-hero">
-                        <span>Go to Dashboard</span>
+                    <a href="@Url.Action("Index", "Dashboard")" class="btn-secondary-hero" style="background: rgba(255,255,255,0.15); color: #fff;">
+                        <span>Dashboard</span>
                     </a>
                 }
             </div>
@@ -388,6 +385,18 @@
                     </div>
                 </div>
             </div>
+        </div>
+
+        <!-- Discovery Bottom Actions -->
+        <div style="text-align: center; margin-top: 48px; display: flex; justify-content: center; gap: 16px; flex-wrap: wrap;">
+            <a href="@Url.Action("Index", "Causes")" class="btn-primary-hero" style="display: inline-flex; align-items: center; gap: 8px;">
+                <span>🎯 Browse All Causes & Sectors</span>
+                <span class="btn-arrow">→</span>
+            </a>
+            <a href="@Url.Action("Index", "NGO")" class="btn-secondary-hero" style="background: #ffffff; color: #0f172a; border: 1px solid #cbd5e1; display: inline-flex; align-items: center; gap: 8px;">
+                <span>🏢 Explore Verified NGOs Directory</span>
+                <span class="btn-arrow">→</span>
+            </a>
         </div>
     </div>
 </section>

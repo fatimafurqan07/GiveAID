@@ -1,0 +1,320 @@
+@model GiveAID_Project.Models.NgoListViewModel
+
+@{
+    ViewBag.Title = "Discover NGOs - Verified Non-Profits in Pakistan | GiveAID";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<!-- =========================================================
+     NGO DISCOVERY HERO SECTION
+     ========================================================= -->
+<section class="ngo-hero-section">
+    <div class="section-container">
+        <div class="ngo-hero-content">
+            <div class="hero-pill">
+                <span class="pulse-dot"></span>
+                <span>100% SECP Audited & Verified Non-Profits</span>
+            </div>
+            <h1 class="ngo-hero-title">Discover NGOs</h1>
+            <p class="ngo-hero-subtitle">
+                Find organizations making an impact across Pakistan. Explore verified missions, active field programs, and transparent track records.
+            </p>
+        </div>
+    </div>
+</section>
+
+<!-- =========================================================
+     SEARCH & FILTER BAR
+     ========================================================= -->
+<section class="ngo-search-section">
+    <div class="section-container">
+        <div class="ngo-filter-card">
+            @using (Html.BeginForm("Index", "NGO", FormMethod.Get, new { id = "ngoFilterForm", @class = "ngo-filter-form" }))
+            {
+                <!-- Primary Search Input -->
+                <div class="search-bar-primary">
+                    <div class="input-icon-wrap search-input-flex">
+                        <span class="input-icon">🔍</span>
+                        <input type="text" 
+                               id="searchQuery" 
+                               name="search" 
+                               class="filter-input filter-input-lg" 
+                               placeholder="Search NGOs by name, keyword, or mission..." 
+                               value="@Model.SearchQuery" 
+                               autocomplete="off" />
+                    </div>
+                </div>
+
+                <!-- Secondary Filters Row (Location, Cause, Action buttons) -->
+                <div class="filter-controls-row">
+                    <div class="filter-dropdown-group">
+                        <div class="input-icon-wrap">
+                            <span class="input-icon">📍</span>
+                            <select id="locationFilter" name="location" class="filter-select" onchange="submitNgoFilters()">
+                                <option value="">All Locations (Nationwide)</option>
+                                @foreach (var loc in Model.AvailableLocations)
+                                {
+                                    <option value="@loc" @(string.Equals(Model.SelectedLocation, loc, StringComparison.OrdinalIgnoreCase) ? "selected" : "")>
+                                        @loc
+                                    </option>
+                                }
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="filter-dropdown-group">
+                        <div class="input-icon-wrap">
+                            <span class="input-icon">🎯</span>
+                            <select id="causeFilter" name="causeId" class="filter-select" onchange="submitNgoFilters()">
+                                <option value="">All Causes & Sectors</option>
+                                @foreach (var c in Model.AvailableCauses)
+                                {
+                                    <option value="@c.ID" @(Model.SelectedCauseId == c.ID ? "selected" : "")>
+                                        @c.Name
+                                    </option>
+                                }
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="filter-btn-group">
+                        <button type="submit" class="btn-filter-submit">
+                            <span>Search</span>
+                        </button>
+                        @if (!string.IsNullOrEmpty(Model.SearchQuery) || !string.IsNullOrEmpty(Model.SelectedLocation) || Model.SelectedCauseId.HasValue || !string.IsNullOrEmpty(Model.SelectedCategory))
+                        {
+                            <a href="@Url.Action("Index", "NGO")" class="btn-filter-reset" title="Clear all filters">
+                                <span>✕ Clear</span>
+                            </a>
+                        }
+                    </div>
+                </div>
+
+                <!-- Quick Category Chips -->
+                <div class="quick-chips-row">
+                    <span class="chips-label">Quick Sectors:</span>
+                    <button type="button" class="quick-chip @(string.IsNullOrEmpty(Model.SelectedCategory) && !Model.SelectedCauseId.HasValue ? "active" : "")" onclick="setQuickSector('')">All Causes</button>
+                    <button type="button" class="quick-chip @(Model.SelectedCategory == "Education" ? "active" : "")" onclick="setQuickSector('Education')">📚 Education</button>
+                    <button type="button" class="quick-chip @(Model.SelectedCategory == "Healthcare" ? "active" : "")" onclick="setQuickSector('Healthcare')">🩺 Healthcare</button>
+                    <button type="button" class="quick-chip @(Model.SelectedCategory == "Water" ? "active" : "")" onclick="setQuickSector('Water')">💧 Clean Water</button>
+                    <button type="button" class="quick-chip @(Model.SelectedCategory == "Food" ? "active" : "")" onclick="setQuickSector('Food')">🍲 Food Security</button>
+                    <button type="button" class="quick-chip @(Model.SelectedCategory == "Climate" ? "active" : "")" onclick="setQuickSector('Climate')">🌲 Climate</button>
+                    <button type="button" class="quick-chip @(Model.SelectedCategory == "Disability" ? "active" : "")" onclick="setQuickSector('Disability')">♿ Disability</button>
+                    <button type="button" class="quick-chip @(Model.SelectedCategory == "Relief" ? "active" : "")" onclick="setQuickSector('Relief')">🚨 Relief</button>
+                </div>
+                <input type="hidden" id="selectedCategoryInput" name="category" value="@Model.SelectedCategory" />
+            }
+        </div>
+    </div>
+</section>
+
+<!-- =========================================================
+     NGO DIRECTORY LISTING GRID
+     ========================================================= -->
+<section class="ngo-grid-section">
+    <div class="section-container">
+        <!-- Results Header -->
+        <div class="results-header-bar">
+            <div class="results-count">
+                Showing <strong id="ngoResultsCount">@Model.TotalResultsCount</strong> Verified @(Model.TotalResultsCount == 1 ? "Organization" : "Organizations")
+            </div>
+            <div class="directory-view-badges">
+                <span class="compliance-badge">🛡️ SECP Audited</span>
+                <span class="compliance-badge">● Active Platform Partners</span>
+            </div>
+        </div>
+
+        <!-- AJAX / Live Loading Indicator -->
+        <div id="ngoLoadingIndicator" class="live-loading-state" style="display: none;">
+            <div class="spinner-dot"></div>
+            <span>Searching verified NGOs...</span>
+        </div>
+
+        @if (Model.NGOs != null && Model.NGOs.Count > 0)
+        {
+            <div class="ngo-cards-grid" id="ngoCardsContainer">
+                @foreach (var ngo in Model.NGOs)
+                {
+                    <div class="ngo-directory-card" 
+                         data-ngo-name="@ngo.NGOName.ToLower()" 
+                         data-ngo-city="@ngo.City.ToLower()" 
+                         data-ngo-desc="@ngo.Description.ToLower()">
+                        
+                        <!-- Card Header: Logo & Meta -->
+                        <div class="ngo-card-top">
+                            <div class="ngo-avatar-wrap">
+                                @if (!string.IsNullOrEmpty(ngo.LogoURL))
+                                {
+                                    <img src="@ngo.LogoURL" alt="@ngo.NGOName" class="ngo-logo-img" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" />
+                                    <div class="ngo-avatar-fallback" style="display:none;">@ngo.NGOName.Substring(0, 1)</div>
+                                }
+                                else
+                                {
+                                    <div class="ngo-avatar-fallback">@ngo.NGOName.Substring(0, 1)</div>
+                                }
+                            </div>
+                            <div class="ngo-top-meta">
+                                <span class="verified-pill">🛡️ SECP Verified</span>
+                                <span class="location-pill">📍 @ngo.City</span>
+                            </div>
+                        </div>
+
+                        <!-- Card Body: Name, Causes, Description, Stats -->
+                        <div class="ngo-card-main">
+                            <h3 class="ngo-title">
+                                <a href="@Url.Action("Details", "NGO", new { id = ngo.NGOID })">@ngo.NGOName</a>
+                            </h3>
+
+                            @if (ngo.CausesList != null && ngo.CausesList.Count > 0)
+                            {
+                                <div class="ngo-causes-tags">
+                                    @for (int i = 0; i < ngo.CausesList.Count; i++)
+                                    {
+                                        var causeName = ngo.CausesList[i];
+                                        int? cid = (ngo.CauseIdsList != null && i < ngo.CauseIdsList.Count) ? (int?)ngo.CauseIdsList[i] : null;
+
+                                        if (cid.HasValue && cid.Value > 0)
+                                        {
+                                            <a href="@Url.Action("Details", "Causes", new { id = cid.Value })" class="ngo-cause-tag" title="Explore @causeName cause">
+                                                @causeName
+                                            </a>
+                                        }
+                                        else
+                                        {
+                                            <span class="ngo-cause-tag">@causeName</span>
+                                        }
+                                    }
+                                </div>
+                            }
+
+                            <p class="ngo-snippet">
+                                @if (!string.IsNullOrEmpty(ngo.Description))
+                                {
+                                    string cleanDesc = ngo.Description;
+                                    if (cleanDesc.StartsWith("[Category:"))
+                                    {
+                                        int endIdx = cleanDesc.IndexOf(']');
+                                        if (endIdx >= 0) { cleanDesc = cleanDesc.Substring(endIdx + 1).Trim(); }
+                                    }
+                                    if (cleanDesc.Contains("[Reg No:"))
+                                    {
+                                        int regIdx = cleanDesc.IndexOf("[Reg No:");
+                                        if (regIdx >= 0) { cleanDesc = cleanDesc.Substring(0, regIdx).Trim(); }
+                                    }
+                                    @(cleanDesc.Length > 125 ? cleanDesc.Substring(0, 125) + "..." : cleanDesc)
+                                }
+                                else
+                                {
+                                    <span>Dedicated humanitarian operations and community development across Pakistan.</span>
+                                }
+                            </p>
+
+                            <div class="ngo-stats-pills">
+                                <div class="stat-pill-item">
+                                    <span class="stat-pill-icon">📋</span>
+                                    <span class="stat-pill-text"><strong>@ngo.ActiveProgramsCount</strong> Active @(ngo.ActiveProgramsCount == 1 ? "Program" : "Programs")</span>
+                                </div>
+                                @if (ngo.TotalFundsRaised > 0)
+                                {
+                                    <div class="stat-pill-item">
+                                        <span class="stat-pill-icon">💚</span>
+                                        <span class="stat-pill-text"><strong>PKR @ngo.TotalFundsRaised.ToString("N0")</strong> Raised</span>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+
+                        <!-- Card Footer: Actions -->
+                        <div class="ngo-card-footer">
+                            <a href="@Url.Action("Details", "NGO", new { id = ngo.NGOID })" class="btn-ngo-details">
+                                <span>View Profile</span>
+                                <span class="btn-arrow">→</span>
+                            </a>
+                            <a href="@Url.Action("Create", "Donation", new { ngoId = ngo.NGOID })" class="btn-ngo-donate" title="Donate directly to @ngo.NGOName">
+                                <span>Donate 💚</span>
+                            </a>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+        else
+        {
+            <div class="ngo-empty-state">
+                <div class="empty-state-icon">🔍</div>
+                <h3>No NGOs found</h3>
+                <p>Try changing your search or filters to find active partner organizations.</p>
+                <a href="@Url.Action("Index", "NGO")" class="btn-filter-submit" style="margin-top: 16px; text-decoration: none;">
+                    <span>Clear Filters</span>
+                </a>
+            </div>
+        }
+
+        <!-- Client-Side Instant Filter Empty State (Hidden by default) -->
+        <div id="ngoClientEmptyState" class="ngo-empty-state" style="display: none;">
+            <div class="empty-state-icon">🔍</div>
+            <h3>No NGOs found</h3>
+            <p>Try changing your search or filters.</p>
+            <button type="button" class="btn-filter-submit" onclick="resetClientFilters()" style="margin-top: 16px;">
+                <span>Clear Filters</span>
+            </button>
+        </div>
+    </div>
+</section>
+
+@section Scripts {
+    <script>
+        function submitNgoFilters() {
+            document.getElementById('ngoFilterForm').submit();
+        }
+
+        function setQuickSector(sector) {
+            document.getElementById('selectedCategoryInput').value = sector;
+            submitNgoFilters();
+        }
+
+        function resetClientFilters() {
+            $('#searchQuery').val('');
+            $('#selectedCategoryInput').val('');
+            $('#locationFilter').val('');
+            $('#causeFilter').val('');
+            submitNgoFilters();
+        }
+
+        // Live client-side instant filter with loading state
+        $(document).ready(function () {
+            var searchTimeout = null;
+            $('#searchQuery').on('input', function () {
+                clearTimeout(searchTimeout);
+                var q = $(this).val().toLowerCase().trim();
+
+                $('#ngoLoadingIndicator').show();
+
+                searchTimeout = setTimeout(function () {
+                    var visibleCount = 0;
+                    $('.ngo-directory-card').each(function () {
+                        var name = $(this).data('ngo-name') || '';
+                        var city = $(this).data('ngo-city') || '';
+                        var desc = $(this).data('ngo-desc') || '';
+
+                        if (!q || name.indexOf(q) !== -1 || city.indexOf(q) !== -1 || desc.indexOf(q) !== -1) {
+                            $(this).show();
+                            visibleCount++;
+                        } else {
+                            $(this).hide();
+                        }
+                    });
+
+                    $('#ngoLoadingIndicator').hide();
+                    $('#ngoResultsCount').text(visibleCount);
+
+                    if (visibleCount === 0) {
+                        $('#ngoClientEmptyState').show();
+                    } else {
+                        $('#ngoClientEmptyState').hide();
+                    }
+                }, 120);
+            });
+        });
+    </script>
+}

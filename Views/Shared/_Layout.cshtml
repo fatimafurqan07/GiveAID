@@ -46,6 +46,8 @@
                 <div class="nav-main-group">
                     <a href="@Url.Action("Index", "Home")" class="@(currentController.Equals("Home", StringComparison.OrdinalIgnoreCase) && currentAction.Equals("Index", StringComparison.OrdinalIgnoreCase) ? "active-nav" : "")">Home</a>
                     <a href="@Url.Action("About", "Home")" class="@(currentController.Equals("Home", StringComparison.OrdinalIgnoreCase) && currentAction.Equals("About", StringComparison.OrdinalIgnoreCase) ? "active-nav" : "")">About Us</a>
+                    <a href="@Url.Action("Index", "NGO")" class="@(currentController.Equals("NGO", StringComparison.OrdinalIgnoreCase) ? "active-nav" : "")">NGOs</a>
+                    <a href="@Url.Action("Index", "Causes")" class="@(currentController.Equals("Causes", StringComparison.OrdinalIgnoreCase) ? "active-nav" : "")">Causes</a>
                     <a href="@Url.Action("Partners", "Home")" class="@(currentController.Equals("Home", StringComparison.OrdinalIgnoreCase) && currentAction.Equals("Partners", StringComparison.OrdinalIgnoreCase) ? "active-nav" : "")">Partners</a>
                     <a href="@Url.Action("Contact", "Home")" class="@(currentController.Equals("Home", StringComparison.OrdinalIgnoreCase) && currentAction.Equals("Contact", StringComparison.OrdinalIgnoreCase) ? "active-nav" : "")">Contact Us</a>
                 </div>
@@ -128,6 +130,8 @@
                 <div class="footer-links">
                     <a href="@Url.Action("Index", "Home")">Home</a>
                     <a href="@Url.Action("About", "Home")">About Us</a>
+                    <a href="@Url.Action("Index", "NGO")">NGOs</a>
+                    <a href="@Url.Action("Index", "Causes")">Causes</a>
                     <a href="@Url.Action("Partners", "Home")">Partners</a>
                     <a href="@Url.Action("Contact", "Home")">Contact Us</a>
                     <a href="@Url.Action("Register", "Account")">Join as Donor / Volunteer</a>
@@ -178,13 +182,23 @@
     <script src="@Url.Content("~/Scripts/jquery.validate.min.js")"></script>
     <script src="@Url.Content("~/Scripts/jquery.validate.unobtrusive.min.js")"></script>
     <script>
-        // Mobile navigation drawer toggle
+        // Mobile navigation drawer and dropdown toggle
         $(document).ready(function () {
             $('#navToggle').on('click', function () {
                 var expanded = $(this).attr('aria-expanded') === 'true';
                 $(this).attr('aria-expanded', !expanded);
                 $('#navLinks').toggleClass('show');
                 $(this).toggleClass('open');
+            });
+
+            $('#discoverDropdown').on('click', function (e) {
+                if (window.innerWidth <= 768) {
+                    e.preventDefault();
+                    var menu = $(this).siblings('.nav-dropdown-menu');
+                    menu.toggleClass('show');
+                    var expanded = $(this).attr('aria-expanded') === 'true';
+                    $(this).attr('aria-expanded', !expanded);
+                }
             });
         });
     </script>

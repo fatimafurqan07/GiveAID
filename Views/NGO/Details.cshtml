@@ -1,0 +1,353 @@
+@model GiveAID_Project.Models.NgoDetailViewModel
+
+@{
+    ViewBag.Title = Model.NGOName + " - Verified NGO Profile | GiveAID";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<!-- =========================================================
+     NGO DETAIL HERO SECTION
+     ========================================================= -->
+<section class="ngo-detail-header-section">
+    <div class="section-container">
+        <!-- Breadcrumb Navigation -->
+        <nav class="detail-breadcrumb" aria-label="Breadcrumb">
+            <a href="@Url.Action("Index", "Home")">Home</a>
+            <span class="sep">/</span>
+            <a href="@Url.Action("Index", "NGO")">NGOs</a>
+            <span class="sep">/</span>
+            <span class="current">@Model.NGOName</span>
+        </nav>
+
+        <div class="ngo-detail-hero-card">
+            <div class="ngo-hero-main-info">
+                <div class="ngo-detail-avatar-wrap">
+                    @if (!string.IsNullOrEmpty(Model.LogoURL))
+                    {
+                        <img src="@Model.LogoURL" alt="@Model.NGOName" class="ngo-detail-logo" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" />
+                        <div class="ngo-detail-avatar-fallback" style="display:none;">@Model.NGOName.Substring(0, 1)</div>
+                    }
+                    else
+                    {
+                        <div class="ngo-detail-avatar-fallback">@Model.NGOName.Substring(0, 1)</div>
+                    }
+                </div>
+
+                <div class="ngo-hero-text">
+                    <div class="ngo-badges-row">
+                        <span class="verified-pill">🛡️ SECP Verified Partner</span>
+                        <span class="location-pill">📍 @Model.City, Pakistan</span>
+                        <span class="active-status-pill">● Active</span>
+                    </div>
+
+                    <h1 class="ngo-detail-name">@Model.NGOName</h1>
+
+                    @{
+                        string shortSnippet = Model.Description ?? "";
+                        if (shortSnippet.StartsWith("[Category:"))
+                        {
+                            int endIdx = shortSnippet.IndexOf(']');
+                            if (endIdx >= 0) { shortSnippet = shortSnippet.Substring(endIdx + 1).Trim(); }
+                        }
+                        if (shortSnippet.Contains("[Reg No:"))
+                        {
+                            int regIdx = shortSnippet.IndexOf("[Reg No:");
+                            if (regIdx >= 0) { shortSnippet = shortSnippet.Substring(0, regIdx).Trim(); }
+                        }
+                    }
+                    <p class="cause-detail-lead">
+                        @(shortSnippet.Length > 160 ? shortSnippet.Substring(0, 160) + "..." : shortSnippet)
+                    </p>
+
+                    <div class="ngo-contact-pills">
+                        @if (!string.IsNullOrEmpty(Model.Email))
+                        {
+                            <a href="mailto:@Model.Email" class="contact-pill-link">
+                                <span>📧 @Model.Email</span>
+                            </a>
+                        }
+                        @if (!string.IsNullOrEmpty(Model.Phone))
+                        {
+                            <a href="tel:@Model.Phone" class="contact-pill-link">
+                                <span>📞 @Model.Phone</span>
+                            </a>
+                        }
+                        @if (!string.IsNullOrEmpty(Model.WebsiteURL))
+                        {
+                            <a href="@(Model.WebsiteURL.StartsWith("http") ? Model.WebsiteURL : "https://" + Model.WebsiteURL)" target="_blank" rel="noopener noreferrer" class="contact-pill-link website-link">
+                                <span>🌐 Official Website ↗</span>
+                            </a>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <!-- Header Action & Stats -->
+            <div class="ngo-hero-action-panel">
+                <div class="ngo-hero-stats-row">
+                    <div class="hero-mini-stat">
+                        <div class="stat-num">@Model.TotalProgramsCount</div>
+                        <div class="stat-lbl">Programs</div>
+                    </div>
+                    <div class="hero-mini-stat">
+                        <div class="stat-num">@Model.TotalCausesCount</div>
+                        <div class="stat-lbl">Causes</div>
+                    </div>
+                    <div class="hero-mini-stat">
+                        <div class="stat-num">PKR @Model.TotalFundsRaised.ToString("N0")</div>
+                        <div class="stat-lbl">Raised</div>
+                    </div>
+                </div>
+
+                <a href="@Url.Action("Create", "Donation", new { ngoId = Model.NGOID })" class="btn-primary-hero full-width-btn">
+                    <span>Donate to @Model.NGOName</span>
+                    <span class="btn-arrow">💚</span>
+                </a>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- =========================================================
+     NGO CONTENT BODY (ABOUT, CAUSES, PROGRAMS)
+     ========================================================= -->
+<section class="ngo-detail-body-section">
+    <div class="section-container">
+        <div class="detail-layout-grid">
+            <!-- Main Column (Left) -->
+            <div class="detail-main-col">
+                
+                <!-- 1. ABOUT THE NGO -->
+                <div class="detail-card">
+                    <h2 class="section-card-title">About the NGO</h2>
+                    <div class="rich-desc-content">
+                        @{
+                            string fullDescription = Model.Description ?? "";
+                            string regNum = "";
+                            string sector = "";
+
+                            if (fullDescription.StartsWith("[Category:"))
+                            {
+                                int endCat = fullDescription.IndexOf(']');
+                                if (endCat >= 0)
+                                {
+                                    sector = fullDescription.Substring(10, endCat - 10).Trim();
+                                    fullDescription = fullDescription.Substring(endCat + 1).Trim();
+                                }
+                            }
+                            if (fullDescription.Contains("[Reg No:"))
+                            {
+                                int regStart = fullDescription.IndexOf("[Reg No:");
+                                int regEnd = fullDescription.IndexOf(']', regStart);
+                                if (regStart >= 0 && regEnd > regStart)
+                                {
+                                    regNum = fullDescription.Substring(regStart + 8, regEnd - (regStart + 8)).Trim();
+                                    fullDescription = fullDescription.Remove(regStart, (regEnd - regStart) + 1).Trim();
+                                }
+                            }
+                        }
+
+                        @if (!string.IsNullOrEmpty(sector) || !string.IsNullOrEmpty(regNum) || !string.IsNullOrEmpty(Model.Address))
+                        {
+                            <div class="ngo-meta-banner">
+                                @if (!string.IsNullOrEmpty(sector))
+                                {
+                                    <div class="meta-banner-item">
+                                        <span class="meta-banner-lbl">Sector:</span>
+                                        <span class="meta-banner-val">@sector</span>
+                                    </div>
+                                }
+                                @if (!string.IsNullOrEmpty(regNum))
+                                {
+                                    <div class="meta-banner-item">
+                                        <span class="meta-banner-lbl">SECP Reg:</span>
+                                        <span class="meta-banner-val">@regNum</span>
+                                    </div>
+                                }
+                                @if (!string.IsNullOrEmpty(Model.Address))
+                                {
+                                    <div class="meta-banner-item">
+                                        <span class="meta-banner-lbl">HQ:</span>
+                                        <span class="meta-banner-val">@Model.Address</span>
+                                    </div>
+                                }
+                                <div class="meta-banner-item">
+                                    <span class="meta-banner-lbl">Audited Since:</span>
+                                    <span class="meta-banner-val">@Model.CreatedAt.ToString("MMM yyyy")</span>
+                                </div>
+                            </div>
+                        }
+
+                        <p class="paragraph-lead">
+                            @(!string.IsNullOrEmpty(fullDescription) ? fullDescription : "A verified humanitarian partner organization registered on GiveAID, delivering verifiable grassroots assistance, transparent social development, and relief across communities in Pakistan.")
+                        </p>
+                    </div>
+                </div>
+
+                <!-- 2. CAUSES SUPPORTED -->
+                <div class="detail-card" id="causes">
+                    <div class="card-header-flex">
+                        <div>
+                            <h2 class="section-card-title">Causes</h2>
+                            <p class="section-card-sub">Humanitarian sectors and impact areas supported by @Model.NGOName.</p>
+                        </div>
+                    </div>
+
+                    @if (Model.Causes != null && Model.Causes.Count > 0)
+                    {
+                        <div class="ngo-causes-grid">
+                            @foreach (var cause in Model.Causes)
+                            {
+                                <div class="ngo-cause-box">
+                                    <div class="cause-box-icon">@cause.Icon</div>
+                                    <div class="cause-box-content">
+                                        <h3 class="cause-box-title">
+                                            <a href="@Url.Action("Details", "Causes", new { id = cause.CauseID })">@cause.CauseName</a>
+                                        </h3>
+                                        <p class="cause-box-desc">
+                                            @(!string.IsNullOrEmpty(cause.Description) ? (cause.Description.Length > 90 ? cause.Description.Substring(0, 90) + "..." : cause.Description) : "Dedicated relief and development initiatives.")
+                                        </p>
+                                        <div class="cause-box-footer">
+                                            <span class="cause-box-prog-count">📋 @cause.ProgramsCount @(cause.ProgramsCount == 1 ? "Program" : "Programs")</span>
+                                            <a href="@Url.Action("Details", "Causes", new { id = cause.CauseID })" class="cause-box-link">Explore Cause →</a>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="empty-sub-state">
+                            <p>No specific sub-causes currently registered. General donations are allocated to core field operations.</p>
+                        </div>
+                    }
+                </div>
+
+                <!-- 3. PROGRAMS -->
+                <div class="detail-card" id="programs">
+                    <div class="card-header-flex">
+                        <div>
+                            <h2 class="section-card-title">Programs</h2>
+                            <p class="section-card-sub">Active field projects and verified fundraising campaigns run by @Model.NGOName.</p>
+                        </div>
+                    </div>
+
+                    @if (Model.Programs != null && Model.Programs.Count > 0)
+                    {
+                        <div class="programs-list-grid">
+                            @foreach (var prog in Model.Programs)
+                            {
+                                <div class="program-item-card">
+                                    <div class="program-card-header">
+                                        <div class="program-title-wrap">
+                                            <a href="@Url.Action("Details", "Causes", new { id = prog.CauseID })" class="prog-cause-badge">
+                                                <span>@prog.CauseName</span>
+                                            </a>
+                                            <h3 class="program-title">@prog.ProgramName</h3>
+                                        </div>
+                                        <span class="prog-status-pill status-@prog.Status.ToLower()">@prog.Status</span>
+                                    </div>
+
+                                    <div class="program-card-meta">
+                                        <span class="meta-item">📍 @(string.IsNullOrEmpty(prog.Location) ? Model.City : prog.Location)</span>
+                                        <span class="meta-item">🗓️ Started: @prog.StartDate.ToString("dd MMM yyyy")</span>
+                                        @if (prog.EndDate.HasValue)
+                                        {
+                                            <span class="meta-item">🏁 Target End: @prog.EndDate.Value.ToString("dd MMM yyyy")</span>
+                                        }
+                                    </div>
+
+                                    @if (!string.IsNullOrEmpty(prog.Description))
+                                    {
+                                        <p class="program-desc">@prog.Description</p>
+                                    }
+
+                                    <!-- Funding Progress -->
+                                    <div class="prog-funding-wrap">
+                                        <div class="prog-progress-bar">
+                                            <div class="prog-progress-fill" style="width: @prog.ProgressPercent%;"></div>
+                                        </div>
+                                        <div class="prog-funding-labels">
+                                            <span class="funding-raised">Raised: <strong>PKR @prog.CurrentAmount.ToString("N0")</strong></span>
+                                            <span class="funding-goal">Goal: PKR @prog.TargetAmount.ToString("N0") (@prog.ProgressPercent%)</span>
+                                        </div>
+                                    </div>
+
+                                    <div class="program-card-actions">
+                                        <a href="@Url.Action("Create", "Donation", new { ngoId = Model.NGOID, causeId = prog.CauseID, programId = prog.ProgramID })" class="btn-support-prog">
+                                            <span>Support Program 💚</span>
+                                        </a>
+                                        <a href="@Url.Action("Details", "Causes", new { id = prog.CauseID })" class="btn-view-cause-prog">
+                                            <span>View Cause Info →</span>
+                                        </a>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="empty-sub-state">
+                            <p>No programs available yet. You can support @Model.NGOName through a direct donation.</p>
+                            <a href="@Url.Action("Create", "Donation", new { ngoId = Model.NGOID })" class="btn-filter-submit" style="margin-top: 12px; display: inline-flex; text-decoration: none;">
+                                <span>Donate to General Fund</span>
+                            </a>
+                        </div>
+                    }
+                </div>
+
+                <!-- Bottom Support Banner -->
+                <div class="ngo-cta-banner-card">
+                    <div class="ngo-cta-banner-content">
+                        <h3>Ready to support @Model.NGOName?</h3>
+                        <p>100% of your donation directly reaches ground operations with full financial auditability.</p>
+                    </div>
+                    <a href="@Url.Action("Create", "Donation", new { ngoId = Model.NGOID })" class="btn-primary-hero">
+                        <span>Donate / Support @Model.NGOName 💚</span>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Sidebar (Right) -->
+            <div class="detail-sidebar-col">
+                <!-- Donation Box -->
+                <div class="sidebar-sticky-card">
+                    <div class="sidebar-donate-box">
+                        <span class="sidebar-badge">Direct Donation</span>
+                        <h3 class="sidebar-donate-title">Support @Model.NGOName</h3>
+                        <p class="sidebar-donate-desc">
+                            Direct, zero-commission funding to @Model.NGOName with real-time audit tracking.
+                        </p>
+
+                        <div class="sidebar-quick-amounts">
+                            <a href="@Url.Action("Create", "Donation", new { ngoId = Model.NGOID, amount = 1000 })" class="sidebar-amt-btn">PKR 1,000</a>
+                            <a href="@Url.Action("Create", "Donation", new { ngoId = Model.NGOID, amount = 2500 })" class="sidebar-amt-btn">PKR 2,500</a>
+                            <a href="@Url.Action("Create", "Donation", new { ngoId = Model.NGOID, amount = 5000 })" class="sidebar-amt-btn">PKR 5,000</a>
+                            <a href="@Url.Action("Create", "Donation", new { ngoId = Model.NGOID, amount = 10000 })" class="sidebar-amt-btn">PKR 10,000</a>
+                        </div>
+
+                        <a href="@Url.Action("Create", "Donation", new { ngoId = Model.NGOID })" class="btn-primary-hero full-width-btn">
+                            <span>Proceed to Donate 💚</span>
+                        </a>
+
+                        <div class="sidebar-trust-points">
+                            <div class="trust-point">✓ 100% SECP Verified Partner</div>
+                            <div class="trust-point">✓ Direct On-Ground Delivery</div>
+                            <div class="trust-point">✓ Instant Official Receipt</div>
+                        </div>
+                    </div>
+
+                    <!-- Transparency Card -->
+                    <div class="sidebar-info-card" style="margin-top: 20px;">
+                        <h4 class="info-card-title">🛡️ Transparency Commitment</h4>
+                        <p class="info-card-text">
+                            @Model.NGOName is an audited member of GiveAID Pakistan. All disbursements are verified by administrators.
+                        </p>
+                        <a href="@Url.Action("Partners", "Home")" class="info-card-link">View Partner Standards →</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
