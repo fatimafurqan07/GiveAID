@@ -1,0 +1,256 @@
+@using System
+
+@{
+    var sidebarName =
+        Convert.ToString(Session["UserName"]);
+
+    var sidebarEmail =
+        Convert.ToString(Session["UserEmail"]);
+
+    if (string.IsNullOrWhiteSpace(sidebarName))
+    {
+        sidebarName = "GiveAID Member";
+    }
+
+    if (string.IsNullOrWhiteSpace(sidebarEmail) &&
+        Request.IsAuthenticated)
+    {
+        sidebarEmail = User.Identity.Name;
+    }
+
+    if (string.IsNullOrWhiteSpace(sidebarEmail))
+    {
+        sidebarEmail = "Personal GiveAID account";
+    }
+
+    var sidebarInitial = sidebarName
+        .Substring(0, 1)
+        .ToUpperInvariant();
+
+    var currentController = Convert.ToString(
+        ViewContext.RouteData.Values["controller"]) ?? "";
+
+    var currentAction = Convert.ToString(
+        ViewContext.RouteData.Values["action"]) ?? "";
+
+    // ==========================================
+    // OVERVIEW ACTIVE STATE
+    // ==========================================
+    var overviewClass =
+        currentController.Equals(
+            "Dashboard",
+            StringComparison.OrdinalIgnoreCase) &&
+        (
+            currentAction.Equals(
+                "UserDashboard",
+                StringComparison.OrdinalIgnoreCase) ||
+
+            currentAction.Equals(
+                "User",
+                StringComparison.OrdinalIgnoreCase) ||
+
+            currentAction.Equals(
+                "Index",
+                StringComparison.OrdinalIgnoreCase)
+        )
+        ? "active"
+        : "";
+
+    // ==========================================
+    // PROFILE ACTIVE STATE
+    // ==========================================
+    var profileClass =
+        currentController.Equals(
+            "Dashboard",
+            StringComparison.OrdinalIgnoreCase) &&
+
+        currentAction.Equals(
+            "Profile",
+            StringComparison.OrdinalIgnoreCase)
+        ? "active"
+        : "";
+
+    // ==========================================
+    // CREATE DONATION ACTIVE STATE
+    // ==========================================
+    var createDonationClass =
+        currentController.Equals(
+            "Donation",
+            StringComparison.OrdinalIgnoreCase) &&
+
+        currentAction.Equals(
+            "Create",
+            StringComparison.OrdinalIgnoreCase)
+        ? "active"
+        : "";
+
+    // ==========================================
+    // DONATION HISTORY / DETAILS / SUCCESS STATE
+    // ==========================================
+    var donationsClass =
+        (
+            currentController.Equals(
+                "Dashboard",
+                StringComparison.OrdinalIgnoreCase) &&
+            (
+                currentAction.Equals(
+                    "Donations",
+                    StringComparison.OrdinalIgnoreCase) ||
+
+                currentAction.Equals(
+                    "DonationDetails",
+                    StringComparison.OrdinalIgnoreCase)
+            )
+        )
+        ||
+        (
+            currentController.Equals(
+                "Donation",
+                StringComparison.OrdinalIgnoreCase) &&
+
+            currentAction.Equals(
+                "Success",
+                StringComparison.OrdinalIgnoreCase)
+        )
+        ? "active"
+        : "";
+
+    // ==========================================
+    // INTERESTS ACTIVE STATE
+    // ==========================================
+    var interestsClass =
+        currentController.Equals(
+            "Dashboard",
+            StringComparison.OrdinalIgnoreCase) &&
+
+        currentAction.Equals(
+            "Interests",
+            StringComparison.OrdinalIgnoreCase)
+        ? "active"
+        : "";
+
+    // ==========================================
+    // CONTACT MESSAGES / DETAILS ACTIVE STATE
+    // ==========================================
+    var messagesClass =
+        currentController.Equals(
+            "Dashboard",
+            StringComparison.OrdinalIgnoreCase) &&
+        (
+            currentAction.Equals(
+                "Messages",
+                StringComparison.OrdinalIgnoreCase) ||
+
+            currentAction.Equals(
+                "MessageDetails",
+                StringComparison.OrdinalIgnoreCase)
+        )
+        ? "active"
+        : "";
+}
+
+<aside class="user-side">
+    <div class="account-chip">
+        <div class="account-avatar">
+            @sidebarInitial
+        </div>
+
+        <div class="account-identity">
+            <strong>
+                @sidebarName
+            </strong>
+
+            <span title="@sidebarEmail">
+                @sidebarEmail
+            </span>
+        </div>
+    </div>
+
+    <div class="nav-label">
+        My workspace
+    </div>
+
+    <nav class="user-nav"
+         aria-label="User dashboard navigation">
+
+        <!-- OVERVIEW -->
+        <a class="@overviewClass"
+           href="@Url.Action(
+               "UserDashboard",
+               "Dashboard")"
+           aria-current="@(overviewClass == "active" ? "page" : null)">
+
+            <span class="nav-icon">OV</span>
+            <span>Overview</span>
+        </a>
+
+        <!-- PROFILE -->
+        <a class="@profileClass"
+           href="@Url.Action(
+               "Profile",
+               "Dashboard")"
+           aria-current="@(profileClass == "active" ? "page" : null)">
+
+            <span class="nav-icon">PF</span>
+            <span>My profile</span>
+        </a>
+
+        <!-- CREATE DONATION -->
+        <a class="@createDonationClass"
+           href="@Url.Action(
+               "Create",
+               "Donation")"
+           aria-current="@(createDonationClass == "active" ? "page" : null)">
+
+            <span class="nav-icon">+</span>
+            <span>Make a donation</span>
+        </a>
+
+        <!-- DONATION HISTORY -->
+        <a class="@donationsClass"
+           href="@Url.Action(
+               "Donations",
+               "Dashboard")"
+           aria-current="@(donationsClass == "active" ? "page" : null)">
+
+            <span class="nav-icon">DN</span>
+            <span>My donations</span>
+        </a>
+
+        <!-- PROGRAMME INTERESTS -->
+        <a class="@interestsClass"
+           href="@Url.Action(
+               "Interests",
+               "Dashboard")"
+           aria-current="@(interestsClass == "active" ? "page" : null)">
+
+            <span class="nav-icon">IN</span>
+            <span>My interests</span>
+        </a>
+
+        <!-- CONTACT MESSAGES -->
+        <a class="@messagesClass"
+           href="@Url.Action(
+               "Messages",
+               "Dashboard")"
+           aria-current="@(messagesClass == "active" ? "page" : null)">
+
+            <span class="nav-icon">MS</span>
+            <span>My messages</span>
+        </a>
+
+        <!-- PUBLIC WEBSITE -->
+        <a href="@Url.Action(
+            "Index",
+            "Home")">
+
+            <span class="nav-icon">WB</span>
+            <span>View website</span>
+        </a>
+    </nav>
+
+    <div class="side-note">
+        Your dashboard displays only the records
+        connected to your signed-in GiveAID account.
+    </div>
+</aside>

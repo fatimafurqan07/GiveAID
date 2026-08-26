@@ -1,0 +1,130 @@
+@model GiveAID_Project.Models.DonationDetailViewModel
+@{ ViewBag.Title="Donation Details | GiveAID"; Layout="~/Views/Shared/_Layout.cshtml"; var status=(Model.DonationStatus??"Pending").ToLowerInvariant(); }
+@section Styles{<link href="@Url.Content("~/Content/UserDashboard.css")" rel="stylesheet" /><style>
+        .detail-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: end;
+            gap: 20px;
+            margin-bottom: 22px
+        }
+
+            .detail-head h1 {
+                font-size: 38px;
+                margin: 7px 0
+            }
+
+        .receipt-shell {
+            display: grid;
+            grid-template-columns: 1.15fr .85fr;
+            gap: 18px
+        }
+
+        .receipt-card {
+            background: #fff;
+            border: 1px solid #cfdfda;
+            border-radius: 22px;
+            overflow: hidden;
+            box-shadow: 0 16px 38px rgba(7,31,44,.07)
+        }
+
+        .receipt-title {
+            padding: 24px;
+            background: linear-gradient(120deg,#073b45,#087c63);
+            color: #fff
+        }
+
+            .receipt-title h2 {
+                margin: 7px 0;
+                font-size: 24px
+            }
+
+        .receipt-body {
+            padding: 22px
+        }
+
+        .receipt-row {
+            display: flex;
+            justify-content: space-between;
+            gap: 18px;
+            padding: 13px 0;
+            border-bottom: 1px solid #e5eeeb
+        }
+
+            .receipt-row span {
+                color: #6d8185
+            }
+
+            .receipt-row strong {
+                text-align: right
+            }
+
+        .status-box {
+            padding: 22px;
+            border-radius: 22px;
+            background: linear-gradient(145deg,#fff4eb,#fff);
+            border: 1px solid #efd8ca
+        }
+
+        .status-pill {
+            display: inline-flex;
+            padding: 8px 12px;
+            border-radius: 20px;
+            font-weight: 900;
+            text-transform: uppercase;
+            font-size: 9px;
+            background: #fff0d8;
+            color: #9b6418
+        }
+
+            .status-pill.completed {
+                background: #dcf6e8;
+                color: #087553
+            }
+
+            .status-pill.cancelled {
+                background: #ffe7e2;
+                color: #a74635
+            }
+
+        .status-box h2 {
+            font-size: 22px;
+            margin: 18px 0 8px
+        }
+
+        .status-box p {
+            color: #667d81;
+            line-height: 1.7
+        }
+
+        .detail-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 18px
+        }
+
+            .detail-actions a {
+                padding: 12px 15px;
+                border-radius: 10px;
+                text-decoration: none;
+                font-weight: 900;
+                background: #087f5b;
+                color: #fff
+            }
+
+                .detail-actions a:last-child {
+                    background: #eef5f2;
+                    color: #274d53
+                }
+    @@media(max-width:800px)
+        {
+            .receipt-shell {
+                grid-template-columns: 1fr
+            }
+
+            .detail-head {
+                display: block
+            }
+        }
+</style>}
+<main class="user-workspace"><div class="user-shell">@Html.Partial("_UserDashboardSidebar")<section class="user-main"><header class="detail-head"><div><span class="eyebrow">Contribution record</span><h1>Donation details</h1><p>Secure record linked to your signed-in GiveAID account.</p></div><span class="member-pill">@Model.PaymentReference</span></header><div class="receipt-shell"><article class="receipt-card"><header class="receipt-title"><span class="eyebrow">Digital receipt</span><h2>PKR @Model.Amount.ToString("N0")</h2><span>@Model.DonationDate.ToString("dd MMM yyyy, hh:mm tt")</span></header><div class="receipt-body"><div class="receipt-row"><span>Partner NGO</span><strong>@Model.NGOName</strong></div><div class="receipt-row"><span>Cause</span><strong>@Model.CauseName</strong></div><div class="receipt-row"><span>Programme</span><strong>@Model.ProgramName</strong></div><div class="receipt-row"><span>Payment method</span><strong>@Model.PaymentMethod</strong></div><div class="receipt-row"><span>Payment status</span><strong>@Model.PaymentStatus</strong></div>@if(!string.IsNullOrWhiteSpace(Model.Message)){<div class="receipt-row"><span>Your note</span><strong>@Model.Message</strong></div>}</div></article><aside class="status-box"><span class="status-pill @status">@Model.DonationStatus</span><h2>Review status</h2><p>@(status=="completed"?"This contribution has been reviewed and marked completed.":status=="cancelled"?"This contribution was cancelled during review.":"This contribution is waiting for administrator review.")</p>@if(!string.IsNullOrWhiteSpace(Model.AdminRemarks)){<h3>Administrator remarks</h3><p>@Model.AdminRemarks</p>}@if(Model.AdminReviewedAt.HasValue){<p><strong>Reviewed:</strong> @Model.AdminReviewedAt.Value.ToString("dd MMM yyyy, hh:mm tt")</p>}<div class="detail-actions"><a href="@Url.Action("Donations","Dashboard")">Back to donations</a><a href="@Url.Action("Create","Donation")">New contribution</a></div></aside></div></section></div></main>

@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.Data.SqlClient;
+using System.Diagnostics;
 using System.Linq;
 using System.Web;
 using System.Web.Mvc;
@@ -10,349 +12,78 @@ namespace GiveAID_Project.Controllers
 {
     public class AccountController : Controller
     {
-        private readonly AccountRepository _accountRepo;
+        private readonly AccountRepository _accounts;
+        public AccountController() { _accounts = new AccountRepository(); }
+        public AccountController(AccountRepository accounts) { _accounts = accounts ?? throw new ArgumentNullException(nameof(accounts)); }
 
-        public AccountController()
-        {
-            _accountRepo = new AccountRepository();
-        }
+        [HttpGet, AllowAnonymous]
+        public ActionResult Register() { if (Request.IsAuthenticated) return RedirectToAction("Index", "Dashboard"); return View(new RegisterModel()); }
 
-        public AccountController(AccountRepository accountRepo)
-        {
-            _accountRepo = accountRepo;
-        }
-
-        // ==========================================
-        // REGISTER (NORMAL USER)
-        // ==========================================
-
-        [HttpGet]
-        [AllowAnonymous]
-        public ActionResult Register()
-        {
-            if (User.Identity.IsAuthenticated || Session["UserID"] != null)
-            {
-                return RedirectToAction("Index", "Home");
-            }
-
-            return View(new RegisterModel());
-        }
-
-        [HttpPost]
-        [AllowAnonymous]
-        [ValidateAntiForgeryToken]
+        [HttpPost, AllowAnonymous, ValidateAntiForgeryToken]
         public ActionResult Register(RegisterModel model)
         {
-            if (User.Identity.IsAuthenticated || Session["UserID"] != null)
-            {
-                return RedirectToAction("Index", "Home");
-            }
-
-            if (!ModelState.IsValid)
-            {
-                return View(model);
-            }
-
+            if (Request.IsAuthenticated) return RedirectToAction("Index", "Dashboard");
+            if (!ModelState.IsValid) return View(model);
             try
             {
-                if (_accountRepo.EmailExists(model.Email))
-                {
-                    ModelState.AddModelError("Email", "An account with this email address already exists. Please log in or use a different email.");
-                    return View(model);
-                }
-
-                // Create user in database with default role "User"
-                var newUser = _accountRepo.CreateUser(model, "User");
-
-                // Sign in user immediately upon successful registration
-                EstablishUserSession(newUser, rememberMe: false);
-
-                TempData["SuccessMessage"] = "Account created successfully! Welcome to Give-AID.";
-                return RedirectToAction("Index", "Dashboard");
+                if (_accounts.EmailExists(model.Email)) { ModelState.AddModelError("Email", "An account with this email address already exists."); return View(model); }
+                var user = _accounts.CreateUser(model, "User"); EstablishUserSession(user, false);
+                TempData["SuccessMessage"] = "Your account was created successfully."; return RedirectToAction("Index", "Dashboard");
             }
-            catch (Exception ex)
-            {
-                ModelState.AddModelError("", "An unexpected error occurred while creating your account. Please try again. (" + ex.Message + ")");
-                return View(model);
-            }
+            catch (SqlException ex) when (ex.Number == 2601 || ex.Number == 2627) { ModelState.AddModelError("Email", "An account with this email address already exists."); return View(model); }
+            catch (Exception ex) { Trace.TraceError("Registration failed: {0}", ex); ModelState.AddModelError("", "We could not create your account. Please try again."); return View(model); }
         }
 
-        // ==========================================
-        // NGO REGISTRATION (APPLICATION FOR APPROVAL)
-        // ==========================================
+        [HttpGet, AllowAnonymous]
+        public ActionResult Login(string returnUrl) { if (Request.IsAuthenticated) return RedirectToAction("Index", "Dashboard"); return View(new LoginModel { ReturnUrl = returnUrl }); }
 
-        [HttpGet]
-        [AllowAnonymous]
-        public ActionResult NGORegister()
-        {
-            if (User.Identity.IsAuthenticated || Session["UserID"] != null)
-            {
-                return RedirectToAction("Index", "Home");
-            }
-
-            return View(new NGORegisterModel());
-        }
-
-        [HttpPost]
-        [AllowAnonymous]
-        [ValidateAntiForgeryToken]
-        public ActionResult NGORegister(NGORegisterModel model)
-        {
-            if (User.Identity.IsAuthenticated || Session["UserID"] != null)
-            {
-                return RedirectToAction("Index", "Home");
-            }
-
-            if (!ModelState.IsValid)
-            {
-                return View(model);
-            }
-
-            try
-            {
-                if (_accountRepo.EmailExists(model.Email))
-                {
-                    ModelState.AddModelError("Email", "An account with this email address already exists. Please log in or use a different email.");
-                    return View(model);
-                }
-
-                if (_accountRepo.NGONameExists(model.NGOName))
-                {
-                    ModelState.AddModelError("NGOName", "An NGO with this name is already registered or has an application on file.");
-                    return View(model);
-                }
-
-                // Create NGO Application (Inactive pending admin approval)
-                _accountRepo.CreateNGOApplication(model);
-
-                TempData["SuccessMessage"] = "Your NGO registration application has been submitted successfully! It is currently awaiting review and approval by the platform administrator.";
-                return RedirectToAction("Login", "Account");
-            }
-            catch (Exception ex)
-            {
-                ModelState.AddModelError("", "An unexpected error occurred while submitting your NGO application. Please try again. (" + ex.Message + ")");
-                return View(model);
-            }
-        }
-
-        // ==========================================
-        // LOGIN
-        // ==========================================
-
-        [HttpGet]
-        [AllowAnonymous]
-        public ActionResult Login(string returnUrl)
-        {
-            if (User.Identity.IsAuthenticated || Session["UserID"] != null)
-            {
-                return RedirectToAction("Index", "Dashboard");
-            }
-
-            ViewBag.ReturnUrl = returnUrl;
-            return View(new LoginModel { ReturnUrl = returnUrl });
-        }
-
-        [HttpPost]
-        [AllowAnonymous]
-        [ValidateAntiForgeryToken]
+        [HttpPost, AllowAnonymous, ValidateAntiForgeryToken]
         public ActionResult Login(LoginModel model)
         {
-            if (User.Identity.IsAuthenticated || Session["UserID"] != null)
-            {
-                return RedirectToAction("Index", "Dashboard");
-            }
-
-            if (!ModelState.IsValid)
-            {
-                return View(model);
-            }
-
+            if (Request.IsAuthenticated) return RedirectToAction("Index", "Dashboard");
+            if (!ModelState.IsValid) return View(model);
             try
             {
-                var user = _accountRepo.GetUserByEmail(model.Email);
-
-                if (user == null || !PasswordSecurity.VerifyPassword(model.Password, user.PasswordHash))
-                {
-                    ModelState.AddModelError("", "Invalid email address or password.");
-                    return View(model);
-                }
-
-                if (user.IsBanned)
-                {
-                    ModelState.AddModelError("", "Your account has been suspended due to policy violations.");
-                    return View(model);
-                }
-
-                // Check role-specific constraints for NGOs
-                var roles = user.Roles ?? new List<string>();
-                if (roles.Contains("NGO"))
-                {
-                    var ngoStatus = _accountRepo.GetNGOAccountStatus(user.UserID);
-                    if (ngoStatus != null)
-                    {
-                        if (string.Equals(ngoStatus.ApplicationStatus, "Pending", StringComparison.OrdinalIgnoreCase))
-                        {
-                            ModelState.AddModelError("", "Your NGO application is currently awaiting admin approval.");
-                            return View(model);
-                        }
-
-                        if (string.Equals(ngoStatus.ApplicationStatus, "Rejected", StringComparison.OrdinalIgnoreCase) ||
-                            string.Equals(ngoStatus.ApplicationStatus, "Denied", StringComparison.OrdinalIgnoreCase))
-                        {
-                            string reason = !string.IsNullOrWhiteSpace(ngoStatus.AdminRemarks) ? $" (Reason: {ngoStatus.AdminRemarks})" : "";
-                            ModelState.AddModelError("", "Your NGO application was not approved." + reason);
-                            return View(model);
-                        }
-
-                        if (!user.IsActive || !string.Equals(ngoStatus.NGOStatus, "Active", StringComparison.OrdinalIgnoreCase))
-                        {
-                            ModelState.AddModelError("", "Your NGO account is currently inactive. Please contact the administrator.");
-                            return View(model);
-                        }
-                    }
-                }
-                else
-                {
-                    if (!user.IsActive)
-                    {
-                        ModelState.AddModelError("", "Your account has been deactivated. Please contact support.");
-                        return View(model);
-                    }
-                }
-
-                // Update last login timestamp
-                _accountRepo.UpdateLastLogin(user.UserID);
-
-                // Establish Forms Authentication & Session
-                EstablishUserSession(user, model.RememberMe);
-
-                TempData["SuccessMessage"] = $"Welcome back, {user.FullName}!";
-
-                if (!string.IsNullOrEmpty(model.ReturnUrl) && Url.IsLocalUrl(model.ReturnUrl))
-                {
-                    return Redirect(model.ReturnUrl);
-                }
-
+                var user = _accounts.GetUserByEmail(model.Email);
+                if (user == null || !PasswordSecurity.VerifyPassword(model.Password, user.PasswordHash)) { ModelState.AddModelError("", "Invalid email address or password."); return View(model); }
+                if (!user.IsActive) { ModelState.AddModelError("", "This account is inactive. Please contact the administrator."); return View(model); }
+                if (user.Roles == null || !user.Roles.Any()) { ModelState.AddModelError("", "This account has no assigned role. Please contact the administrator."); return View(model); }
+                if (PasswordSecurity.NeedsRehash(user.PasswordHash)) _accounts.UpdatePasswordHash(user.UserID, PasswordSecurity.HashPassword(model.Password));
+                _accounts.UpdateLastLogin(user.UserID); EstablishUserSession(user, model.RememberMe);
+                if (!string.IsNullOrWhiteSpace(model.ReturnUrl) && Url.IsLocalUrl(model.ReturnUrl)) return Redirect(model.ReturnUrl);
                 return RedirectToAction("Index", "Dashboard");
             }
-            catch (Exception ex)
-            {
-                ModelState.AddModelError("", "An unexpected error occurred during login. Please try again. (" + ex.Message + ")");
-                return View(model);
-            }
+            catch (Exception ex) { Trace.TraceError("Login failed: {0}", ex); ModelState.AddModelError("", "We could not sign you in. Please try again."); return View(model); }
         }
 
-        // ==========================================
-        // ACCESS DENIED
-        // ==========================================
+        [HttpGet, AllowAnonymous]
+        public ActionResult AccessDenied() { return View(); }
 
         [HttpGet]
-        [AllowAnonymous]
-        public ActionResult AccessDenied()
-        {
-            return View();
-        }
+        public ActionResult Logout() { PerformSignOut(); TempData["SuccessMessage"] = "You have been logged out successfully."; return RedirectToAction("Login"); }
 
-        // ==========================================
-        // LOGOUT
-        // ==========================================
-
-        [HttpGet]
-        public ActionResult Logout()
-        {
-            PerformSignOut();
-            return View();
-        }
-
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public ActionResult LogoutPost()
-        {
-            PerformSignOut();
-            TempData["SuccessMessage"] = "You have been logged out successfully.";
-            return RedirectToAction("Login", "Account");
-        }
-
-        // ==========================================
-        // HELPER METHODS
-        // ==========================================
+        [HttpPost, ValidateAntiForgeryToken]
+        public ActionResult LogoutPost() { PerformSignOut(); TempData["SuccessMessage"] = "You have been logged out successfully."; return RedirectToAction("Login"); }
 
         private void EstablishUserSession(UserAccount user, bool rememberMe)
         {
-            // Roles list to comma-delimited string
-            var roles = user.Roles ?? new List<string> { "User" };
-            string primaryRole = roles.FirstOrDefault() ?? "User";
-            string rolesJoined = string.Join(",", roles);
-
-            // UserData packed into ticket: UserID|FullName|Roles
-            string userData = $"{user.UserID}|{user.FullName}|{rolesJoined}";
-
-            DateTime issueDate = DateTime.Now;
-            DateTime expireDate = rememberMe ? issueDate.AddDays(14) : issueDate.AddHours(8);
-
-            var authTicket = new FormsAuthenticationTicket(
-                1,
-                user.Email,
-                issueDate,
-                expireDate,
-                rememberMe,
-                userData,
-                FormsAuthentication.FormsCookiePath
-            );
-
-            string encryptedTicket = FormsAuthentication.Encrypt(authTicket);
-
-            var authCookie = new HttpCookie(FormsAuthentication.FormsCookieName, encryptedTicket)
-            {
-                HttpOnly = true,
-                Secure = FormsAuthentication.RequireSSL,
-                Path = FormsAuthentication.FormsCookiePath
-            };
-
-            if (rememberMe)
-            {
-                authCookie.Expires = expireDate;
-            }
-
-            Response.Cookies.Add(authCookie);
-
-            // Store in Session for convenient access in Razor views
-            Session["UserID"] = user.UserID;
-            Session["UserName"] = user.FullName;
-            Session["UserEmail"] = user.Email;
-            Session["UserRole"] = primaryRole;
-            Session["UserRoles"] = roles;
+            var roles = user.Roles ?? new List<string>();
+            var primary = roles.Any(role =>
+                string.Equals(
+                    role,
+                    "Admin",
+                    StringComparison.OrdinalIgnoreCase))
+                ? "Admin"
+                : "User";
+            var now = DateTime.Now; var expires = rememberMe ? now.AddDays(14) : now.AddHours(8);
+            var userData = "v2|" + user.UserID + "|" + string.Join(",", roles);
+            var ticket = new FormsAuthenticationTicket(2, user.Email, now, expires, rememberMe, userData, FormsAuthentication.FormsCookiePath);
+            var cookie = new HttpCookie(FormsAuthentication.FormsCookieName, FormsAuthentication.Encrypt(ticket)) { HttpOnly = true, Secure = Request.IsSecureConnection, Path = FormsAuthentication.FormsCookiePath, SameSite = SameSiteMode.Lax };
+            if (rememberMe) cookie.Expires = expires; Response.Cookies.Add(cookie);
+            Session["UserID"] = user.UserID; Session["UserName"] = user.FullName; Session["UserEmail"] = user.Email; Session["UserRole"] = primary; Session["UserRoles"] = roles;
         }
 
-        private void PerformSignOut()
-        {
-            FormsAuthentication.SignOut();
-
-            Session.Clear();
-            Session.Abandon();
-
-            // Clear authentication cookie
-            if (Request.Cookies[FormsAuthentication.FormsCookieName] != null)
-            {
-                var cookie = new HttpCookie(FormsAuthentication.FormsCookieName, "")
-                {
-                    Expires = DateTime.Now.AddYears(-1),
-                    HttpOnly = true,
-                    Path = FormsAuthentication.FormsCookiePath
-                };
-                Response.Cookies.Add(cookie);
-            }
-
-            // Clear ASP.NET session cookie
-            if (Request.Cookies["ASP.NET_SessionId"] != null)
-            {
-                var sessionCookie = new HttpCookie("ASP.NET_SessionId", "")
-                {
-                    Expires = DateTime.Now.AddYears(-1),
-                    HttpOnly = true
-                };
-                Response.Cookies.Add(sessionCookie);
-            }
-        }
+        private void PerformSignOut() { FormsAuthentication.SignOut(); Session.Clear(); Session.Abandon(); ExpireCookie(FormsAuthentication.FormsCookieName); ExpireCookie("ASP.NET_SessionId"); }
+        private void ExpireCookie(string name) { Response.Cookies.Add(new HttpCookie(name, string.Empty) { Expires = DateTime.Now.AddYears(-1), HttpOnly = true, Path = "/", SameSite = SameSiteMode.Lax }); }
     }
 }

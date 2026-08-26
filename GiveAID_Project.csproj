@@ -123,6 +123,7 @@
     <Compile Include="App_Start\FilterConfig.cs" />
     <Compile Include="App_Start\RouteConfig.cs" />
     <Compile Include="Controllers\AccountController.cs" />
+    <Compile Include="Controllers\AdminContactController.cs" />
     <Compile Include="Controllers\CausesController.cs" />
     <Compile Include="Controllers\DashboardController.cs" />
     <Compile Include="Controllers\DonationController.cs" />
@@ -135,6 +136,8 @@
     <Compile Include="Models\AuthorizeRolesAttribute.cs" />
     <Compile Include="Models\CausesRepository.cs" />
     <Compile Include="Models\CausesViewModels.cs" />
+    <Compile Include="Models\ContactRepository.cs" />
+    <Compile Include="Models\ContactViewModels.cs" />
     <Compile Include="Models\DashboardRepository.cs" />
     <Compile Include="Models\DashboardViewModels.cs" />
     <Compile Include="Models\DonationViewModels.cs" />
@@ -142,12 +145,19 @@
     <Compile Include="Models\NGORegisterModel.cs" />
     <Compile Include="Models\NgoRepository.cs" />
     <Compile Include="Models\NgoViewModels.cs" />
+    <Compile Include="Models\PartnersRepository.cs" />
+    <Compile Include="Models\PartnersViewModels.cs" />
     <Compile Include="Models\PasswordSecurity.cs" />
+    <Compile Include="Models\Phase1_HomePageModels.cs" />
     <Compile Include="Models\RegisterModel.cs" />
     <Compile Include="Models\UserAccount.cs" />
+    <Compile Include="Models\UserDonationsViewModel.cs" />
+    <Compile Include="Models\UserProfileViewModel.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="Content\AdminDashboard.css" />
+    <Content Include="Content\AdminShellFix.css" />
     <Content Include="Content\bootstrap-grid.css" />
     <Content Include="Content\bootstrap-grid.min.css" />
     <Content Include="Content\bootstrap-grid.rtl.css" />
@@ -164,6 +174,22 @@
     <Content Include="Content\bootstrap.min.css" />
     <Content Include="Content\bootstrap.rtl.css" />
     <Content Include="Content\bootstrap.rtl.min.css" />
+    <Content Include="Content\CauseProgrammeAdmin.css" />
+    <Content Include="Content\DonationFlow.css" />
+    <Content Include="Content\giveaid-about.png" />
+    <Content Include="Content\giveaid-hero.png" />
+    <Content Include="Content\giveaid-ngo-directory.png" />
+    <Content Include="Content\NgoAdminManagement.css" />
+    <Content Include="Content\programme-health.png" />
+    <Content Include="Content\programme-learning.png" />
+    <Content Include="Content\programme-water.png" />
+    <Content Include="Content\UserDashboard.css" />
+    <Content Include="Content\UserDonations.css" />
+    <Content Include="Content\UserProfile.css" />
+    <Content Include="Database\01_CreateDatabase.sql" />
+    <Content Include="Database\02_CreateSchema.sql" />
+    <Content Include="Database\03_SeedData.sql" />
+    <Content Include="Database\05_ContactReplyWorkflow.sql" />
     <Content Include="favicon.ico" />
     <Content Include="Global.asax" />
     <Content Include="Content\Site.css" />
@@ -173,6 +199,7 @@
     <Content Include="Scripts\bootstrap.esm.min.js" />
     <Content Include="Scripts\bootstrap.js" />
     <Content Include="Scripts\bootstrap.min.js" />
+    <Content Include="wwwroot\css\images\giveaid-hero.png" />
     <Content Include="wwwroot\css\site.css" />
     <None Include="Scripts\jquery-3.7.0.intellisense.js" />
     <Content Include="Scripts\jquery-3.7.0.js" />
@@ -205,7 +232,7 @@
     <Content Include="Views\Account\Login.cshtml" />
     <Content Include="Views\Account\Logout.cshtml" />
     <Content Include="Views\Account\AccessDenied.cshtml" />
-    <Content Include="Views\Dashboard\Admin.cshtml" />
+    <Content Include="Views\Dashboard\Admin1.cshtml" />
     <Content Include="Views\Dashboard\NGO.cshtml" />
     <Content Include="Views\Dashboard\User.cshtml" />
     <Content Include="Views\Donation\Create.cshtml" />
@@ -214,6 +241,26 @@
     <Content Include="Views\NGO\Details.cshtml" />
     <Content Include="Views\Causes\Index.cshtml" />
     <Content Include="Views\Causes\Details.cshtml" />
+    <Content Include="Views\Dashboard\Users.cshtml" />
+    <Content Include="Views\Shared\_UserDashboardSidebar.cshtml" />
+    <Content Include="Views\Dashboard\Profile.cshtml" />
+    <Content Include="Views\Dashboard\Donations.cshtml" />
+    <Content Include="Views\Dashboard\DonationDetails.cshtml" />
+    <Content Include="Views\Dashboard\Interests.cshtml" />
+    <Content Include="Views\Dashboard\AdminDonations.cshtml" />
+    <Content Include="Views\Dashboard\Admin.cshtml" />
+    <Content Include="Views\Shared\_AdminSidebar.cshtml" />
+    <Content Include="Views\Shared\_AdminLayout.cshtml" />
+    <Content Include="Views\NGO\AdminIndex.cshtml" />
+    <Content Include="Views\NGO\AdminForm.cshtml" />
+    <Content Include="Views\Causes\AdminCauses.cshtml" />
+    <Content Include="Views\Causes\CauseForm.cshtml" />
+    <Content Include="Views\Causes\AdminProgrammes.cshtml" />
+    <Content Include="Views\Causes\ProgrammeForm.cshtml" />
+    <Content Include="Views\AdminContact\Index.cshtml" />
+    <Content Include="Views\AdminContact\Details.cshtml" />
+    <Content Include="Views\Dashboard\Messages.cshtml" />
+    <Content Include="Views\Dashboard\MessageDetails.cshtml" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="App_Data\" />

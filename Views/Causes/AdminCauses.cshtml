@@ -1,0 +1,283 @@
+@model GiveAID_Project.Models.AdminCauseListViewModel
+@using System
+@using System.Collections.Generic
+@using System.Linq
+
+@{
+    ViewBag.Title = "Cause Management | GiveAID";
+    ViewBag.AdminPageTitle = "Cause management";
+    ViewBag.AdminPageSubtitle = "Create, organise and publish platform causes";
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+
+    var causes = Model.Causes ?? new List<GiveAID_Project.Models.AdminCauseListItemViewModel>();
+    var selectedStatus = string.IsNullOrWhiteSpace(Model.SelectedStatus) ? "all" : Model.SelectedStatus;
+    var selectedFeature = string.IsNullOrWhiteSpace(Model.SelectedFeature) ? "all" : Model.SelectedFeature;
+}
+
+@section Styles {
+    <link href="@Url.Content("~/Content/CauseProgrammeAdmin.css?v=20260826-1")"
+          rel="stylesheet" />
+}
+
+<main class="admin-page cause-admin-page">
+    <header class="admin-hero cause-admin-hero">
+        <div class="admin-hero-copy">
+            <span class="admin-eyebrow">Content administration</span>
+            <h1>Cause management</h1>
+            <p>
+                Maintain the social causes shown across GiveAID and review the
+                programmes connected to each cause.
+            </p>
+        </div>
+
+        <div class="admin-hero-actions">
+            <a class="admin-button admin-button-secondary"
+               href="@Url.Action("AdminProgrammes", "Causes")">
+                Manage programmes
+            </a>
+
+            <a class="admin-button admin-button-primary"
+               href="@Url.Action("CreateCause", "Causes")">
+                <span aria-hidden="true">+</span>
+                Create cause
+            </a>
+        </div>
+    </header>
+
+    <section class="admin-stat-grid" aria-label="Cause statistics">
+        <article class="admin-stat-card stat-green">
+            <span class="admin-stat-code">ALL</span>
+            <strong>@Model.TotalCauses</strong>
+            <small>Total causes</small>
+        </article>
+
+        <article class="admin-stat-card stat-teal">
+            <span class="admin-stat-code">ON</span>
+            <strong>@Model.ActiveCauses</strong>
+            <small>Active causes</small>
+        </article>
+
+        <article class="admin-stat-card stat-coral">
+            <span class="admin-stat-code">OFF</span>
+            <strong>@Model.InactiveCauses</strong>
+            <small>Inactive causes</small>
+        </article>
+
+        <article class="admin-stat-card stat-purple">
+            <span class="admin-stat-code">FT</span>
+            <strong>@Model.FeaturedCauses</strong>
+            <small>Featured causes</small>
+        </article>
+
+        <article class="admin-stat-card stat-blue">
+            <span class="admin-stat-code">PR</span>
+            <strong>@Model.TotalProgrammes</strong>
+            <small>Connected programmes</small>
+        </article>
+    </section>
+
+    <section class="admin-filter-panel" aria-label="Cause filters">
+        @using (Html.BeginForm("AdminCauses", "Causes", FormMethod.Get, new { @class = "admin-filter-form" }))
+        {
+            <div class="admin-filter-field admin-filter-search">
+                <label for="causeSearch">Search records</label>
+                <input id="causeSearch"
+                       type="search"
+                       name="search"
+                       value="@Model.SearchQuery"
+                       placeholder="Cause name, slug or description"
+                       autocomplete="off" />
+            </div>
+
+            <div class="admin-filter-field">
+                <label for="causeStatus">Visibility</label>
+                <select id="causeStatus" name="status">
+                    <option value="all" @(selectedStatus == "all" ? "selected" : "")>All statuses</option>
+                    <option value="active" @(selectedStatus == "active" ? "selected" : "")>Active</option>
+                    <option value="inactive" @(selectedStatus == "inactive" ? "selected" : "")>Inactive</option>
+                </select>
+            </div>
+
+            <div class="admin-filter-field">
+                <label for="causeFeature">Placement</label>
+                <select id="causeFeature" name="feature">
+                    <option value="all" @(selectedFeature == "all" ? "selected" : "")>All causes</option>
+                    <option value="featured" @(selectedFeature == "featured" ? "selected" : "")>Featured</option>
+                    <option value="standard" @(selectedFeature == "standard" ? "selected" : "")>Standard</option>
+                </select>
+            </div>
+
+            <div class="admin-filter-actions">
+                <button class="admin-button admin-button-primary" type="submit">
+                    Apply filters
+                </button>
+
+                <a class="admin-button admin-button-ghost"
+                   href="@Url.Action("AdminCauses", "Causes")">
+                    Reset
+                </a>
+            </div>
+        }
+    </section>
+
+    <section class="admin-record-panel">
+        <header class="admin-record-header">
+            <div>
+                <span class="admin-eyebrow">Database records</span>
+                <h2>Platform causes</h2>
+                <p>
+                    Active records are visible publicly. Deactivation hides a cause
+                    without deleting its existing programme relationships.
+                </p>
+            </div>
+
+            <span class="admin-count-pill">@causes.Count record(s)</span>
+        </header>
+
+        @if (causes.Any())
+        {
+            <div class="admin-table-wrap">
+                <table class="admin-data-table cause-data-table">
+                    <thead>
+                        <tr>
+                            <th>Cause</th>
+                            <th>Programmes</th>
+                            <th>NGOs</th>
+                            <th>Financial overview</th>
+                            <th>Order</th>
+                            <th>Status</th>
+                            <th class="admin-action-column">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var cause in causes)
+                        {
+                            var statusClass = cause.IsActive
+                                ? "admin-status active"
+                                : "admin-status inactive";
+
+                            <tr>
+                                <td>
+                                    <div class="cause-identity">
+                                        <span class="cause-monogram" aria-hidden="true">
+                                            @(string.IsNullOrWhiteSpace(cause.Icon) ? "CS" : cause.Icon.Substring(0, Math.Min(2, cause.Icon.Length)).ToUpperInvariant())
+                                        </span>
+
+                                        <div>
+                                            <strong>@cause.CauseName</strong>
+                                            <span class="admin-secondary-text">/@cause.Slug</span>
+                                            @if (!string.IsNullOrWhiteSpace(cause.ShortDescription))
+                                            {
+                                                <small>@cause.ShortDescription</small>
+                                            }
+                                        </div>
+                                    </div>
+                                </td>
+
+                                <td>
+                                    <strong>@cause.ActiveProgrammes active</strong>
+                                    <span class="admin-secondary-text">
+                                        @cause.TotalProgrammes total
+                                    </span>
+                                </td>
+
+                                <td>
+                                    <strong>@cause.AssociatedNGOs</strong>
+                                    <span class="admin-secondary-text">associated organisations</span>
+                                </td>
+
+                                <td>
+                                    <strong>PKR @cause.CompletedFunds.ToString("N0")</strong>
+                                    <span class="admin-secondary-text">
+                                        Target PKR @cause.TargetAmount.ToString("N0")
+                                    </span>
+                                </td>
+
+                                <td>
+                                    <span class="order-badge">@cause.DisplayOrder</span>
+                                </td>
+
+                                <td>
+                                    <span class="@statusClass">
+                                        @(cause.IsActive ? "Active" : "Inactive")
+                                    </span>
+
+                                    @if (cause.IsFeatured)
+                                    {
+                                        <span class="admin-featured-pill">Featured</span>
+                                    }
+                                </td>
+
+                                <td class="admin-action-column">
+                                    <div class="admin-row-actions">
+                                        <a class="admin-small-button primary"
+                                           href="@Url.Action("EditCause", "Causes", new { id = cause.CauseID })">
+                                            Edit
+                                        </a>
+
+                                        <a class="admin-small-button"
+                                           href="@Url.Action("AdminProgrammes", "Causes", new { causeId = cause.CauseID })">
+                                            Programmes
+                                        </a>
+
+                                        @using (Html.BeginForm("SetCauseStatus", "Causes", FormMethod.Post, new { @class = "inline-admin-form" }))
+                                        {
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="causeId" value="@cause.CauseID" />
+                                            <input type="hidden" name="makeActive" value="@(!cause.IsActive)" />
+                                            <input type="hidden" name="search" value="@Model.SearchQuery" />
+                                            <input type="hidden" name="status" value="@selectedStatus" />
+                                            <input type="hidden" name="feature" value="@selectedFeature" />
+
+                                            <button type="submit"
+                                                    class="admin-small-button @(cause.IsActive ? "danger" : "success")"
+                                                    data-confirm="@(cause.IsActive ? "Deactivate this cause? It will no longer appear on public cause pages." : "Activate this cause and make it publicly visible?")">
+                                                @(cause.IsActive ? "Deactivate" : "Activate")
+                                            </button>
+                                        }
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+        else
+        {
+            <div class="admin-empty-state">
+                <span class="admin-empty-mark" aria-hidden="true">CS</span>
+                <h3>No cause records matched these filters</h3>
+                <p>Reset the filters or create a new cause record.</p>
+                <div class="admin-empty-actions">
+                    <a class="admin-button admin-button-ghost"
+                       href="@Url.Action("AdminCauses", "Causes")">
+                        Clear filters
+                    </a>
+                    <a class="admin-button admin-button-primary"
+                       href="@Url.Action("CreateCause", "Causes")">
+                        Create cause
+                    </a>
+                </div>
+            </div>
+        }
+    </section>
+</main>
+
+@section Scripts {
+    <script>
+        (function () {
+            var buttons = document.querySelectorAll('[data-confirm]');
+
+            for (var i = 0; i < buttons.length; i++) {
+                buttons[i].addEventListener('click', function (event) {
+                    var message = this.getAttribute('data-confirm');
+
+                    if (message && !window.confirm(message)) {
+                        event.preventDefault();
+                    }
+                });
+            }
+        }());
+    </script>
+}

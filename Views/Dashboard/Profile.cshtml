@@ -1,0 +1,180 @@
+@model GiveAID_Project.Models.UserProfileViewModel
+
+@{
+    ViewBag.Title = "My Profile | GiveAID";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+@section Styles {
+    <link href="@Url.Content("~/Content/UserDashboard.css")" rel="stylesheet" />
+    <link href="@Url.Content("~/Content/UserProfile.css?v=20260824")" rel="stylesheet" />
+}
+
+<main class="user-workspace">
+    <div class="user-shell">
+        @Html.Partial("_UserDashboardSidebar")
+
+        <section class="user-main">
+            <header class="profile-heading">
+                <span class="eyebrow">Account settings</span>
+                <h1>Personal profile</h1>
+                <p>Keep your contact and personal information accurate and up to date.</p>
+            </header>
+
+            <div class="profile-grid">
+                <section class="panel profile-form">
+                    <div class="panel-head">
+                        <div>
+                            <h2>Edit profile information</h2>
+                            <p>Your changes will be saved directly to your GiveAID account.</p>
+                        </div>
+                    </div>
+
+                    <div class="profile-form-body">
+                        @using (Html.BeginForm("Profile", "Dashboard", FormMethod.Post, new { autocomplete = "on" }))
+                        {
+                            @Html.AntiForgeryToken()
+                            @Html.HiddenFor(model => model.UserID)
+
+                            @Html.ValidationSummary(true, "Please correct the following information:", new { @class = "validation-box" })
+
+                            <div class="form-grid">
+                                <div class="form-field full">
+                                    @Html.LabelFor(model => model.FullName)
+                                    @Html.TextBoxFor(model => model.FullName, new
+                                    {
+                                        @class = "profile-input",
+                                        placeholder = "Enter your full name",
+                                        maxlength = "150"
+                                    })
+                                    @Html.ValidationMessageFor(model => model.FullName, "", new { @class = "field-error" })
+                                </div>
+
+                                <div class="form-field full">
+                                    @Html.LabelFor(model => model.Email)
+                                    @Html.TextBoxFor(model => model.Email, new
+                                    {
+                                        @class = "profile-input",
+                                        @readonly = "readonly"
+                                    })
+                                    <span class="field-note">Email is your login identity and cannot be changed from this page.</span>
+                                    @Html.ValidationMessageFor(model => model.Email, "", new { @class = "field-error" })
+                                </div>
+
+                                <div class="form-field">
+                                    @Html.LabelFor(model => model.Phone)
+                                    @Html.TextBoxFor(model => model.Phone, new
+                                    {
+                                        @class = "profile-input",
+                                        placeholder = "+92 300 0000000",
+                                        maxlength = "30"
+                                    })
+                                    @Html.ValidationMessageFor(model => model.Phone, "", new { @class = "field-error" })
+                                </div>
+
+                                <div class="form-field">
+                                    @Html.LabelFor(model => model.Gender)
+                                    @Html.DropDownListFor(
+                                                       model => model.Gender,
+                                                       new SelectList(
+                                                           new[]
+                                                           {
+                                                "Male",
+                                                "Female",
+                                                "Other",
+                                                "Prefer not to say"
+},
+                                                           Model.Gender),
+                                                       "Select gender",
+                                                       new { @class = "profile-input" })
+                                    @Html.ValidationMessageFor(model => model.Gender, "", new { @class = "field-error" })
+                                </div>
+
+                                <div class="form-field">
+                                    @Html.LabelFor(model => model.Profession)
+                                    @Html.TextBoxFor(model => model.Profession, new
+                                    {
+                                        @class = "profile-input",
+                                        placeholder = "Student, teacher, developer...",
+                                        maxlength = "120"
+                                    })
+                                    @Html.ValidationMessageFor(model => model.Profession, "", new { @class = "field-error" })
+                                </div>
+
+                                <div class="form-field">
+                                    @Html.LabelFor(model => model.City)
+                                    @Html.TextBoxFor(model => model.City, new
+                                    {
+                                        @class = "profile-input",
+                                        placeholder = "Your city",
+                                        maxlength = "100"
+                                    })
+                                    @Html.ValidationMessageFor(model => model.City, "", new { @class = "field-error" })
+                                </div>
+
+                                <div class="form-field full">
+                                    @Html.LabelFor(model => model.Address)
+                                    @Html.TextAreaFor(model => model.Address, new
+                                    {
+                                        @class = "profile-input",
+                                        placeholder = "Enter your street or postal address",
+                                        maxlength = "500",
+                                        rows = "4"
+                                    })
+                                    @Html.ValidationMessageFor(model => model.Address, "", new { @class = "field-error" })
+                                </div>
+
+                                <div class="form-field full">
+                                    @Html.LabelFor(model => model.Country)
+                                    @Html.TextBoxFor(model => model.Country, new
+                                    {
+                                        @class = "profile-input",
+                                        placeholder = "Pakistan",
+                                        maxlength = "100"
+                                    })
+                                    @Html.ValidationMessageFor(model => model.Country, "", new { @class = "field-error" })
+                                </div>
+                            </div>
+
+                            <div class="form-actions">
+                                <a class="profile-cancel" href="@Url.Action("UserDashboard", "Dashboard")">Back to dashboard</a>
+                                <button class="profile-save" type="submit">Save profile changes</button>
+                            </div>
+                        }
+                    </div>
+                </section>
+
+                <aside class="profile-summary">
+                    <div class="profile-avatar-large">@Model.Initial</div>
+                    <h2>@Model.FullName</h2>
+                    <p>@Model.Email</p>
+
+                    <div class="profile-meta">
+                        <div>
+                            <span>Account role</span>
+                            <strong>Registered user</strong>
+                        </div>
+
+                        <div>
+                            <span>Member since</span>
+                            <strong>@Model.MemberSince.ToString("dd MMM yyyy")</strong>
+                        </div>
+
+                        <div>
+                            <span>Last login</span>
+                            <strong>
+                                @(Model.LastLoginAt.HasValue
+                                    ? Model.LastLoginAt.Value.ToString("dd MMM yyyy, hh:mm tt")
+                                    : "Not recorded yet")
+                            </strong>
+                        </div>
+                    </div>
+                </aside>
+            </div>
+        </section>
+    </div>
+</main>
+
+@section Scripts {
+    @Scripts.Render("~/bundles/jqueryval")
+}

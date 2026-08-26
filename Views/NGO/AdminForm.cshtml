@@ -1,0 +1,378 @@
+@model GiveAID_Project.Models.NgoAdminFormViewModel
+@using System
+
+@{
+    var isEdit = Model != null && Model.IsEditMode;
+    var actionName = isEdit ? "AdminEdit" : "AdminCreate";
+    var pageTitle = isEdit ? "Edit NGO" : "Add NGO";
+
+    ViewBag.Title = pageTitle + " | GiveAID Administration";
+    ViewBag.AdminPageTitle = pageTitle;
+    ViewBag.AdminPageSubtitle = isEdit
+        ? "Update organisation information and public visibility"
+        : "Create a new associated organisation record";
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+
+    var previewInitial = !string.IsNullOrWhiteSpace(Model.NGOName)
+        ? Model.NGOName.Substring(0, 1).ToUpperInvariant()
+        : "N";
+}
+
+@section Styles {
+    <link href="@Url.Content("~/Content/NgoAdminManagement.css?v=20260826-1")"
+          rel="stylesheet" />
+}
+
+<main class="ngo-admin-page ngo-form-page">
+    <nav class="ngo-breadcrumb" aria-label="Breadcrumb">
+        <a href="@Url.Action("Admin", "Dashboard")">Overview</a>
+        <span>/</span>
+        <a href="@Url.Action("AdminIndex", "NGO")">NGO management</a>
+        <span>/</span>
+        <strong>@pageTitle</strong>
+    </nav>
+
+    <header class="ngo-admin-hero ngo-form-hero">
+        <div>
+            <span class="ngo-admin-eyebrow">
+                @(isEdit ? "Organisation maintenance" : "New organisation")
+            </span>
+            <h1>@(isEdit ? "Update NGO record" : "Add an associated NGO")</h1>
+            <p>
+                @(isEdit
+                    ? "Keep public information, contact details and visibility accurate."
+                    : "Enter verified organisation information before making the record publicly available.")
+            </p>
+        </div>
+
+        <a class="ngo-secondary-button" href="@Url.Action("AdminIndex", "NGO")">
+            Back to NGO records
+        </a>
+    </header>
+
+    @using (Html.BeginForm(actionName, "NGO", FormMethod.Post, new
+    {
+        @class = "ngo-editor-form",
+        autocomplete = "off"
+    }))
+    {
+        @Html.AntiForgeryToken()
+        @Html.HiddenFor(model => model.NGOID)
+
+        if (!ViewData.ModelState.IsValid)
+        {
+            <section class="ngo-validation-summary" role="alert">
+                <strong>Please correct the highlighted information.</strong>
+                @Html.ValidationSummary(false, "", new { @class = "ngo-validation-list" })
+            </section>
+        }
+
+        <div class="ngo-editor-layout">
+            <div class="ngo-editor-fields">
+                <section class="ngo-form-card">
+                    <header class="ngo-form-card-head">
+                        <span class="ngo-form-step">01</span>
+                        <div>
+                            <h2>Organisation identity</h2>
+                            <p>Core information used throughout the platform.</p>
+                        </div>
+                    </header>
+
+                    <div class="ngo-form-grid">
+                        <div class="ngo-field ngo-field-wide">
+                            @Html.LabelFor(model => model.NGOName)
+                            @Html.TextBoxFor(model => model.NGOName, new
+                            {
+                                @class = "ngo-input",
+                                placeholder = "e.g. Community Health Alliance",
+                                maxlength = "200",
+                                id = "NGOName"
+                            })
+                            @Html.ValidationMessageFor(model => model.NGOName, "", new { @class = "ngo-field-error" })
+                        </div>
+
+                        <div class="ngo-field">
+                            @Html.LabelFor(model => model.RegistrationNumber)
+                            @Html.TextBoxFor(model => model.RegistrationNumber, new
+                            {
+                                @class = "ngo-input",
+                                placeholder = "e.g. SECP-NGO-001",
+                                maxlength = "100"
+                            })
+                            @Html.ValidationMessageFor(model => model.RegistrationNumber, "", new { @class = "ngo-field-error" })
+                        </div>
+
+                        <div class="ngo-field">
+                            @Html.LabelFor(model => model.Category)
+                            @Html.TextBoxFor(model => model.Category, new
+                            {
+                                @class = "ngo-input",
+                                placeholder = "Education, Healthcare, Welfare...",
+                                maxlength = "120",
+                                list = "ngoCategorySuggestions"
+                            })
+                            <datalist id="ngoCategorySuggestions">
+                                <option value="Education"></option>
+                                <option value="Healthcare"></option>
+                                <option value="Community Welfare"></option>
+                                <option value="Emergency Relief"></option>
+                                <option value="Clean Water"></option>
+                                <option value="Women Empowerment"></option>
+                                <option value="Children"></option>
+                            </datalist>
+                            @Html.ValidationMessageFor(model => model.Category, "", new { @class = "ngo-field-error" })
+                        </div>
+
+                        <div class="ngo-field ngo-field-wide">
+                            @Html.LabelFor(model => model.Description)
+                            @Html.TextAreaFor(model => model.Description, 6, 1, new
+                            {
+                                @class = "ngo-input ngo-textarea",
+                                placeholder = "Describe the organisation's purpose, work and community impact...",
+                                maxlength = "2000",
+                                id = "Description"
+                            })
+                            <div class="ngo-field-meta">
+                                <span>Minimum 20 characters</span>
+                                <span id="descriptionCount">0 / 2000</span>
+                            </div>
+                            @Html.ValidationMessageFor(model => model.Description, "", new { @class = "ngo-field-error" })
+                        </div>
+                    </div>
+                </section>
+
+                <section class="ngo-form-card">
+                    <header class="ngo-form-card-head">
+                        <span class="ngo-form-step">02</span>
+                        <div>
+                            <h2>Location and contact</h2>
+                            <p>Details displayed in the public NGO directory.</p>
+                        </div>
+                    </header>
+
+                    <div class="ngo-form-grid">
+                        <div class="ngo-field">
+                            @Html.LabelFor(model => model.City)
+                            @Html.TextBoxFor(model => model.City, new
+                            {
+                                @class = "ngo-input",
+                                placeholder = "City",
+                                maxlength = "100"
+                            })
+                            @Html.ValidationMessageFor(model => model.City, "", new { @class = "ngo-field-error" })
+                        </div>
+
+                        <div class="ngo-field">
+                            @Html.LabelFor(model => model.Country)
+                            @Html.TextBoxFor(model => model.Country, new
+                            {
+                                @class = "ngo-input",
+                                placeholder = "Pakistan",
+                                maxlength = "100"
+                            })
+                            @Html.ValidationMessageFor(model => model.Country, "", new { @class = "ngo-field-error" })
+                        </div>
+
+                        <div class="ngo-field ngo-field-wide">
+                            @Html.LabelFor(model => model.Address)
+                            @Html.TextAreaFor(model => model.Address, 3, 1, new
+                            {
+                                @class = "ngo-input ngo-textarea ngo-address",
+                                placeholder = "Office or registered address",
+                                maxlength = "500"
+                            })
+                            @Html.ValidationMessageFor(model => model.Address, "", new { @class = "ngo-field-error" })
+                        </div>
+
+                        <div class="ngo-field">
+                            @Html.LabelFor(model => model.Email)
+                            @Html.TextBoxFor(model => model.Email, new
+                            {
+                                @class = "ngo-input",
+                                type = "email",
+                                placeholder = "contact@organisation.org",
+                                maxlength = "200"
+                            })
+                            @Html.ValidationMessageFor(model => model.Email, "", new { @class = "ngo-field-error" })
+                        </div>
+
+                        <div class="ngo-field">
+                            @Html.LabelFor(model => model.Phone)
+                            @Html.TextBoxFor(model => model.Phone, new
+                            {
+                                @class = "ngo-input",
+                                type = "tel",
+                                placeholder = "+92 300 0000000",
+                                maxlength = "50"
+                            })
+                            @Html.ValidationMessageFor(model => model.Phone, "", new { @class = "ngo-field-error" })
+                        </div>
+
+                        <div class="ngo-field ngo-field-wide">
+                            @Html.LabelFor(model => model.ContactPerson)
+                            @Html.TextBoxFor(model => model.ContactPerson, new
+                            {
+                                @class = "ngo-input",
+                                placeholder = "Primary representative or focal person",
+                                maxlength = "150"
+                            })
+                            @Html.ValidationMessageFor(model => model.ContactPerson, "", new { @class = "ngo-field-error" })
+                        </div>
+                    </div>
+                </section>
+
+                <section class="ngo-form-card">
+                    <header class="ngo-form-card-head">
+                        <span class="ngo-form-step">03</span>
+                        <div>
+                            <h2>Digital presence</h2>
+                            <p>Optional links for the public organisation profile.</p>
+                        </div>
+                    </header>
+
+                    <div class="ngo-form-grid">
+                        <div class="ngo-field">
+                            @Html.LabelFor(model => model.WebsiteURL)
+                            @Html.TextBoxFor(model => model.WebsiteURL, new
+                            {
+                                @class = "ngo-input",
+                                type = "url",
+                                placeholder = "https://organisation.org",
+                                maxlength = "500"
+                            })
+                            @Html.ValidationMessageFor(model => model.WebsiteURL, "", new { @class = "ngo-field-error" })
+                        </div>
+
+                        <div class="ngo-field">
+                            @Html.LabelFor(model => model.LogoURL)
+                            @Html.TextBoxFor(model => model.LogoURL, new
+                            {
+                                @class = "ngo-input",
+                                type = "url",
+                                placeholder = "https://example.com/logo.png",
+                                maxlength = "500"
+                            })
+                            @Html.ValidationMessageFor(model => model.LogoURL, "", new { @class = "ngo-field-error" })
+                        </div>
+                    </div>
+                </section>
+            </div>
+
+            <aside class="ngo-editor-aside">
+                <section class="ngo-preview-card">
+                    <span class="ngo-preview-label">Record preview</span>
+                    <div class="ngo-preview-avatar" id="ngoPreviewInitial">@previewInitial</div>
+                    <h2 id="ngoPreviewName">
+                        @(string.IsNullOrWhiteSpace(Model.NGOName) ? "New NGO record" : Model.NGOName)
+                    </h2>
+                    <p id="ngoPreviewCategory">
+                        @(string.IsNullOrWhiteSpace(Model.Category) ? "Organisation category" : Model.Category)
+                    </p>
+                    <div class="ngo-preview-status">
+                        <span class="ngo-live-dot"></span>
+                        <span id="ngoPreviewStatus">@(Model.IsActive ? "Active and public" : "Inactive and hidden")</span>
+                    </div>
+                </section>
+
+                <section class="ngo-visibility-card">
+                    <div class="ngo-toggle-copy">
+                        <strong>Public visibility</strong>
+                        <span>
+                            Active NGOs appear in the public directory and donation workflow.
+                        </span>
+                    </div>
+
+                    <label class="ngo-toggle" for="IsActive">
+                        @Html.CheckBoxFor(model => model.IsActive, new { id = "IsActive" })
+                        <span class="ngo-toggle-track" aria-hidden="true">
+                            <span class="ngo-toggle-thumb"></span>
+                        </span>
+                        <span class="ngo-toggle-text">Active</span>
+                    </label>
+                </section>
+
+                <section class="ngo-form-guidance">
+                    <strong>Before saving</strong>
+                    <ul>
+                        <li>Confirm the registration number is unique.</li>
+                        <li>Use an official organisation email address.</li>
+                        <li>Only publish information suitable for public viewing.</li>
+                    </ul>
+                </section>
+
+                <div class="ngo-form-actions">
+                    <button type="submit" class="ngo-primary-button ngo-save-button">
+                        @(isEdit ? "Save NGO changes" : "Create NGO record")
+                    </button>
+
+                    <a class="ngo-secondary-button" href="@Url.Action("AdminIndex", "NGO")">
+                        Cancel
+                    </a>
+
+                    @if (isEdit)
+                    {
+                        <a class="ngo-text-button"
+                           href="@Url.Action("Details", "NGO", new { id = Model.NGOID })">
+                            View public profile
+                        </a>
+                    }
+                </div>
+            </aside>
+        </div>
+    }
+</main>
+
+@section Scripts {
+    <script>
+        (function () {
+            var nameInput = document.getElementById('NGOName');
+            var categoryInput = document.getElementById('Category');
+            var descriptionInput = document.getElementById('Description');
+            var activeInput = document.getElementById('IsActive');
+            var previewName = document.getElementById('ngoPreviewName');
+            var previewInitial = document.getElementById('ngoPreviewInitial');
+            var previewCategory = document.getElementById('ngoPreviewCategory');
+            var previewStatus = document.getElementById('ngoPreviewStatus');
+            var descriptionCount = document.getElementById('descriptionCount');
+
+            function updatePreview() {
+                var name = nameInput && nameInput.value.trim()
+                    ? nameInput.value.trim()
+                    : 'New NGO record';
+
+                var category = categoryInput && categoryInput.value.trim()
+                    ? categoryInput.value.trim()
+                    : 'Organisation category';
+
+                previewName.textContent = name;
+                previewInitial.textContent = name.charAt(0).toUpperCase();
+                previewCategory.textContent = category;
+                previewStatus.textContent = activeInput && activeInput.checked
+                    ? 'Active and public'
+                    : 'Inactive and hidden';
+
+                if (descriptionInput) {
+                    descriptionCount.textContent = descriptionInput.value.length + ' / 2000';
+                }
+            }
+
+            if (nameInput) {
+                nameInput.addEventListener('input', updatePreview);
+            }
+
+            if (categoryInput) {
+                categoryInput.addEventListener('input', updatePreview);
+            }
+
+            if (descriptionInput) {
+                descriptionInput.addEventListener('input', updatePreview);
+            }
+
+            if (activeInput) {
+                activeInput.addEventListener('change', updatePreview);
+            }
+
+            updatePreview();
+        })();
+    </script>
+}

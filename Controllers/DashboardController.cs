@@ -1,7 +1,8 @@
+
+using GiveAID_Project.Models;
 using System;
 using System.Linq;
 using System.Web.Mvc;
-using GiveAID_Project.Models;
 
 namespace GiveAID_Project.Controllers
 {
@@ -10,68 +11,126 @@ namespace GiveAID_Project.Controllers
     {
         private readonly DashboardRepository _dashboardRepo;
         private readonly AccountRepository _accountRepo;
+        private readonly ContactRepository _contactRepo;
 
         public DashboardController()
         {
             _dashboardRepo = new DashboardRepository();
             _accountRepo = new AccountRepository();
+            _contactRepo = new ContactRepository();
         }
 
         public DashboardController(DashboardRepository dashboardRepo, AccountRepository accountRepo)
         {
             _dashboardRepo = dashboardRepo;
             _accountRepo = accountRepo;
+            _contactRepo = new ContactRepository();
         }
 
-        // ==========================================
-        // ROUTING HUB: Role-based redirect
-        // ==========================================
+        public DashboardController(
+            DashboardRepository dashboardRepo,
+            AccountRepository accountRepo,
+            ContactRepository contactRepo)
+        {
+            if (dashboardRepo == null)
+            {
+                throw new ArgumentNullException("dashboardRepo");
+            }
+
+            if (accountRepo == null)
+            {
+                throw new ArgumentNullException("accountRepo");
+            }
+
+            if (contactRepo == null)
+            {
+                throw new ArgumentNullException("contactRepo");
+            }
+
+            _dashboardRepo = dashboardRepo;
+            _accountRepo = accountRepo;
+            _contactRepo = contactRepo;
+        }
+
         [HttpGet]
         public ActionResult Index()
         {
-            string role = Session["UserRole"] as string;
+            bool isAdmin =
+                User.IsInRole("Admin") ||
+                string.Equals(
+                    Convert.ToString(Session["UserRole"]),
+                    "Admin",
+                    StringComparison.OrdinalIgnoreCase);
 
-            if (string.IsNullOrEmpty(role))
-            {
-                if (User.IsInRole("Admin"))
-                    role = "Admin";
-                else if (User.IsInRole("NGO"))
-                    role = "NGO";
-                else
-                    role = "User";
+            Session["UserRole"] = isAdmin ? "Admin" : "User";
 
-                Session["UserRole"] = role;
-            }
-
-            if (string.Equals(role, "Admin", StringComparison.OrdinalIgnoreCase))
-            {
-                return RedirectToAction("Admin");
-            }
-            if (string.Equals(role, "NGO", StringComparison.OrdinalIgnoreCase))
-            {
-                int uid = GetCurrentUserId();
-                var ngoStatus = _accountRepo.GetNGOAccountStatus(uid);
-                if (ngoStatus != null && (!string.Equals(ngoStatus.ApplicationStatus, "Approved", StringComparison.OrdinalIgnoreCase) || !ngoStatus.UserIsActive))
-                {
-                    TempData["ErrorMessage"] = "Your NGO account is currently awaiting approval or is inactive.";
-                    return RedirectToAction("AccessDenied", "Account");
-                }
-
-                return RedirectToAction("NGO");
-            }
-
-            return RedirectToAction("UserDashboard");
+            return isAdmin
+                ? RedirectToAction("Admin")
+                : RedirectToAction("UserDashboard");
         }
 
-        // ==========================================
-        // 1. ADMIN DASHBOARD & APPROVAL ACTIONS
-        // ==========================================
+        [HttpGet]
+        [ActionName("User")]
+        [AuthorizeRoles("User", "Admin")]
+        public ActionResult UserAlias()
+        {
+            return RedirectToAction("Index");
+        }
+
         [HttpGet]
         [AuthorizeRoles("Admin")]
         public ActionResult Admin()
         {
             var model = _dashboardRepo.GetAdminDashboardData();
             return View(model);
+        }
+
+        [HttpGet]
+        [AuthorizeRoles("Admin")]
+        public ActionResult AdminDonations(string search = "", string status = "all")
+        {
+            var model = _dashboardRepo.GetAdminDonations(search, status);
+            return View(model);
+        }
+
+        [HttpPost]
+        [AuthorizeRoles("Admin")]
+        [ValidateAntiForgeryToken]
+        public ActionResult ReviewDonation(
+            AdminDonationDecisionViewModel model,
+            string search = "",
+            string status = "all")
+        {
+            int adminId = GetCurrentUserId();
+
+            if (adminId <= 0)
+            {
+                return RedirectToAction("Login", "Account");
+            }
+
+            if (!ModelState.IsValid)
+            {
+                string validationMessage = string.Join(
+                    " ",
+                    ModelState.Values
+                        .SelectMany(value => value.Errors)
+                        .Select(error => string.IsNullOrWhiteSpace(error.ErrorMessage)
+                            ? "Please check the donation review information."
+                            : error.ErrorMessage));
+
+                TempData["ErrorMessage"] = string.IsNullOrWhiteSpace(validationMessage)
+                    ? "Please check the donation review information."
+                    : validationMessage;
+
+                return RedirectToAction("AdminDonations", new { search, status });
+            }
+
+            string message;
+            bool success = _dashboardRepo.ReviewDonation(model, adminId, out message);
+
+            TempData[success ? "SuccessMessage" : "ErrorMessage"] = message;
+
+            return RedirectToAction("AdminDonations", new { search, status });
         }
 
         [HttpPost]
@@ -82,14 +141,9 @@ namespace GiveAID_Project.Controllers
             int adminId = GetCurrentUserId();
             bool success = _dashboardRepo.ApproveDonation(donationId, adminId);
 
-            if (success)
-            {
-                TempData["SuccessMessage"] = $"Donation #{donationId} has been Approved successfully. Funds and status are updated.";
-            }
-            else
-            {
-                TempData["ErrorMessage"] = "Could not approve the donation. Record not found.";
-            }
+            TempData[success ? "SuccessMessage" : "ErrorMessage"] = success
+                ? $"Donation #{donationId} has been approved."
+                : "The donation could not be approved.";
 
             return RedirectToAction("Admin");
         }
@@ -102,117 +156,323 @@ namespace GiveAID_Project.Controllers
             int adminId = GetCurrentUserId();
             bool success = _dashboardRepo.DenyDonation(donationId, adminId, remarks);
 
-            if (success)
-            {
-                TempData["SuccessMessage"] = $"Donation #{donationId} has been Denied and preserved in history.";
-            }
-            else
-            {
-                TempData["ErrorMessage"] = "Could not deny the donation. Record not found.";
-            }
+            TempData[success ? "SuccessMessage" : "ErrorMessage"] = success
+                ? $"Donation #{donationId} has been denied."
+                : "The donation could not be denied.";
 
             return RedirectToAction("Admin");
         }
 
-        [HttpPost]
-        [AuthorizeRoles("Admin")]
-        [ValidateAntiForgeryToken]
-        public ActionResult ApproveNGO(int applicationId)
-        {
-            int adminId = GetCurrentUserId();
-            bool success = _dashboardRepo.ApproveNgoApplication(applicationId, adminId);
-
-            if (success)
-            {
-                TempData["SuccessMessage"] = "NGO Application approved successfully! The NGO account is now Active.";
-            }
-            else
-            {
-                TempData["ErrorMessage"] = "Could not approve the application. Please try again.";
-            }
-
-            return RedirectToAction("Admin");
-        }
-
-        [HttpPost]
-        [AuthorizeRoles("Admin")]
-        [ValidateAntiForgeryToken]
-        public ActionResult DenyNGO(int applicationId, string remarks)
-        {
-            int adminId = GetCurrentUserId();
-            bool success = _dashboardRepo.DenyNgoApplication(applicationId, adminId, remarks);
-
-            if (success)
-            {
-                TempData["SuccessMessage"] = "NGO Application has been denied.";
-            }
-            else
-            {
-                TempData["ErrorMessage"] = "Could not deny the application. Please try again.";
-            }
-
-            return RedirectToAction("Admin");
-        }
-
-        [HttpPost]
-        [AuthorizeRoles("Admin")]
-        [ValidateAntiForgeryToken]
-        public ActionResult ToggleNGOActive(int applicationId, bool isActive)
-        {
-            bool success = _dashboardRepo.SetNgoActiveStatus(applicationId, isActive);
-
-            if (success)
-            {
-                TempData["SuccessMessage"] = $"NGO account status has been updated to {(isActive ? "Active" : "Inactive")}.";
-            }
-            else
-            {
-                TempData["ErrorMessage"] = "Could not update the NGO status. Please try again.";
-            }
-
-            return RedirectToAction("Admin");
-        }
-
-        // ==========================================
-        // 2. NGO DASHBOARD
-        // ==========================================
         [HttpGet]
-        [AuthorizeRoles("NGO", "Admin")]
-        public ActionResult NGO()
-        {
-            int userId = GetCurrentUserId();
-
-            // Verify approval & active status if user is an NGO
-            if (!User.IsInRole("Admin"))
-            {
-                var ngoStatus = _accountRepo.GetNGOAccountStatus(userId);
-                if (ngoStatus != null && (!string.Equals(ngoStatus.ApplicationStatus, "Approved", StringComparison.OrdinalIgnoreCase) || !ngoStatus.UserIsActive))
-                {
-                    TempData["ErrorMessage"] = "Your NGO account is currently awaiting approval or is inactive.";
-                    return RedirectToAction("AccessDenied", "Account");
-                }
-            }
-
-            var model = _dashboardRepo.GetNgoDashboardData(userId);
-            return View(model);
-        }
-
-        // ==========================================
-        // 3. USER DASHBOARD
-        // ==========================================
-        [HttpGet]
-        [AuthorizeRoles("User", "Admin", "NGO")]
+        [AuthorizeRoles("User", "Admin")]
         public ActionResult UserDashboard()
         {
+            bool isAdmin =
+                User.IsInRole("Admin") ||
+                string.Equals(
+                    Convert.ToString(Session["UserRole"]),
+                    "Admin",
+                    StringComparison.OrdinalIgnoreCase);
+
+            if (isAdmin)
+            {
+                Session["UserRole"] = "Admin";
+                return RedirectToAction("Admin");
+            }
+
             int userId = GetCurrentUserId();
+
+            if (userId <= 0)
+            {
+                return RedirectToAction("Login", "Account");
+            }
+
             var model = _dashboardRepo.GetUserDashboardData(userId);
             return View("User", model);
         }
 
-        // ==========================================
-        // 4. DONATION DETAILS MODAL (JSON HELPER)
-        // ==========================================
         [HttpGet]
+        [AuthorizeRoles("User", "Admin")]
+        public new ActionResult Profile()
+        {
+            int userId = GetCurrentUserId();
+
+            if (userId <= 0)
+            {
+                return RedirectToAction("Login", "Account");
+            }
+
+            var model = _dashboardRepo.GetUserProfile(userId);
+
+            if (model == null)
+            {
+                TempData["ErrorMessage"] = "Your profile could not be loaded.";
+                return RedirectToAction("UserDashboard");
+            }
+
+            return View(model);
+        }
+
+        [HttpPost]
+        [AuthorizeRoles("User", "Admin")]
+        [ValidateAntiForgeryToken]
+        public new ActionResult Profile(UserProfileViewModel model)
+        {
+            int currentUserId = GetCurrentUserId();
+
+            if (currentUserId <= 0)
+            {
+                return RedirectToAction("Login", "Account");
+            }
+
+            var currentProfile = _dashboardRepo.GetUserProfile(currentUserId);
+
+            if (currentProfile == null)
+            {
+                TempData["ErrorMessage"] = "Your profile could not be loaded.";
+                return RedirectToAction("UserDashboard");
+            }
+
+            // Identity values always come from the authenticated session/database,
+            // never from editable or tampered form values.
+            model.UserID = currentUserId;
+            model.Email = currentProfile.Email;
+            model.MemberSince = currentProfile.MemberSince;
+            model.LastLoginAt = currentProfile.LastLoginAt;
+
+            ModelState.Remove("UserID");
+            ModelState.Remove("Email");
+
+            if (!ModelState.IsValid)
+            {
+                return View(model);
+            }
+
+            bool updated = _dashboardRepo.UpdateUserProfile(model);
+
+            if (!updated)
+            {
+                ModelState.AddModelError("", "Your profile could not be updated. Please try again.");
+                return View(model);
+            }
+
+            Session["UserName"] = model.FullName.Trim();
+            Session["UserEmail"] = currentProfile.Email;
+            TempData["SuccessMessage"] = "Your profile has been updated successfully.";
+
+            return RedirectToAction("Profile");
+        }
+
+        [HttpGet]
+        [AuthorizeRoles("User", "Admin")]
+        public ActionResult Donations(string search = "", string status = "all")
+        {
+            int userId = GetCurrentUserId();
+
+            if (userId <= 0)
+            {
+                return RedirectToAction("Login", "Account");
+            }
+
+            var model = _dashboardRepo.GetUserDonations(userId, search, status);
+            return View(model);
+        }
+
+        [HttpGet]
+        [AuthorizeRoles("User", "Admin")]
+        public ActionResult Interests()
+        {
+            int userId = GetCurrentUserId();
+            if (userId <= 0) return RedirectToAction("Login", "Account");
+            return View(_dashboardRepo.GetUserInterests(userId));
+        }
+
+        [HttpPost]
+        [AuthorizeRoles("User", "Admin")]
+        [ValidateAntiForgeryToken]
+        public ActionResult SaveInterest(int programId, string returnUrl = null)
+        {
+            int userId = GetCurrentUserId();
+            if (userId <= 0) return RedirectToAction("Login", "Account");
+
+            bool saved = _dashboardRepo.SaveProgramInterest(userId, programId);
+            TempData[saved ? "SuccessMessage" : "ErrorMessage"] = saved
+                ? "Programme added to My Interests."
+                : "This programme could not be saved.";
+
+            if (!string.IsNullOrWhiteSpace(returnUrl) && Url.IsLocalUrl(returnUrl))
+                return Redirect(returnUrl);
+            return RedirectToAction("Interests");
+        }
+
+        [HttpPost]
+        [AuthorizeRoles("User", "Admin")]
+        [ValidateAntiForgeryToken]
+        public ActionResult RemoveInterest(int programId)
+        {
+            int userId = GetCurrentUserId();
+            if (userId <= 0) return RedirectToAction("Login", "Account");
+
+            bool removed = _dashboardRepo.RemoveProgramInterest(userId, programId);
+            TempData[removed ? "SuccessMessage" : "ErrorMessage"] = removed
+                ? "Programme removed from My Interests."
+                : "The programme was not present in your interests.";
+            return RedirectToAction("Interests");
+        }
+
+        /* =====================================================
+           USER DASHBOARD - MY CONTACT MESSAGES
+           ===================================================== */
+
+        [HttpGet]
+        [AuthorizeRoles("User", "Admin")]
+        public ActionResult Messages(string search = "", string status = "all")
+        {
+            int userId = GetCurrentUserId();
+
+            if (userId <= 0)
+            {
+                return RedirectToAction("Login", "Account");
+            }
+
+            var model = _contactRepo.GetUserMessages(userId, search, status);
+            return View(model);
+        }
+
+        /* =====================================================
+           USER DASHBOARD - CONTACT MESSAGE DETAILS
+           ===================================================== */
+
+        [HttpGet]
+        [AuthorizeRoles("User", "Admin")]
+        public ActionResult MessageDetails(int? id)
+        {
+            int userId = GetCurrentUserId();
+
+            if (userId <= 0)
+            {
+                return RedirectToAction("Login", "Account");
+            }
+
+            if (!id.HasValue || id.Value <= 0)
+            {
+                TempData["ErrorMessage"] =
+                    "Please select a valid contact message.";
+
+                return RedirectToAction("Messages");
+            }
+
+            // UserID is included in the repository WHERE clause. This prevents
+            // one user from opening another user's message by changing the URL.
+            var model = _contactRepo.GetUserMessageById(id.Value, userId);
+
+            if (model == null)
+            {
+                TempData["ErrorMessage"] =
+                    "The requested message was not found or does not belong to your account.";
+
+                return RedirectToAction("Messages");
+            }
+
+            return View(model);
+        }
+
+        [HttpGet]
+        [AuthorizeRoles("User", "Admin")]
+        public ActionResult DonationDetails(int? id)
+        {
+            int userId = GetCurrentUserId();
+
+            if (userId <= 0)
+            {
+                return RedirectToAction("Login", "Account");
+            }
+
+            if (!id.HasValue || id.Value <= 0)
+            {
+                TempData["ErrorMessage"] =
+                    "Please select a valid donation record.";
+
+                return RedirectToAction("Donations");
+            }
+
+            var donation =
+                _dashboardRepo.GetDonationById(id.Value);
+
+            if (donation == null)
+            {
+                TempData["ErrorMessage"] =
+                    "The requested donation record was not found.";
+
+                return RedirectToAction("Donations");
+            }
+
+            bool isAdmin =
+                string.Equals(
+                    Convert.ToString(Session["UserRole"]),
+                    "Admin",
+                    StringComparison.OrdinalIgnoreCase)
+                || User.IsInRole("Admin");
+
+            if (!isAdmin && donation.UserID != userId)
+            {
+                return RedirectToAction(
+                    "AccessDenied",
+                    "Account"
+                );
+            }
+
+            return View("DonationDetails", donation);
+        }
+
+        [HttpGet]
+        [AuthorizeRoles("Admin")]
+        public ActionResult Users(string search = "", string status = "all")
+        {
+            var model = _dashboardRepo.GetAdminUsers(search, status);
+            return View(model);
+        }
+
+        [HttpPost]
+        [AuthorizeRoles("Admin")]
+        [ValidateAntiForgeryToken]
+        public ActionResult ToggleUserStatus(
+            int userId,
+            bool? makeActive,
+            string search = "",
+            string status = "all")
+        {
+            // A nullable Boolean prevents MVC from throwing an unhandled
+            // parameter-binding exception if an old/cached form omits the value.
+            if (!makeActive.HasValue)
+            {
+                TempData["ErrorMessage"] =
+                    "The requested account status was not received. Please try again.";
+
+                return RedirectToAction("Users", new { search, status });
+            }
+
+            int currentAdminId = GetCurrentUserId();
+
+            if (currentAdminId <= 0)
+            {
+                return RedirectToAction("Login", "Account");
+            }
+
+            string message;
+            bool success = _dashboardRepo.SetUserActiveStatus(
+                userId,
+                makeActive.Value,
+                currentAdminId,
+                out message);
+
+            TempData[success ? "SuccessMessage" : "ErrorMessage"] = message;
+
+            return RedirectToAction("Users", new { search, status });
+        }
+
+        [HttpGet]
+        [AuthorizeRoles("User", "Admin")]
         public JsonResult GetDonationDetailsJson(int id)
         {
             var donation = _dashboardRepo.GetDonationById(id);
@@ -222,25 +482,9 @@ namespace GiveAID_Project.Controllers
             }
 
             int currentUserId = GetCurrentUserId();
-
-            // Role-based security check
-            if (!User.IsInRole("Admin"))
+            if (!User.IsInRole("Admin") && donation.UserID != currentUserId)
             {
-                if (User.IsInRole("NGO"))
-                {
-                    var ngoStatus = _accountRepo.GetNGOAccountStatus(currentUserId);
-                    if (ngoStatus == null || ngoStatus.NGOID != donation.NGOID)
-                    {
-                        return Json(new { success = false, message = "Unauthorized access to this donation record." }, JsonRequestBehavior.AllowGet);
-                    }
-                }
-                else
-                {
-                    if (donation.UserID != currentUserId)
-                    {
-                        return Json(new { success = false, message = "Unauthorized access to this donation record." }, JsonRequestBehavior.AllowGet);
-                    }
-                }
+                return Json(new { success = false, message = "You cannot access this donation." }, JsonRequestBehavior.AllowGet);
             }
 
             return Json(new
@@ -256,26 +500,26 @@ namespace GiveAID_Project.Controllers
                     donation.CauseName,
                     donation.ProgramName,
                     AmountFormatted = "PKR " + donation.Amount.ToString("N0"),
-                    Amount = donation.Amount,
+                    donation.Amount,
                     donation.DonationStatus,
                     donation.AdminApprovalStatus,
                     donation.NGOApprovalStatus,
                     donation.PaymentStatus,
                     donation.PaymentMethod,
                     DonationDateFormatted = donation.DonationDate.ToString("MMM dd, yyyy HH:mm"),
-                    AdminReviewedAtFormatted = donation.AdminReviewedAt.HasValue ? donation.AdminReviewedAt.Value.ToString("MMM dd, yyyy HH:mm") : "Pending Review",
+                    AdminReviewedAtFormatted = donation.AdminReviewedAt.HasValue
+                        ? donation.AdminReviewedAt.Value.ToString("MMM dd, yyyy HH:mm")
+                        : "Pending review",
                     donation.AdminRemarks,
                     donation.Message
                 }
             }, JsonRequestBehavior.AllowGet);
         }
 
-        // ==========================================
-        // HELPER: Resolve current user ID
-        // ==========================================
         private int GetCurrentUserId()
         {
-            if (Session["UserID"] != null && int.TryParse(Session["UserID"].ToString(), out int id))
+            int id;
+            if (Session["UserID"] != null && int.TryParse(Session["UserID"].ToString(), out id))
             {
                 return id;
             }
@@ -285,10 +529,18 @@ namespace GiveAID_Project.Controllers
                 var user = _accountRepo.GetUserByEmail(User.Identity.Name);
                 if (user != null)
                 {
+                    bool isAdmin =
+                        user.Roles != null &&
+                        user.Roles.Any(role =>
+                            string.Equals(
+                                role,
+                                "Admin",
+                                StringComparison.OrdinalIgnoreCase));
+
                     Session["UserID"] = user.UserID;
                     Session["UserName"] = user.FullName;
                     Session["UserEmail"] = user.Email;
-                    Session["UserRole"] = user.Roles.FirstOrDefault() ?? "User";
+                    Session["UserRole"] = isAdmin ? "Admin" : "User";
                     return user.UserID;
                 }
             }

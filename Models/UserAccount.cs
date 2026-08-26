@@ -10,12 +10,15 @@ namespace GiveAID_Project.Models
         public string Email { get; set; }
         public string PasswordHash { get; set; }
         public string Phone { get; set; }
+        public string Gender { get; set; }
+        public string Profession { get; set; }
         public string Address { get; set; }
         public string City { get; set; }
+        public string Country { get; set; }
         public string ProfileImageURL { get; set; }
         public bool IsActive { get; set; }
-        public bool IsBanned { get; set; }
         public DateTime CreatedAt { get; set; }
+        public DateTime? UpdatedAt { get; set; }
         public DateTime? LastLoginAt { get; set; }
         public List<string> Roles { get; set; } = new List<string>();
     }

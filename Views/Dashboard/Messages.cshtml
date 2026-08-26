@@ -1,0 +1,703 @@
+@model GiveAID_Project.Models.UserContactMessagesViewModel
+@using System
+@using System.Linq
+
+@{
+    ViewBag.Title = "My Messages | GiveAID";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+
+    var selectedStatus = string.IsNullOrWhiteSpace(Model.SelectedStatus)
+        ? "all"
+        : Model.SelectedStatus;
+}
+
+@section Styles {
+    <link href="@Url.Content("~/Content/UserDashboard.css")" rel="stylesheet" />
+
+    <style>
+        .messages-main {
+            min-width: 0;
+            padding: 38px 35px 80px;
+            background:
+                radial-gradient(circle at 7% 2%, rgba(19, 184, 135, .11), transparent 27%),
+                radial-gradient(circle at 96% 1%, rgba(255, 128, 96, .09), transparent 25%),
+                #eef5f3;
+        }
+
+        .messages-hero {
+            position: relative;
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-between;
+            gap: 24px;
+            overflow: hidden;
+            margin-bottom: 18px;
+            padding: 30px 31px;
+            border-radius: 24px;
+            color: #fff;
+            background: linear-gradient(120deg, #073b46 0%, #08705e 57%, #0ba175 100%);
+            box-shadow: 0 18px 40px rgba(7, 55, 65, .13);
+        }
+
+        .messages-hero::after {
+            position: absolute;
+            width: 230px;
+            height: 230px;
+            right: -65px;
+            top: -105px;
+            content: "";
+            border: 38px solid rgba(255, 255, 255, .07);
+            border-radius: 50%;
+        }
+
+        .messages-hero-copy,
+        .messages-hero-actions {
+            position: relative;
+            z-index: 1;
+        }
+
+        .messages-kicker {
+            display: block;
+            color: #67efbd;
+            font-size: 9px;
+            font-weight: 950;
+            letter-spacing: .13em;
+            text-transform: uppercase;
+        }
+
+        .messages-hero h1 {
+            margin: 8px 0 7px;
+            font-size: clamp(31px, 3vw, 43px);
+            line-height: 1.05;
+            letter-spacing: -.045em;
+        }
+
+        .messages-hero p {
+            max-width: 660px;
+            margin: 0;
+            color: #c8e6df;
+            font-size: 12px;
+            line-height: 1.65;
+        }
+
+        .new-message-link {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 46px;
+            padding: 0 18px;
+            border: 1px solid rgba(255, 255, 255, .32);
+            border-radius: 12px;
+            color: #073b46;
+            background: #fff;
+            box-shadow: 0 10px 24px rgba(0, 0, 0, .1);
+            font-size: 10px;
+            font-weight: 950;
+            text-decoration: none;
+            white-space: nowrap;
+        }
+
+        .message-stat-grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 13px;
+            margin-bottom: 18px;
+        }
+
+        .message-stat {
+            position: relative;
+            overflow: hidden;
+            min-height: 130px;
+            padding: 20px;
+            border: 1px solid #cfe0da;
+            border-radius: 18px;
+            background: rgba(255, 255, 255, .94);
+            box-shadow: 0 11px 28px rgba(7, 42, 52, .06);
+        }
+
+        .message-stat::after {
+            position: absolute;
+            width: 90px;
+            height: 90px;
+            right: -38px;
+            top: -42px;
+            content: "";
+            border: 16px solid #eaf3f0;
+            border-radius: 50%;
+        }
+
+        .message-stat-code {
+            position: relative;
+            z-index: 1;
+            display: grid;
+            place-items: center;
+            width: 37px;
+            height: 37px;
+            border-radius: 11px;
+            color: #087657;
+            background: #e1f5ec;
+            font-size: 8px;
+            font-weight: 950;
+        }
+
+        .message-stat:nth-child(2) .message-stat-code {
+            color: #a46614;
+            background: #fff0d8;
+        }
+
+        .message-stat:nth-child(3) .message-stat-code {
+            color: #17677a;
+            background: #e3f2f6;
+        }
+
+        .message-stat:nth-child(4) .message-stat-code {
+            color: #705093;
+            background: #f0e9f7;
+        }
+
+        .message-stat strong {
+            display: block;
+            margin-top: 17px;
+            color: #0b3540;
+            font-size: 27px;
+            letter-spacing: -.035em;
+        }
+
+        .message-stat span:last-child {
+            display: block;
+            margin-top: 4px;
+            color: #71868a;
+            font-size: 8px;
+            font-weight: 850;
+            letter-spacing: .06em;
+            text-transform: uppercase;
+        }
+
+        .messages-filter {
+            display: grid;
+            grid-template-columns: minmax(220px, 1fr) 220px auto auto;
+            gap: 11px;
+            align-items: end;
+            margin-bottom: 18px;
+            padding: 18px;
+            border: 1px solid #cfe0da;
+            border-radius: 19px;
+            background: #fff;
+            box-shadow: 0 11px 28px rgba(7, 42, 52, .05);
+        }
+
+        .filter-field label {
+            display: block;
+            margin: 0 0 7px;
+            color: #31565d;
+            font-size: 8px;
+            font-weight: 950;
+            letter-spacing: .09em;
+            text-transform: uppercase;
+        }
+
+        .filter-control {
+            width: 100%;
+            height: 47px;
+            padding: 0 14px;
+            border: 1px solid #c5d9d3;
+            border-radius: 12px;
+            outline: none;
+            color: #234c53;
+            background: #fbfdfc;
+            font: inherit;
+            font-size: 11px;
+            box-sizing: border-box;
+        }
+
+        .filter-control:focus {
+            border-color: #0a9b70;
+            box-shadow: 0 0 0 4px rgba(10, 155, 112, .1);
+        }
+
+        .filter-button,
+        .reset-button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 105px;
+            height: 47px;
+            padding: 0 16px;
+            border: 0;
+            border-radius: 12px;
+            font-size: 9px;
+            font-weight: 950;
+            cursor: pointer;
+            text-decoration: none;
+        }
+
+        .filter-button {
+            color: #fff;
+            background: #07865f;
+        }
+
+        .reset-button {
+            border: 1px solid #c5d9d3;
+            color: #345b61;
+            background: #fff;
+        }
+
+        .messages-panel {
+            overflow: hidden;
+            border: 1px solid #cfe0da;
+            border-radius: 22px;
+            background: #fff;
+            box-shadow: 0 15px 36px rgba(7, 42, 52, .065);
+        }
+
+        .messages-panel-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 18px;
+            padding: 22px 24px;
+            border-bottom: 1px solid #e1ebe8;
+        }
+
+        .messages-panel-head h2 {
+            margin: 0;
+            color: #0b3540;
+            font-size: 20px;
+            letter-spacing: -.025em;
+        }
+
+        .messages-panel-head p {
+            margin: 5px 0 0;
+            color: #74888c;
+            font-size: 9px;
+        }
+
+        .record-count {
+            display: inline-flex;
+            padding: 8px 11px;
+            border-radius: 20px;
+            color: #087354;
+            background: #e1f5eb;
+            font-size: 8px;
+            font-weight: 950;
+            white-space: nowrap;
+        }
+
+        .message-list {
+            display: grid;
+        }
+
+        .message-record {
+            display: grid;
+            grid-template-columns: 52px minmax(0, 1fr) 145px 110px 125px;
+            gap: 16px;
+            align-items: center;
+            padding: 18px 23px;
+            border-top: 1px solid #e7efec;
+        }
+
+        .message-record:first-child {
+            border-top: 0;
+        }
+
+        .message-record:hover {
+            background: #f8fcfa;
+        }
+
+        .record-icon {
+            display: grid;
+            place-items: center;
+            width: 42px;
+            height: 42px;
+            border-radius: 13px;
+            color: #087657;
+            background: #e4f6ee;
+            font-size: 9px;
+            font-weight: 950;
+        }
+
+        .record-copy {
+            min-width: 0;
+        }
+
+        .record-copy strong {
+            display: block;
+            overflow: hidden;
+            color: #123e46;
+            font-size: 12px;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .record-copy p {
+            display: -webkit-box;
+            overflow: hidden;
+            margin: 5px 0 0;
+            color: #74888c;
+            font-size: 9px;
+            line-height: 1.55;
+            -webkit-box-orient: vertical;
+            -webkit-line-clamp: 2;
+        }
+
+        .record-date {
+            color: #607b80;
+            font-size: 9px;
+            line-height: 1.55;
+        }
+
+        .record-date strong {
+            display: block;
+            color: #244f56;
+            font-size: 9px;
+        }
+
+        .message-status {
+            display: inline-flex;
+            justify-content: center;
+            padding: 8px 10px;
+            border-radius: 20px;
+            color: #526d71;
+            background: #edf3f1;
+            font-size: 8px;
+            font-weight: 950;
+            letter-spacing: .03em;
+            text-transform: uppercase;
+        }
+
+        .status-new {
+            color: #a3620f;
+            background: #fff0d8;
+        }
+
+        .status-read {
+            color: #17667a;
+            background: #e3f2f6;
+        }
+
+        .status-replied {
+            color: #087354;
+            background: #def5e9;
+        }
+
+        .status-closed {
+            color: #725393;
+            background: #f0e9f7;
+        }
+
+        .conversation-link {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 40px;
+            padding: 0 12px;
+            border: 1px solid #c3d8d2;
+            border-radius: 10px;
+            color: #174c53;
+            background: #fff;
+            font-size: 8px;
+            font-weight: 950;
+            text-decoration: none;
+            white-space: nowrap;
+        }
+
+        .conversation-link.has-reply {
+            border-color: #9fd5c2;
+            color: #fff;
+            background: #07865f;
+        }
+
+        .messages-empty {
+            padding: 62px 25px;
+            text-align: center;
+        }
+
+        .empty-message-icon {
+            display: grid;
+            place-items: center;
+            width: 62px;
+            height: 62px;
+            margin: 0 auto 17px;
+            border-radius: 18px;
+            color: #087657;
+            background: #e3f6ee;
+            font-size: 12px;
+            font-weight: 950;
+        }
+
+        .messages-empty h3 {
+            margin: 0 0 7px;
+            color: #0b3540;
+            font-size: 18px;
+        }
+
+        .messages-empty p {
+            max-width: 470px;
+            margin: auto;
+            color: #71868a;
+            font-size: 10px;
+            line-height: 1.7;
+        }
+
+        .messages-empty a {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 43px;
+            margin-top: 16px;
+            padding: 0 16px;
+            border-radius: 11px;
+            color: #fff;
+            background: #07865f;
+            font-size: 9px;
+            font-weight: 950;
+            text-decoration: none;
+        }
+
+        @@media (max-width: 1080px) {
+            .message-stat-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+
+            .messages-filter {
+                grid-template-columns: 1fr 220px;
+            }
+
+            .filter-button,
+            .reset-button {
+                width: 100%;
+            }
+
+            .message-record {
+                grid-template-columns: 48px minmax(0, 1fr) 115px 100px;
+            }
+
+            .record-date {
+                display: none;
+            }
+        }
+
+        @@media (max-width: 760px) {
+            .messages-main {
+                padding: 25px 16px 60px;
+            }
+
+            .messages-hero {
+                display: block;
+                padding: 25px;
+            }
+
+            .messages-hero-actions {
+                margin-top: 17px;
+            }
+
+            .messages-filter {
+                grid-template-columns: 1fr;
+            }
+
+            .message-record {
+                grid-template-columns: 44px minmax(0, 1fr) auto;
+                gap: 12px;
+            }
+
+            .message-status {
+                display: none;
+            }
+
+            .conversation-link {
+                min-height: 38px;
+                padding: 0 10px;
+            }
+        }
+
+        @@media (max-width: 470px) {
+            .message-stat-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .messages-panel-head {
+                display: block;
+            }
+
+            .record-count {
+                margin-top: 12px;
+            }
+
+            .message-record {
+                grid-template-columns: 1fr;
+            }
+
+            .record-icon {
+                display: none;
+            }
+
+            .conversation-link {
+                width: 100%;
+                box-sizing: border-box;
+            }
+        }
+    </style>
+}
+
+<main class="user-workspace">
+    <div class="user-shell">
+        @Html.Partial("_UserDashboardSidebar")
+
+        <section class="messages-main">
+            <header class="messages-hero">
+                <div class="messages-hero-copy">
+                    <span class="messages-kicker">Support conversations</span>
+                    <h1>My messages</h1>
+                    <p>
+                        Review the enquiries sent from your GiveAID account and read responses
+                        saved by the platform administrator.
+                    </p>
+                </div>
+
+                <div class="messages-hero-actions">
+                    <a class="new-message-link" href="@Url.Action("Contact", "Home")">
+                        Send a new message
+                    </a>
+                </div>
+            </header>
+
+            <section class="message-stat-grid" aria-label="Message statistics">
+                <article class="message-stat">
+                    <span class="message-stat-code">ALL</span>
+                    <strong>@Model.TotalMessages</strong>
+                    <span>Total messages</span>
+                </article>
+
+                <article class="message-stat">
+                    <span class="message-stat-code">WT</span>
+                    <strong>@Model.AwaitingReplyCount</strong>
+                    <span>Awaiting reply</span>
+                </article>
+
+                <article class="message-stat">
+                    <span class="message-stat-code">RP</span>
+                    <strong>@Model.RepliedCount</strong>
+                    <span>Administrator replies</span>
+                </article>
+
+                <article class="message-stat">
+                    <span class="message-stat-code">CL</span>
+                    <strong>@Model.ClosedCount</strong>
+                    <span>Closed messages</span>
+                </article>
+            </section>
+
+            @using (Html.BeginForm("Messages", "Dashboard", FormMethod.Get,
+                new { @class = "messages-filter" }))
+            {
+                <div class="filter-field">
+                    <label for="messageSearch">Search messages</label>
+                    <input class="filter-control"
+                           id="messageSearch"
+                           name="search"
+                           type="search"
+                           maxlength="300"
+                           value="@Model.SearchQuery"
+                           placeholder="Search subject, message or administrator reply" />
+                </div>
+
+                <div class="filter-field">
+                    <label for="messageStatus">Message status</label>
+                    <select class="filter-control" id="messageStatus" name="status">
+                        <option value="all" @(selectedStatus.Equals("all", StringComparison.OrdinalIgnoreCase) ? "selected" : "")>
+                            All statuses
+                        </option>
+                        <option value="New" @(selectedStatus.Equals("New", StringComparison.OrdinalIgnoreCase) ? "selected" : "")>
+                            New
+                        </option>
+                        <option value="Read" @(selectedStatus.Equals("Read", StringComparison.OrdinalIgnoreCase) ? "selected" : "")>
+                            Read
+                        </option>
+                        <option value="Replied" @(selectedStatus.Equals("Replied", StringComparison.OrdinalIgnoreCase) ? "selected" : "")>
+                            Replied
+                        </option>
+                        <option value="Closed" @(selectedStatus.Equals("Closed", StringComparison.OrdinalIgnoreCase) ? "selected" : "")>
+                            Closed
+                        </option>
+                    </select>
+                </div>
+
+                <button class="filter-button" type="submit">Apply filters</button>
+
+                <a class="reset-button" href="@Url.Action("Messages", "Dashboard")">
+                    Reset
+                </a>
+            }
+
+            <section class="messages-panel">
+                <header class="messages-panel-head">
+                    <div>
+                        <h2>Conversation records</h2>
+                        <p>Only messages linked to your signed-in UserID are displayed.</p>
+                    </div>
+
+                    <span class="record-count">
+                        @(Model.Messages == null ? 0 : Model.Messages.Count) record(s)
+                    </span>
+                </header>
+
+                @if (Model.Messages != null && Model.Messages.Any())
+                {
+                    <div class="message-list">
+                        @foreach (var item in Model.Messages)
+                        {
+                            var messageStatus = string.IsNullOrWhiteSpace(item.Status)
+                                ? "New"
+                                : item.Status;
+
+                            var statusClass =
+                                "message-status status-" + messageStatus.ToLowerInvariant();
+
+                            <article class="message-record">
+                                <span class="record-icon">
+                                    @(item.HasAdminReply ? "RP" : "MS")
+                                </span>
+
+                                <div class="record-copy">
+                                    <strong>@item.Subject</strong>
+                                    <p>@item.MessagePreview</p>
+                                </div>
+
+                                <div class="record-date">
+                                    <strong>@item.CreatedAt.ToString("dd MMM yyyy")</strong>
+                                    @item.CreatedAt.ToString("hh:mm tt")
+
+                                    @if (item.RepliedAt.HasValue)
+                                    {
+                                        <span>
+                                            Replied @item.RepliedAt.Value.ToString("dd MMM yyyy")
+                                        </span>
+                                    }
+                                </div>
+
+                                <span class="@statusClass">@messageStatus</span>
+
+                                <a class="conversation-link @(item.HasAdminReply ? "has-reply" : "")"
+                                   href="@Url.Action("MessageDetails", "Dashboard", new { id = item.ContactMessageID })">
+                                    @(item.HasAdminReply ? "Read reply" : "View message")
+                                </a>
+                            </article>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <div class="messages-empty">
+                        <div class="empty-message-icon">MS</div>
+                        <h3>No messages found</h3>
+                        <p>
+                            You have not submitted a matching enquiry from this account yet.
+                            Send a message and it will appear here for tracking.
+                        </p>
+                        <a href="@Url.Action("Contact", "Home")">Contact GiveAID</a>
+                    </div>
+                }
+            </section>
+        </section>
+    </div>
+</main>

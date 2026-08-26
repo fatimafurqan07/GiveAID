@@ -1,0 +1,366 @@
+@inherits System.Web.Mvc.WebViewPage<GiveAID_Project.Models.AdminDonationsViewModel>
+@using System
+@using System.Linq
+@using System.Web.Mvc
+@using System.Web.Mvc.Html
+
+@{
+    ViewBag.Title = "Donation Management | GiveAID";
+    ViewBag.AdminPageTitle = "Donation management";
+    ViewBag.AdminPageSubtitle = "Review and audit platform contribution records";
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+
+    var selectedStatus = string.IsNullOrWhiteSpace(Model.Status)
+        ? "all"
+        : Model.Status.ToLowerInvariant();
+
+    var visibleRecords = Model.Donations == null ? 0 : Model.Donations.Count;
+}
+
+<main class="page">
+    <header class="page-head">
+        <div>
+            <span class="eyebrow">Financial records</span>
+            <h1>Donation review centre</h1>
+            <p>Search contributions, inspect complete records and securely review pending submissions.</p>
+        </div>
+
+        <a class="live-pill" href="@Url.Action("Admin", "Dashboard")">
+            Back to overview
+        </a>
+    </header>
+
+    <section class="stats" aria-label="Donation statistics">
+        <article class="stat">
+            <span class="stat-code">ALL</span>
+            <div class="stat-value">@Model.TotalRecords</div>
+            <div class="stat-label">Total records</div>
+        </article>
+
+        <article class="stat pending">
+            <span class="stat-code">PN</span>
+            <div class="stat-value">@Model.PendingRecords</div>
+            <div class="stat-label">
+                Pending &middot; PKR @Model.PendingAmount.ToString("N0")
+            </div>
+        </article>
+
+        <article class="stat completed">
+            <span class="stat-code">OK</span>
+            <div class="stat-value">@Model.CompletedRecords</div>
+            <div class="stat-label">
+                Completed &middot; PKR @Model.CompletedAmount.ToString("N0")
+            </div>
+        </article>
+
+        <article class="stat cancelled">
+            <span class="stat-code">CN</span>
+            <div class="stat-value">@Model.CancelledRecords</div>
+            <div class="stat-label">Cancelled records</div>
+        </article>
+
+        <article class="stat cancelled">
+            <span class="stat-code">FL</span>
+            <div class="stat-value">@Model.FailedRecords</div>
+            <div class="stat-label">Failed records</div>
+        </article>
+    </section>
+
+    @using (Html.BeginForm(
+        "AdminDonations",
+        "Dashboard",
+        FormMethod.Get,
+        new { @class = "filter-card" }))
+    {
+        <div class="field">
+            <label for="search">Search records</label>
+
+            <input id="search"
+                   name="search"
+                   type="search"
+                   value="@Model.Search"
+                   maxlength="150"
+                   placeholder="Reference, donor, email, NGO, cause or programme" />
+        </div>
+
+        <div class="field">
+            <label for="status">Donation status</label>
+
+            <select id="status" name="status">
+                <option value="all" @(selectedStatus == "all" ? "selected" : "")>
+                    All statuses
+                </option>
+
+                <option value="pending" @(selectedStatus == "pending" ? "selected" : "")>
+                    Pending
+                </option>
+
+                <option value="completed" @(selectedStatus == "completed" ? "selected" : "")>
+                    Completed
+                </option>
+
+                <option value="cancelled" @(selectedStatus == "cancelled" ? "selected" : "")>
+                    Cancelled
+                </option>
+
+                <option value="failed" @(selectedStatus == "failed" ? "selected" : "")>
+                    Failed
+                </option>
+            </select>
+        </div>
+
+        <button class="filter-button" type="submit">
+            Apply filters
+        </button>
+
+        <a class="reset-button"
+           href="@Url.Action("AdminDonations", "Dashboard")">
+            Reset
+        </a>
+    }
+
+    <section class="records-card">
+
+        <header class="records-head">
+            <div>
+                <h2>Contribution records</h2>
+
+                <p>
+                    Pending records appear first. Every completed review becomes read-only.
+                </p>
+            </div>
+
+            <span class="record-count">
+                @visibleRecords record(s)
+            </span>
+        </header>
+
+        @if (Model.Donations != null && Model.Donations.Any())
+        {
+            <div class="donation-list">
+
+                @foreach (var donation in Model.Donations)
+                {
+                    var recordStatus =
+                        (donation.DisplayStatus ?? "Pending").ToLowerInvariant();
+
+                    var badgeClass =
+                        recordStatus == "completed"
+                            ? "badge-completed"
+                            : recordStatus == "pending"
+                                ? "badge-pending"
+                                : recordStatus == "cancelled"
+                                    ? "badge-cancelled"
+                                    : recordStatus == "failed"
+                                        ? "badge-failed"
+                                        : "badge-other";
+
+                    <article class="donation-record">
+
+                        <div>
+                            <div class="reference">
+                                @donation.PaymentReference
+                            </div>
+
+                            <div class="record-id">
+                                Donation #@donation.DonationID &middot; User #@donation.UserID
+                            </div>
+                        </div>
+
+                        <div class="person">
+                            <strong>
+                                @(donation.IsAnonymous
+                                    ? "Anonymous supporter"
+                                    : donation.DonorName)
+                            </strong>
+
+                            <span>
+                                @donation.DonorEmail
+                            </span>
+                        </div>
+
+                        <div class="destination">
+                            <strong>
+                                @donation.NGOName
+                            </strong>
+
+                            <span>
+                                @donation.CauseName &middot; @donation.ProgramName
+                            </span>
+                        </div>
+
+                        <div>
+                            <div class="amount">
+                                @donation.CurrencyCode @donation.Amount.ToString("N0")
+                            </div>
+
+                            <div class="date">
+                                @donation.DonationDate.ToString("dd MMM yyyy, hh:mm tt")
+                            </div>
+
+                            <span class="badge @badgeClass">
+                                @donation.DisplayStatus
+                            </span>
+                        </div>
+
+                        <details class="record-details">
+
+                            <summary>
+                                View complete record and payment information
+                            </summary>
+
+                            <div class="details-grid">
+
+                                <div class="detail-box">
+                                    <small>Payment method</small>
+                                    <span>@donation.PaymentMethod</span>
+                                </div>
+
+                                <div class="detail-box">
+                                    <small>Payment status</small>
+                                    <span>@donation.PaymentStatus</span>
+                                </div>
+
+                                <div class="detail-box">
+                                    <small>Payment processed</small>
+
+                                    <span>
+                                        @(donation.PaymentProcessedAt.HasValue
+                                            ? donation.PaymentProcessedAt.Value
+                                                .ToString("dd MMM yyyy, hh:mm tt")
+                                            : "Not processed")
+                                    </span>
+                                </div>
+
+                                <div class="detail-box">
+                                    <small>Completed</small>
+
+                                    <span>
+                                        @(donation.CompletedAt.HasValue
+                                            ? donation.CompletedAt.Value
+                                                .ToString("dd MMM yyyy, hh:mm tt")
+                                            : "Not completed")
+                                    </span>
+                                </div>
+
+                                <div class="detail-box wide-detail">
+                                    <small>Donor message</small>
+
+                                    <span>
+                                        @(string.IsNullOrWhiteSpace(donation.DonorMessage)
+                                            ? "No message provided"
+                                            : donation.DonorMessage)
+                                    </span>
+                                </div>
+
+                                <div class="detail-box wide-detail">
+                                    <small>Administrator review</small>
+
+                                    <span>
+                                        @(string.IsNullOrWhiteSpace(donation.ReviewedByName)
+                                            ? "Not reviewed"
+                                            : donation.ReviewedByName)
+                                        @(donation.AdminReviewedAt.HasValue
+                                            ? " \u00B7 " + donation.AdminReviewedAt.Value
+                                                .ToString("dd MMM yyyy, hh:mm tt")
+                                            : "")
+                                    </span>
+                                </div>
+
+                                @if (!string.IsNullOrWhiteSpace(donation.AdminRemarks))
+                                {
+                                    <div class="detail-box wide-detail">
+                                        <small>Administrator remarks</small>
+
+                                        <span>
+                                            @donation.AdminRemarks
+                                        </span>
+                                    </div>
+                                }
+
+                            </div>
+                        </details>
+
+                        @if (recordStatus == "pending")
+                        {
+                            using (Html.BeginForm(
+                                "ReviewDonation",
+                                "Dashboard",
+                                FormMethod.Post,
+                                new { @class = "review-form" }))
+                            {
+                                @Html.AntiForgeryToken()
+
+                                <input type="hidden"
+                                       name="DonationID"
+                                       value="@donation.DonationID" />
+
+                                <input type="hidden"
+                                       name="search"
+                                       value="@Model.Search" />
+
+                                <input type="hidden"
+                                       name="status"
+                                       value="@Model.Status" />
+
+                                <div class="review-field">
+
+                                    <label for="remarks-@donation.DonationID">
+                                        Administrator remarks
+                                    </label>
+
+                                    <textarea id="remarks-@donation.DonationID"
+                                              name="Remarks"
+                                              maxlength="500"
+                                              placeholder="Optional for completion; required when cancelling"></textarea>
+
+                                </div>
+
+                                <button class="decision decision-complete"
+                                        type="submit"
+                                        name="Decision"
+                                        value="Complete">
+                                    Complete donation
+                                </button>
+
+                                <button class="decision decision-cancel"
+                                        type="submit"
+                                        name="Decision"
+                                        value="Cancel">
+                                    Cancel donation
+                                </button>
+                            }
+                        }
+                        else
+                        {
+                            <div class="reviewed-note">
+                                This record is read-only because its review decision has already been recorded.
+                            </div>
+                        }
+
+                    </article>
+                }
+
+            </div>
+        }
+        else
+        {
+            <div class="empty">
+
+                <div class="empty-mark">
+                    DN
+                </div>
+
+                <h3>
+                    No matching donation records
+                </h3>
+
+                <p>
+                    Change the search or status filter to see other contribution records.
+                </p>
+
+            </div>
+        }
+
+    </section>
+</main>

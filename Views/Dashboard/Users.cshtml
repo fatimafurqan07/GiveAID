@@ -1,0 +1,213 @@
+@model GiveAID_Project.Models.AdminUsersViewModel
+@using System
+@using System.Linq
+
+@{
+    ViewBag.Title = "User Management | GiveAID";
+    ViewBag.AdminPageTitle = "User management";
+    ViewBag.AdminPageSubtitle = "Manage registered platform accounts";
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+
+    var selectedStatus = string.IsNullOrWhiteSpace(Model.Status)
+        ? "all"
+        : Model.Status.ToLowerInvariant();
+
+    var standardUsers = Math.Max(0, Model.TotalUsers - Model.AdminUsers);
+    var visibleUsers = Model.Users == null ? 0 : Model.Users.Count;
+}
+
+<main class="page">
+    <header class="page-head">
+        <div>
+            <span class="eyebrow">Account administration</span>
+            <h1>Registered users</h1>
+            <p>Search accounts, review profile information and safely control access to the platform.</p>
+        </div>
+
+        <span class="live-pill">
+            <span class="live-dot" aria-hidden="true"></span>
+            @visibleUsers visible account(s)
+        </span>
+    </header>
+
+    <section class="stats" aria-label="User statistics">
+        <article class="stat">
+            <span class="stat-code">ALL</span>
+            <div class="stat-value">@Model.TotalUsers</div>
+            <div class="stat-label">Total accounts</div>
+        </article>
+
+        <article class="stat completed">
+            <span class="stat-code">AC</span>
+            <div class="stat-value">@Model.ActiveUsers</div>
+            <div class="stat-label">Active accounts</div>
+        </article>
+
+        <article class="stat cancelled">
+            <span class="stat-code">IN</span>
+            <div class="stat-value">@Model.InactiveUsers</div>
+            <div class="stat-label">Inactive accounts</div>
+        </article>
+
+        <article class="stat pending">
+            <span class="stat-code">AD</span>
+            <div class="stat-value">@Model.AdminUsers</div>
+            <div class="stat-label">Protected administrators</div>
+        </article>
+
+        <article class="stat">
+            <span class="stat-code">US</span>
+            <div class="stat-value">@standardUsers</div>
+            <div class="stat-label">Standard users</div>
+        </article>
+    </section>
+
+    @using (Html.BeginForm("Users", "Dashboard", FormMethod.Get, new { @class = "filter-card" }))
+    {
+        <div class="field">
+            <label for="user-search">Search accounts</label>
+            <input id="user-search"
+                   name="search"
+                   type="search"
+                   value="@Model.Search"
+                   maxlength="150"
+                   placeholder="Search by name, email or city" />
+        </div>
+
+        <div class="field">
+            <label for="user-status">Account status</label>
+            <select id="user-status" name="status">
+                <option value="all" @(selectedStatus == "all" ? "selected" : "")>All accounts</option>
+                <option value="active" @(selectedStatus == "active" ? "selected" : "")>Active accounts</option>
+                <option value="inactive" @(selectedStatus == "inactive" ? "selected" : "")>Inactive accounts</option>
+            </select>
+        </div>
+
+        <button class="filter-button" type="submit">Apply filters</button>
+        <a class="reset-button" href="@Url.Action("Users", "Dashboard")">Reset</a>
+    }
+
+    <section class="admin-card">
+        <header class="admin-card-head">
+            <div>
+                <h2>Platform accounts</h2>
+                <p>Administrator accounts are protected from accidental deactivation.</p>
+            </div>
+
+            <span class="record-count">@visibleUsers record(s)</span>
+        </header>
+
+        @if (Model.Users != null && Model.Users.Any())
+        {
+            <div class="admin-table-wrap">
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>User</th>
+                            <th>Contact</th>
+                            <th>Location</th>
+                            <th>Role</th>
+                            <th>Joined</th>
+                            <th>Last login</th>
+                            <th>Status</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var user in Model.Users)
+                        {
+                            var userInitial = string.IsNullOrWhiteSpace(user.FullName)
+                                ? "U"
+                                : user.FullName.Substring(0, 1).ToUpperInvariant();
+
+                            <tr>
+                                <td>
+                                    <div class="user-cell">
+                                        <span class="user-mark">@userInitial</span>
+                                        <div>
+                                            <div class="primary-text">@user.FullName</div>
+                                            <div class="secondary-text">ID #@user.UserID</div>
+                                        </div>
+                                    </div>
+                                </td>
+
+                                <td>
+                                    <div class="primary-text">@user.Email</div>
+                                    <div class="secondary-text">
+                                        @(string.IsNullOrWhiteSpace(user.Phone) ? "No phone" : user.Phone)
+                                    </div>
+                                </td>
+
+                                <td>
+                                    <div class="primary-text">
+                                        @(string.IsNullOrWhiteSpace(user.City) ? "Not provided" : user.City)
+                                    </div>
+                                    <div class="secondary-text">@user.Country</div>
+                                </td>
+
+                                <td>
+                                    <span class="status-badge @(user.IsAdmin ? "status-admin" : "status-user")">
+                                        @user.Roles
+                                    </span>
+                                </td>
+
+                                <td>@user.CreatedAt.ToString("dd MMM yyyy")</td>
+                                <td>@(user.LastLoginAt.HasValue ? user.LastLoginAt.Value.ToString("dd MMM yyyy") : "Never")</td>
+
+                                <td>
+                                    <span class="status-badge @(user.IsActive ? "status-active" : "status-inactive")">
+                                        @(user.IsActive ? "Active" : "Inactive")
+                                    </span>
+                                </td>
+
+                                <td>
+                                    @if (user.IsAdmin)
+                                    {
+                                        <span class="protected-label">Protected</span>
+                                    }
+                                    else
+                                    {
+                                        using (Html.BeginForm(
+                                            "ToggleUserStatus",
+                                            "Dashboard",
+                                            FormMethod.Post,
+                                            new { @class = "action-form" }))
+                                        {
+                                            @Html.AntiForgeryToken()
+
+                                            <input type="hidden"
+                                                   name="userId"
+                                                   value="@user.UserID" />
+
+                                            <input type="hidden"
+                                                   name="search"
+                                                   value="@Model.Search" />
+
+                                            <input type="hidden"
+                                                   name="status"
+                                                   value="@Model.Status" />
+
+                                            <button type="submit"
+                                                    name="makeActive"
+                                                    value="@(user.IsActive ? "false" : "true")"
+                                                    class="account-action @(user.IsActive ? "action-deactivate" : "action-activate")"
+                                                    onclick="return confirm('@(user.IsActive ? "Deactivate" : "Activate") this user account?');">
+                                                @(user.IsActive ? "Deactivate" : "Activate")
+                                            </button>
+                                        }
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+        else
+        {
+            <div class="empty-state">
+                No users matched the selected search or status filter.
+            </div>
+        }
+    </section>
+</main>

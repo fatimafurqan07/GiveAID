@@ -1,0 +1,207 @@
+@using System
+
+@{
+    var currentController = Convert.ToString(ViewContext.RouteData.Values["controller"]);
+    var currentAction = Convert.ToString(ViewContext.RouteData.Values["action"]);
+
+    var isDashboardController = string.Equals(
+        currentController,
+        "Dashboard",
+        StringComparison.OrdinalIgnoreCase);
+
+    var isNgoController = string.Equals(
+        currentController,
+        "NGO",
+        StringComparison.OrdinalIgnoreCase);
+
+    var isCausesController = string.Equals(
+        currentController,
+        "Causes",
+        StringComparison.OrdinalIgnoreCase);
+
+    var isAdminContactController = string.Equals(
+        currentController,
+        "AdminContact",
+        StringComparison.OrdinalIgnoreCase);
+
+    var overviewClass =
+        isDashboardController &&
+        string.Equals(currentAction, "Admin", StringComparison.OrdinalIgnoreCase)
+            ? "active"
+            : "";
+
+    var donationsClass =
+        isDashboardController &&
+        string.Equals(currentAction, "AdminDonations", StringComparison.OrdinalIgnoreCase)
+            ? "active"
+            : "";
+
+    var usersClass =
+        isDashboardController &&
+        string.Equals(currentAction, "Users", StringComparison.OrdinalIgnoreCase)
+            ? "active"
+            : "";
+
+    var contactMessagesClass =
+        isAdminContactController &&
+        (
+            string.Equals(currentAction, "Index", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(currentAction, "Details", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(currentAction, "UpdateStatus", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(currentAction, "QuickUpdateStatus", StringComparison.OrdinalIgnoreCase)
+        )
+            ? "active"
+            : "";
+
+    var ngoManagementClass =
+        isNgoController &&
+        (
+            string.Equals(currentAction, "AdminIndex", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(currentAction, "AdminCreate", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(currentAction, "AdminEdit", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(currentAction, "ToggleAdminStatus", StringComparison.OrdinalIgnoreCase)
+        )
+            ? "active"
+            : "";
+
+    var causeManagementClass =
+        isCausesController &&
+        (
+            string.Equals(currentAction, "AdminCauses", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(currentAction, "CreateCause", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(currentAction, "EditCause", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(currentAction, "SetCauseStatus", StringComparison.OrdinalIgnoreCase)
+        )
+            ? "active"
+            : "";
+
+    var programmeManagementClass =
+        isCausesController &&
+        (
+            string.Equals(currentAction, "AdminProgrammes", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(currentAction, "CreateProgramme", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(currentAction, "EditProgramme", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(currentAction, "SetProgrammeStatus", StringComparison.OrdinalIgnoreCase)
+        )
+            ? "active"
+            : "";
+
+    var publicWebsiteClass =
+        string.Equals(currentController, "Home", StringComparison.OrdinalIgnoreCase)
+            ? "active-public"
+            : "";
+
+    var publicNgoClass =
+        isNgoController &&
+        (
+            string.Equals(currentAction, "Index", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(currentAction, "Details", StringComparison.OrdinalIgnoreCase)
+        )
+            ? "active-public"
+            : "";
+
+    var publicCausesClass =
+        isCausesController &&
+        (
+            string.Equals(currentAction, "Index", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(currentAction, "Details", StringComparison.OrdinalIgnoreCase)
+        )
+            ? "active-public"
+            : "";
+}
+
+<aside class="sidebar">
+    <a class="brand"
+       href="@Url.Action("Admin", "Dashboard")"
+       aria-label="GiveAID administration overview">
+        <div class="brand-mark" aria-hidden="true">GA</div>
+
+        <div>
+            <div class="brand-name">Give<span>AID</span></div>
+            <small>Administration</small>
+        </div>
+    </a>
+
+    <div class="nav-label">Workspace</div>
+
+    <nav class="nav" aria-label="Administrator workspace navigation">
+        <a class="@overviewClass"
+           href="@Url.Action("Admin", "Dashboard")"
+           aria-current="@(overviewClass == "active" ? "page" : null)">
+            <span class="nav-icon" aria-hidden="true">OV</span>
+            <span>Overview</span>
+        </a>
+
+        <a class="@donationsClass"
+           href="@Url.Action("AdminDonations", "Dashboard")"
+           aria-current="@(donationsClass == "active" ? "page" : null)">
+            <span class="nav-icon" aria-hidden="true">DN</span>
+            <span>Donations</span>
+        </a>
+
+        <a class="@usersClass"
+           href="@Url.Action("Users", "Dashboard")"
+           aria-current="@(usersClass == "active" ? "page" : null)">
+            <span class="nav-icon" aria-hidden="true">US</span>
+            <span>User management</span>
+        </a>
+
+        <a class="@contactMessagesClass"
+           href="@Url.Action("Index", "AdminContact")"
+           aria-current="@(contactMessagesClass == "active" ? "page" : null)">
+            <span class="nav-icon" aria-hidden="true">CM</span>
+            <span>Contact messages</span>
+        </a>
+
+        <a class="@ngoManagementClass"
+           href="@Url.Action("AdminIndex", "NGO")"
+           aria-current="@(ngoManagementClass == "active" ? "page" : null)">
+            <span class="nav-icon" aria-hidden="true">NG</span>
+            <span>NGO management</span>
+        </a>
+
+        <a class="@causeManagementClass"
+           href="@Url.Action("AdminCauses", "Causes")"
+           aria-current="@(causeManagementClass == "active" ? "page" : null)">
+            <span class="nav-icon" aria-hidden="true">CS</span>
+            <span>Cause management</span>
+        </a>
+
+        <a class="@programmeManagementClass"
+           href="@Url.Action("AdminProgrammes", "Causes")"
+           aria-current="@(programmeManagementClass == "active" ? "page" : null)">
+            <span class="nav-icon" aria-hidden="true">PR</span>
+            <span>Programme management</span>
+        </a>
+    </nav>
+
+    <div class="nav-label">Website</div>
+
+    <nav class="nav" aria-label="Public website navigation">
+        <a class="@publicWebsiteClass"
+           href="@Url.Action("Index", "Home")">
+            <span class="nav-icon" aria-hidden="true">WB</span>
+            <span>View website</span>
+        </a>
+
+        <a class="@publicNgoClass"
+           href="@Url.Action("Index", "NGO")">
+            <span class="nav-icon" aria-hidden="true">PD</span>
+            <span>Public NGO directory</span>
+        </a>
+
+        <a class="@publicCausesClass"
+           href="@Url.Action("Index", "Causes")">
+            <span class="nav-icon" aria-hidden="true">PC</span>
+            <span>Public causes</span>
+        </a>
+    </nav>
+
+    <div class="sidebar-note">
+        <strong>Protected administration</strong>
+        <span>
+            NGO, cause and programme changes require the Admin role and are saved
+            directly in the GiveAID database.
+        </span>
+    </div>
+</aside>

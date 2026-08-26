@@ -1,320 +1,764 @@
 @model GiveAID_Project.Models.NgoListViewModel
-
+@using System
+@using System.Linq
 @{
-    ViewBag.Title = "Discover NGOs - Verified Non-Profits in Pakistan | GiveAID";
+    ViewBag.Title = "NGO Directory | GiveAID";
     Layout = "~/Views/Shared/_Layout.cshtml";
+    bool hasFilters = !string.IsNullOrWhiteSpace(Model.SearchQuery) || !string.IsNullOrWhiteSpace(Model.SelectedLocation) || Model.SelectedCauseId.HasValue || !string.IsNullOrWhiteSpace(Model.SelectedCategory);
 }
 
-<!-- =========================================================
-     NGO DISCOVERY HERO SECTION
-     ========================================================= -->
-<section class="ngo-hero-section">
-    <div class="section-container">
-        <div class="ngo-hero-content">
-            <div class="hero-pill">
-                <span class="pulse-dot"></span>
-                <span>100% SECP Audited & Verified Non-Profits</span>
+@section Styles{
+    <style>
+        .directory-page {
+            overflow: hidden;
+            background: #f7faf9;
+            color: var(--navy)
+        }
+
+        .dir-shell {
+            max-width: 1200px;
+            margin: auto;
+            padding-left: 24px;
+            padding-right: 24px
+        }
+
+        .dir-hero {
+            padding: 70px 0 82px;
+            background: radial-gradient(circle at 5% 12%,#dff7ec 0,transparent 35%),linear-gradient(135deg,#fffaf1,#f7fffb)
+        }
+
+        .dir-hero-grid {
+            display: grid;
+            grid-template-columns: .9fr 1.1fr;
+            gap: 58px;
+            align-items: center
+        }
+
+        .dir-kicker {
+            display: inline-flex;
+            align-items: center;
+            gap: 9px;
+            padding: 8px 13px;
+            border: 1px solid #c8e2d7;
+            border-radius: 30px;
+            background: #fff;
+            color: var(--emerald);
+            font-size: 10px;
+            font-weight: 900;
+            letter-spacing: .13em;
+            text-transform: uppercase;
+            box-shadow: 0 10px 28px rgba(10,76,58,.07)
+        }
+
+            .dir-kicker:before {
+                content: "";
+                width: 8px;
+                height: 8px;
+                border-radius: 50%;
+                background: var(--coral);
+                box-shadow: 0 0 0 6px rgba(239,127,97,.13)
+            }
+
+        .dir-hero h1 {
+            font-size: 60px;
+            line-height: 1.02;
+            letter-spacing: -.06em;
+            margin: 24px 0 20px;
+            color: var(--navy)
+        }
+
+            .dir-hero h1 span {
+                color: var(--emerald)
+            }
+
+        .dir-lead {
+            font-size: 17px;
+            line-height: 1.75;
+            color: #587176;
+            max-width: 545px
+        }
+
+        .hero-proof {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 27px
+        }
+
+            .hero-proof span {
+                padding: 9px 12px;
+                border-radius: 10px;
+                background: #fff;
+                border: 1px solid #dce9e4;
+                color: #33575a;
+                font-size: 10px;
+                font-weight: 800
+            }
+
+        .dir-visual {
+            height: 430px;
+            border-radius: 29px;
+            overflow: hidden;
+            border: 8px solid #fff;
+            box-shadow: 0 30px 70px rgba(7,31,44,.2);
+            position: relative
+        }
+
+            .dir-visual img {
+                width: 100%;
+                height: 100%;
+                object-fit: cover;
+                display: block
+            }
+
+            .dir-visual:after {
+                content: "";
+                position: absolute;
+                inset: 0;
+                background: linear-gradient(180deg,transparent 55%,rgba(7,31,44,.48))
+            }
+
+        .visual-caption {
+            position: absolute;
+            z-index: 2;
+            left: 24px;
+            right: 24px;
+            bottom: 22px;
+            color: #fff
+        }
+
+            .visual-caption small {
+                display: block;
+                color: #bce1da;
+                text-transform: uppercase;
+                letter-spacing: .12em;
+                font-size: 9px;
+                font-weight: 900
+            }
+
+            .visual-caption strong {
+                font-size: 18px;
+                display: block;
+                margin-top: 5px
+            }
+
+        .stats-band {
+            margin-top: -35px;
+            position: relative;
+            z-index: 3
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3,1fr);
+            gap: 14px;
+            padding: 18px;
+            border-radius: 23px;
+            background: #082d3b;
+            box-shadow: 0 22px 50px rgba(7,31,44,.2)
+        }
+
+        .dir-stat {
+            padding: 19px 22px;
+            border-radius: 16px;
+            background: rgba(255,255,255,.07);
+            border: 1px solid rgba(255,255,255,.09)
+        }
+
+            .dir-stat strong {
+                display: block;
+                color: #fff;
+                font-size: 25px
+            }
+
+            .dir-stat span {
+                display: block;
+                margin-top: 5px;
+                color: #a8c6c8;
+                font-size: 9px;
+                text-transform: uppercase;
+                letter-spacing: .09em
+            }
+
+        .filter-section {
+            padding: 75px 0 35px;
+            scroll-margin-top: 92px
+        }
+
+        .filter-card {
+            padding: 30px;
+            border-radius: 23px;
+            background: #fff;
+            border: 1px solid #dce8e3;
+            box-shadow: 0 16px 42px rgba(7,31,44,.09)
+        }
+
+        .search-row {
+            display: grid;
+            grid-template-columns: 1.5fr .8fr .8fr auto;
+            gap: 14px
+        }
+
+        .field {
+            position: relative
+        }
+
+            .field label {
+                display: block;
+                margin: 0 0 9px;
+                color: #31555a;
+                font-size: 11px;
+                font-weight: 900;
+                letter-spacing: .07em;
+                text-transform: uppercase
+            }
+
+            .field input, .field select {
+                width: 100%;
+                height: 56px;
+                border: 1px solid #c8d9d2;
+                border-radius: 13px;
+                background: #f9fcfb;
+                color: #173b40;
+                padding: 0 16px;
+                font: inherit;
+                font-size: 14px;
+                outline: none
+            }
+
+                .field input:focus, .field select:focus {
+                    border-color: var(--emerald);
+                    box-shadow: 0 0 0 4px rgba(8,127,91,.09);
+                    background: #fff
+                }
+
+        .filter-actions {
+            display: flex;
+            align-items: end;
+            gap: 9px
+        }
+
+        .search-btn, .clear-btn {
+            height: 56px;
+            min-width: 92px;
+            padding: 0 21px;
+            border-radius: 13px;
+            border: 0;
+            font-size: 13px;
+            font-weight: 850;
+            cursor: pointer;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            justify-content: center
+        }
+
+        .search-btn {
+            background: var(--emerald);
+            color: #fff;
+            box-shadow: 0 11px 24px rgba(8,127,91,.2)
+        }
+
+            .search-btn:hover {
+                background: #066b4d;
+                color: #fff
+            }
+
+        .clear-btn {
+            background: #edf3f1;
+            color: #38585d
+        }
+
+            .clear-btn:hover {
+                background: #e1ebe7;
+                color: #173b40
+            }
+
+        .category-row {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 22px;
+            padding-top: 22px;
+            border-top: 1px solid #e6eeeb
+        }
+
+        .category-label {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: .09em;
+            font-weight: 900;
+            color: #607b7f;
+            padding: 11px 7px
+        }
+
+        .category-chip {
+            min-height: 40px;
+            padding: 10px 16px;
+            border-radius: 25px;
+            border: 1px solid #cdded7;
+            background: #f7faf9;
+            color: #31575b;
+            text-decoration: none;
+            font-size: 12px;
+            font-weight: 800;
+            transition: .2s;
+            display: inline-flex;
+            align-items: center
+        }
+
+            .category-chip:hover, .category-chip.active {
+                background: #082d3b;
+                border-color: #082d3b;
+                color: #fff;
+                transform: translateY(-2px);
+                box-shadow: 0 8px 18px rgba(7,31,44,.14)
+            }
+
+        .listing {
+            padding: 35px 0 105px
+        }
+
+        .results-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: end;
+            gap: 25px;
+            margin-bottom: 28px
+        }
+
+            .results-head h2 {
+                font-size: 35px;
+                letter-spacing: -.04em;
+                margin: 0 0 6px
+            }
+
+            .results-head p {
+                margin: 0;
+                color: #6a7f83;
+                font-size: 12px
+            }
+
+        .record-note {
+            padding: 9px 12px;
+            border-radius: 20px;
+            background: #e5f6ee;
+            color: #087252;
+            font-size: 9px;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: .08em
+        }
+
+        .ngo-grid {
+            display: grid;
+            grid-template-columns: repeat(3,1fr);
+            gap: 20px
+        }
+
+        .ngo-card {
+            min-height: 405px;
+            border-radius: 23px;
+            background: #fff;
+            border: 1px solid #d9e6e1;
+            box-shadow: 0 14px 38px rgba(7,31,44,.085);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            transition: .32s
+        }
+
+            .ngo-card:before {
+                content: "";
+                height: 7px;
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                background: linear-gradient(90deg,#087f5b,#45c491)
+            }
+
+            .ngo-card:nth-child(3n+2):before {
+                background: linear-gradient(90deg,#ed7959,#f2bd6c)
+            }
+
+            .ngo-card:nth-child(3n):before {
+                background: linear-gradient(90deg,#17667d,#58aeb5)
+            }
+
+            .ngo-card:hover {
+                transform: translateY(-9px);
+                box-shadow: 0 26px 56px rgba(7,31,44,.16)
+            }
+
+        .card-head {
+            padding: 28px 25px 18px;
+            display: flex;
+            justify-content: space-between;
+            gap: 18px;
+            align-items: start
+        }
+
+        .ngo-logo {
+            width: 64px;
+            height: 64px;
+            border-radius: 18px;
+            background: linear-gradient(135deg,#082d3b,#087f5b);
+            color: #fff;
+            display: grid;
+            place-items: center;
+            font-size: 20px;
+            font-weight: 900;
+            box-shadow: 0 11px 25px rgba(7,31,44,.18);
+            overflow: hidden
+        }
+
+            .ngo-logo img {
+                width: 100%;
+                height: 100%;
+                object-fit: cover
+            }
+
+        .ngo-card:nth-child(3n+2) .ngo-logo {
+            background: linear-gradient(135deg,#e66f52,#f0a963)
+        }
+
+        .ngo-card:nth-child(3n) .ngo-logo {
+            background: linear-gradient(135deg,#155b72,#2c929a)
+        }
+
+        .associated {
+            padding: 7px 9px;
+            border-radius: 20px;
+            background: #eef6f3;
+            color: #557074;
+            font-size: 8px;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: .08em
+        }
+
+        .card-body {
+            padding: 0 25px 23px;
+            flex: 1
+        }
+
+        .card-category {
+            font-size: 9px;
+            text-transform: uppercase;
+            letter-spacing: .1em;
+            color: var(--emerald);
+            font-weight: 900
+        }
+
+        .ngo-name {
+            font-size: 20px;
+            line-height: 1.3;
+            margin: 9px 0 8px
+        }
+
+            .ngo-name a {
+                text-decoration: none;
+                color: var(--navy)
+            }
+
+                .ngo-name a:hover {
+                    color: var(--emerald)
+                }
+
+        .location {
+            font-size: 10px;
+            color: #6b8084
+        }
+
+        .description {
+            font-size: 12px;
+            line-height: 1.7;
+            color: #687d81;
+            margin: 18px 0;
+            min-height: 62px
+        }
+
+        .cause-tags {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap
+        }
+
+        .cause-tag {
+            padding: 6px 8px;
+            border-radius: 18px;
+            background: #edf7f2;
+            color: #087252;
+            text-decoration: none;
+            font-size: 8px;
+            font-weight: 850
+        }
+
+            .cause-tag:hover {
+                background: #087f5b;
+                color: #fff
+            }
+
+        .card-meta {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-top: 18px
+        }
+
+        .meta-cell {
+            padding: 11px;
+            border-radius: 12px;
+            background: #f4f8f6
+        }
+
+            .meta-cell strong {
+                display: block;
+                font-size: 15px;
+                color: var(--navy)
+            }
+
+            .meta-cell span {
+                display: block;
+                margin-top: 3px;
+                color: #718589;
+                font-size: 8px;
+                text-transform: uppercase;
+                letter-spacing: .06em
+            }
+
+        .card-foot {
+            padding: 17px 25px;
+            border-top: 1px solid #e5eeea;
+            display: flex;
+            justify-content: space-between;
+            align-items: center
+        }
+
+        .profile-btn {
+            text-decoration: none;
+            color: #fff;
+            background: #082d3b;
+            padding: 10px 14px;
+            border-radius: 10px;
+            font-size: 10px;
+            font-weight: 850
+        }
+
+            .profile-btn:hover {
+                background: var(--emerald);
+                color: #fff
+            }
+
+        .joined {
+            font-size: 9px;
+            color: #849396
+        }
+
+        .empty {
+            padding: 70px 25px;
+            text-align: center;
+            background: #fff;
+            border: 1px dashed #b8cec5;
+            border-radius: 23px
+        }
+
+        .empty-icon {
+            width: 64px;
+            height: 64px;
+            border-radius: 19px;
+            background: #e7f6ef;
+            color: var(--emerald);
+            display: grid;
+            place-items: center;
+            margin: 0 auto 18px;
+            font-weight: 900
+        }
+
+        .empty h3 {
+            font-size: 23px;
+            margin: 0 0 8px
+        }
+
+        .empty p {
+            color: #6d8185;
+            margin-bottom: 22px
+        }
+
+        .reveal {
+            opacity: 0;
+            transform: translateY(25px);
+            transition: .7s
+        }
+
+            .reveal.show {
+                opacity: 1;
+                transform: none
+            }
+
+        @@media(max-width:980px) {
+            .dir-hero-grid {
+                grid-template-columns: 1fr
+            }
+
+            .dir-hero h1 {
+                font-size: 52px
+            }
+
+            .search-row {
+                grid-template-columns: 1fr 1fr
+            }
+
+            .filter-actions {
+                align-items: stretch
+            }
+
+            .ngo-grid {
+                grid-template-columns: 1fr 1fr
+            }
+        }
+
+        @@media(max-width:650px) {
+            .dir-shell {
+                padding-left: 16px;
+                padding-right: 16px
+            }
+
+            .dir-hero {
+                padding: 52px 0 68px
+            }
+
+                .dir-hero h1 {
+                    font-size: 42px
+                }
+
+            .dir-visual {
+                height: 360px
+            }
+
+            .stats-grid, .search-row, .ngo-grid {
+                grid-template-columns: 1fr
+            }
+
+            .stats-band {
+                margin-top: -25px
+            }
+
+            .filter-section {
+                padding-top: 55px
+            }
+
+            .filter-actions {
+                display: grid;
+                grid-template-columns: 1fr 1fr
+            }
+
+            .results-head {
+                display: block
+            }
+
+            .record-note {
+                display: inline-block;
+                margin-top: 15px
+            }
+
+            .hero-proof {
+                display: grid
+            }
+        }
+
+        @@media(prefers-reduced-motion:reduce) {
+            .reveal {
+                opacity: 1;
+                transform: none
+            }
+
+            .ngo-card {
+                transition: none
+            }
+        }
+    </style>
+}
+
+<main class="directory-page">
+    <section class="dir-hero"><div class="dir-shell dir-hero-grid"><div><span class="dir-kicker">Associated organisations</span><h1>Discover the people<br />behind <span>the programmes.</span></h1><p class="dir-lead">Browse active NGO records maintained on GiveAID and explore the causes and community programmes connected to each organisation.</p><div class="hero-proof"><span>Database-driven directory</span><span>Searchable records</span><span>Admin maintained</span></div></div><div class="dir-visual"><img src="@Url.Content("~/Content/giveaid-ngo-directory.png")" alt="Pakistani community organisation representatives planning programmes" /><div class="visual-caption"><small>Community collaboration</small><strong>Organisations working across meaningful causes</strong></div></div></div></section>
+
+    <div class="stats-band"><div class="dir-shell"><div class="stats-grid"><div class="dir-stat"><strong>@Model.TotalActiveNgos</strong><span>Active NGO records</span></div><div class="dir-stat"><strong>@Model.TotalActivePrograms</strong><span>Active programmes</span></div><div class="dir-stat"><strong>PKR @Model.TotalImpactRaised.ToString("N0")</strong><span>Completed contributions</span></div></div></div></div>
+
+    <section class="filter-section" id="directoryFilters">
+        <div class="dir-shell">
+            <div class="filter-card">
+                <form id="ngoFilterForm" method="get" action="@Url.Action("Index","NGO")">
+                    <div class="search-row">
+                        <div class="field"><label for="search">Search directory</label><input id="search" name="search" value="@Model.SearchQuery" placeholder="Name, city, category or programme" autocomplete="off" /></div>
+                        <div class="field"><label for="location">City</label><select id="location" name="location"><option value="">All cities</option>@foreach (var city in Model.AvailableLocations)
+                        {<option value="@city" @(string.Equals(Model.SelectedLocation, city, StringComparison.OrdinalIgnoreCase) ? "selected=selected" : "")>@city</option>}</select></div>
+                        <div class="field"><label for="causeId">Cause</label><select id="causeId" name="causeId"><option value="">All causes</option>@foreach (var cause in Model.AvailableCauses)
+                        {<option value="@cause.ID" @(Model.SelectedCauseId == cause.ID ? "selected=selected" : "")>@cause.Name</option>}</select></div>
+                        <div class="filter-actions"><button class="search-btn" id="applyFilters" type="button">Search</button><button class="clear-btn" id="clearFilters" type="button">Clear</button></div>
+                    </div>
+                    <div class="category-row"><span class="category-label">Categories</span><button type="button" class="category-chip @(string.IsNullOrWhiteSpace(Model.SelectedCategory)?"active":"")" data-category="">All</button>@foreach (var category in Model.AvailableCategories)
+                    {<button type="button" class="category-chip @(string.Equals(Model.SelectedCategory,category,StringComparison.OrdinalIgnoreCase)?"active":"")" data-category="@category">@category</button>}</div>
+                </form>
             </div>
-            <h1 class="ngo-hero-title">Discover NGOs</h1>
-            <p class="ngo-hero-subtitle">
-                Find organizations making an impact across Pakistan. Explore verified missions, active field programs, and transparent track records.
-            </p>
         </div>
-    </div>
-</section>
+    </section>
 
-<!-- =========================================================
-     SEARCH & FILTER BAR
-     ========================================================= -->
-<section class="ngo-search-section">
-    <div class="section-container">
-        <div class="ngo-filter-card">
-            @using (Html.BeginForm("Index", "NGO", FormMethod.Get, new { id = "ngoFilterForm", @class = "ngo-filter-form" }))
+    <section class="listing">
+        <div class="dir-shell">
+            <div class="results-head"><div><h2>NGO directory</h2><p><strong id="resultCount">@Model.TotalResultsCount</strong> @(Model.TotalResultsCount==1?"organisation":"organisations") found</p></div><span class="record-note">Active platform records</span></div>
+            @if (Model.NGOs != null && Model.NGOs.Any())
             {
-                <!-- Primary Search Input -->
-                <div class="search-bar-primary">
-                    <div class="input-icon-wrap search-input-flex">
-                        <span class="input-icon">🔍</span>
-                        <input type="text" 
-                               id="searchQuery" 
-                               name="search" 
-                               class="filter-input filter-input-lg" 
-                               placeholder="Search NGOs by name, keyword, or mission..." 
-                               value="@Model.SearchQuery" 
-                               autocomplete="off" />
-                    </div>
+                <div class="ngo-grid" id="ngoGrid">
+                    @foreach (var ngo in Model.NGOs)
+                    {
+                        string initials = string.Join("", (ngo.NGOName ?? "NG").Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries).Take(2).Select(x => x.Substring(0, 1))).ToUpperInvariant();
+                        string description = string.IsNullOrWhiteSpace(ngo.Description) ? "Community-focused organisation connected to programmes on GiveAID." : ngo.Description;
+                        if (description.Length > 155) { description = description.Substring(0, 155) + "..."; }
+                        <article class="ngo-card reveal" data-search="@((ngo.NGOName+" "+ngo.City+" "+ngo.Category+" "+ngo.Description).ToLowerInvariant())" data-city="@((ngo.City??"").ToLowerInvariant())" data-category="@((ngo.Category??"").ToLowerInvariant())" data-causes="@string.Join(",",ngo.CauseIdsList)">
+                            <div class="card-head"><div class="ngo-logo">@if (!string.IsNullOrWhiteSpace(ngo.LogoURL))
+                            {<img src="@ngo.LogoURL" alt="@ngo.NGOName logo" onerror="this.style.display='none';this.nextElementSibling.style.display='grid';" /><span style="display:none">@initials</span>}
+                        else
+                        {@initials}</div><span class="associated">Associated NGO</span></div>
+                            <div class="card-body">
+                                <div class="card-category">@(string.IsNullOrWhiteSpace(ngo.Category)?"Community support":ngo.Category)</div><h3 class="ngo-name"><a href="@Url.Action("Details","NGO",new{id=ngo.NGOID})">@ngo.NGOName</a></h3><div class="location">@(string.IsNullOrWhiteSpace(ngo.City)?"Pakistan":ngo.City), @(string.IsNullOrWhiteSpace(ngo.Country)?"Pakistan":ngo.Country)</div><p class="description">@description</p>
+                                @if (ngo.CausesList != null && ngo.CausesList.Any())
+                                {<div class="cause-tags">@for (int i = 0; i < ngo.CausesList.Count && i < 3; i++)
+                                    {
+                                        int linkedId = ngo.CauseIdsList != null && i < ngo.CauseIdsList.Count ? ngo.CauseIdsList[i] : 0; if (linkedId > 0)
+                                        {<a class="cause-tag" href="@Url.Action("Details","Causes",new{id=linkedId})">@ngo.CausesList[i]</a>}
+                                    else
+                                    {<span class="cause-tag">@ngo.CausesList[i]</span>}
+                            }</div>}
+                                <div class="card-meta"><div class="meta-cell"><strong>@ngo.ActiveProgramsCount</strong><span>Active programmes</span></div><div class="meta-cell"><strong>@ngo.CausesSupportedCount</strong><span>Connected causes</span></div></div>
+                            </div>
+                            <div class="card-foot"><a class="profile-btn" href="@Url.Action("Details","NGO",new{id=ngo.NGOID})">View profile&nbsp; &#8594;</a><span class="joined">Added @ngo.CreatedAt.ToString("MMM yyyy")</span></div>
+                        </article>
+                    }
                 </div>
-
-                <!-- Secondary Filters Row (Location, Cause, Action buttons) -->
-                <div class="filter-controls-row">
-                    <div class="filter-dropdown-group">
-                        <div class="input-icon-wrap">
-                            <span class="input-icon">📍</span>
-                            <select id="locationFilter" name="location" class="filter-select" onchange="submitNgoFilters()">
-                                <option value="">All Locations (Nationwide)</option>
-                                @foreach (var loc in Model.AvailableLocations)
-                                {
-                                    <option value="@loc" @(string.Equals(Model.SelectedLocation, loc, StringComparison.OrdinalIgnoreCase) ? "selected" : "")>
-                                        @loc
-                                    </option>
-                                }
-                            </select>
-                        </div>
-                    </div>
-
-                    <div class="filter-dropdown-group">
-                        <div class="input-icon-wrap">
-                            <span class="input-icon">🎯</span>
-                            <select id="causeFilter" name="causeId" class="filter-select" onchange="submitNgoFilters()">
-                                <option value="">All Causes & Sectors</option>
-                                @foreach (var c in Model.AvailableCauses)
-                                {
-                                    <option value="@c.ID" @(Model.SelectedCauseId == c.ID ? "selected" : "")>
-                                        @c.Name
-                                    </option>
-                                }
-                            </select>
-                        </div>
-                    </div>
-
-                    <div class="filter-btn-group">
-                        <button type="submit" class="btn-filter-submit">
-                            <span>Search</span>
-                        </button>
-                        @if (!string.IsNullOrEmpty(Model.SearchQuery) || !string.IsNullOrEmpty(Model.SelectedLocation) || Model.SelectedCauseId.HasValue || !string.IsNullOrEmpty(Model.SelectedCategory))
-                        {
-                            <a href="@Url.Action("Index", "NGO")" class="btn-filter-reset" title="Clear all filters">
-                                <span>✕ Clear</span>
-                            </a>
-                        }
-                    </div>
-                </div>
-
-                <!-- Quick Category Chips -->
-                <div class="quick-chips-row">
-                    <span class="chips-label">Quick Sectors:</span>
-                    <button type="button" class="quick-chip @(string.IsNullOrEmpty(Model.SelectedCategory) && !Model.SelectedCauseId.HasValue ? "active" : "")" onclick="setQuickSector('')">All Causes</button>
-                    <button type="button" class="quick-chip @(Model.SelectedCategory == "Education" ? "active" : "")" onclick="setQuickSector('Education')">📚 Education</button>
-                    <button type="button" class="quick-chip @(Model.SelectedCategory == "Healthcare" ? "active" : "")" onclick="setQuickSector('Healthcare')">🩺 Healthcare</button>
-                    <button type="button" class="quick-chip @(Model.SelectedCategory == "Water" ? "active" : "")" onclick="setQuickSector('Water')">💧 Clean Water</button>
-                    <button type="button" class="quick-chip @(Model.SelectedCategory == "Food" ? "active" : "")" onclick="setQuickSector('Food')">🍲 Food Security</button>
-                    <button type="button" class="quick-chip @(Model.SelectedCategory == "Climate" ? "active" : "")" onclick="setQuickSector('Climate')">🌲 Climate</button>
-                    <button type="button" class="quick-chip @(Model.SelectedCategory == "Disability" ? "active" : "")" onclick="setQuickSector('Disability')">♿ Disability</button>
-                    <button type="button" class="quick-chip @(Model.SelectedCategory == "Relief" ? "active" : "")" onclick="setQuickSector('Relief')">🚨 Relief</button>
-                </div>
-                <input type="hidden" id="selectedCategoryInput" name="category" value="@Model.SelectedCategory" />
+                <div class="empty" id="clientEmpty" style="display:none"><div class="empty-icon">NG</div><h3>No matching NGOs</h3><p>Try a different name or use the filters above.</p><a class="profile-btn" href="@Url.Action("Index","NGO")">Reset directory</a></div>
+            }
+            else
+            {
+                <div class="empty"><div class="empty-icon">NG</div><h3>No NGO records found</h3><p>Try changing the selected search or filters.</p><a class="profile-btn" href="@Url.Action("Index","NGO")">Clear filters</a></div>
             }
         </div>
-    </div>
-</section>
+    </section>
+</main>
 
-<!-- =========================================================
-     NGO DIRECTORY LISTING GRID
-     ========================================================= -->
-<section class="ngo-grid-section">
-    <div class="section-container">
-        <!-- Results Header -->
-        <div class="results-header-bar">
-            <div class="results-count">
-                Showing <strong id="ngoResultsCount">@Model.TotalResultsCount</strong> Verified @(Model.TotalResultsCount == 1 ? "Organization" : "Organizations")
-            </div>
-            <div class="directory-view-badges">
-                <span class="compliance-badge">🛡️ SECP Audited</span>
-                <span class="compliance-badge">● Active Platform Partners</span>
-            </div>
-        </div>
-
-        <!-- AJAX / Live Loading Indicator -->
-        <div id="ngoLoadingIndicator" class="live-loading-state" style="display: none;">
-            <div class="spinner-dot"></div>
-            <span>Searching verified NGOs...</span>
-        </div>
-
-        @if (Model.NGOs != null && Model.NGOs.Count > 0)
-        {
-            <div class="ngo-cards-grid" id="ngoCardsContainer">
-                @foreach (var ngo in Model.NGOs)
-                {
-                    <div class="ngo-directory-card" 
-                         data-ngo-name="@ngo.NGOName.ToLower()" 
-                         data-ngo-city="@ngo.City.ToLower()" 
-                         data-ngo-desc="@ngo.Description.ToLower()">
-                        
-                        <!-- Card Header: Logo & Meta -->
-                        <div class="ngo-card-top">
-                            <div class="ngo-avatar-wrap">
-                                @if (!string.IsNullOrEmpty(ngo.LogoURL))
-                                {
-                                    <img src="@ngo.LogoURL" alt="@ngo.NGOName" class="ngo-logo-img" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" />
-                                    <div class="ngo-avatar-fallback" style="display:none;">@ngo.NGOName.Substring(0, 1)</div>
-                                }
-                                else
-                                {
-                                    <div class="ngo-avatar-fallback">@ngo.NGOName.Substring(0, 1)</div>
-                                }
-                            </div>
-                            <div class="ngo-top-meta">
-                                <span class="verified-pill">🛡️ SECP Verified</span>
-                                <span class="location-pill">📍 @ngo.City</span>
-                            </div>
-                        </div>
-
-                        <!-- Card Body: Name, Causes, Description, Stats -->
-                        <div class="ngo-card-main">
-                            <h3 class="ngo-title">
-                                <a href="@Url.Action("Details", "NGO", new { id = ngo.NGOID })">@ngo.NGOName</a>
-                            </h3>
-
-                            @if (ngo.CausesList != null && ngo.CausesList.Count > 0)
-                            {
-                                <div class="ngo-causes-tags">
-                                    @for (int i = 0; i < ngo.CausesList.Count; i++)
-                                    {
-                                        var causeName = ngo.CausesList[i];
-                                        int? cid = (ngo.CauseIdsList != null && i < ngo.CauseIdsList.Count) ? (int?)ngo.CauseIdsList[i] : null;
-
-                                        if (cid.HasValue && cid.Value > 0)
-                                        {
-                                            <a href="@Url.Action("Details", "Causes", new { id = cid.Value })" class="ngo-cause-tag" title="Explore @causeName cause">
-                                                @causeName
-                                            </a>
-                                        }
-                                        else
-                                        {
-                                            <span class="ngo-cause-tag">@causeName</span>
-                                        }
-                                    }
-                                </div>
-                            }
-
-                            <p class="ngo-snippet">
-                                @if (!string.IsNullOrEmpty(ngo.Description))
-                                {
-                                    string cleanDesc = ngo.Description;
-                                    if (cleanDesc.StartsWith("[Category:"))
-                                    {
-                                        int endIdx = cleanDesc.IndexOf(']');
-                                        if (endIdx >= 0) { cleanDesc = cleanDesc.Substring(endIdx + 1).Trim(); }
-                                    }
-                                    if (cleanDesc.Contains("[Reg No:"))
-                                    {
-                                        int regIdx = cleanDesc.IndexOf("[Reg No:");
-                                        if (regIdx >= 0) { cleanDesc = cleanDesc.Substring(0, regIdx).Trim(); }
-                                    }
-                                    @(cleanDesc.Length > 125 ? cleanDesc.Substring(0, 125) + "..." : cleanDesc)
-                                }
-                                else
-                                {
-                                    <span>Dedicated humanitarian operations and community development across Pakistan.</span>
-                                }
-                            </p>
-
-                            <div class="ngo-stats-pills">
-                                <div class="stat-pill-item">
-                                    <span class="stat-pill-icon">📋</span>
-                                    <span class="stat-pill-text"><strong>@ngo.ActiveProgramsCount</strong> Active @(ngo.ActiveProgramsCount == 1 ? "Program" : "Programs")</span>
-                                </div>
-                                @if (ngo.TotalFundsRaised > 0)
-                                {
-                                    <div class="stat-pill-item">
-                                        <span class="stat-pill-icon">💚</span>
-                                        <span class="stat-pill-text"><strong>PKR @ngo.TotalFundsRaised.ToString("N0")</strong> Raised</span>
-                                    </div>
-                                }
-                            </div>
-                        </div>
-
-                        <!-- Card Footer: Actions -->
-                        <div class="ngo-card-footer">
-                            <a href="@Url.Action("Details", "NGO", new { id = ngo.NGOID })" class="btn-ngo-details">
-                                <span>View Profile</span>
-                                <span class="btn-arrow">→</span>
-                            </a>
-                            <a href="@Url.Action("Create", "Donation", new { ngoId = ngo.NGOID })" class="btn-ngo-donate" title="Donate directly to @ngo.NGOName">
-                                <span>Donate 💚</span>
-                            </a>
-                        </div>
-                    </div>
-                }
-            </div>
-        }
-        else
-        {
-            <div class="ngo-empty-state">
-                <div class="empty-state-icon">🔍</div>
-                <h3>No NGOs found</h3>
-                <p>Try changing your search or filters to find active partner organizations.</p>
-                <a href="@Url.Action("Index", "NGO")" class="btn-filter-submit" style="margin-top: 16px; text-decoration: none;">
-                    <span>Clear Filters</span>
-                </a>
-            </div>
-        }
-
-        <!-- Client-Side Instant Filter Empty State (Hidden by default) -->
-        <div id="ngoClientEmptyState" class="ngo-empty-state" style="display: none;">
-            <div class="empty-state-icon">🔍</div>
-            <h3>No NGOs found</h3>
-            <p>Try changing your search or filters.</p>
-            <button type="button" class="btn-filter-submit" onclick="resetClientFilters()" style="margin-top: 16px;">
-                <span>Clear Filters</span>
-            </button>
-        </div>
-    </div>
-</section>
-
-@section Scripts {
+@section Scripts{
     <script>
-        function submitNgoFilters() {
-            document.getElementById('ngoFilterForm').submit();
-        }
-
-        function setQuickSector(sector) {
-            document.getElementById('selectedCategoryInput').value = sector;
-            submitNgoFilters();
-        }
-
-        function resetClientFilters() {
-            $('#searchQuery').val('');
-            $('#selectedCategoryInput').val('');
-            $('#locationFilter').val('');
-            $('#causeFilter').val('');
-            submitNgoFilters();
-        }
-
-        // Live client-side instant filter with loading state
-        $(document).ready(function () {
-            var searchTimeout = null;
-            $('#searchQuery').on('input', function () {
-                clearTimeout(searchTimeout);
-                var q = $(this).val().toLowerCase().trim();
-
-                $('#ngoLoadingIndicator').show();
-
-                searchTimeout = setTimeout(function () {
-                    var visibleCount = 0;
-                    $('.ngo-directory-card').each(function () {
-                        var name = $(this).data('ngo-name') || '';
-                        var city = $(this).data('ngo-city') || '';
-                        var desc = $(this).data('ngo-desc') || '';
-
-                        if (!q || name.indexOf(q) !== -1 || city.indexOf(q) !== -1 || desc.indexOf(q) !== -1) {
-                            $(this).show();
-                            visibleCount++;
-                        } else {
-                            $(this).hide();
-                        }
-                    });
-
-                    $('#ngoLoadingIndicator').hide();
-                    $('#ngoResultsCount').text(visibleCount);
-
-                    if (visibleCount === 0) {
-                        $('#ngoClientEmptyState').show();
-                    } else {
-                        $('#ngoClientEmptyState').hide();
-                    }
-                }, 120);
-            });
-        });
+(function(){
+ var reveals=document.querySelectorAll('.reveal');
+ if('IntersectionObserver' in window){var observer=new IntersectionObserver(function(entries){entries.forEach(function(entry){if(entry.isIntersecting){entry.target.classList.add('show');observer.unobserve(entry.target);}});},{threshold:.1});reveals.forEach(function(x){observer.observe(x);});}else{reveals.forEach(function(x){x.classList.add('show');});}
+ var form=document.getElementById('ngoFilterForm'),search=document.getElementById('search'),city=document.getElementById('location'),cause=document.getElementById('causeId'),apply=document.getElementById('applyFilters'),clear=document.getElementById('clearFilters'),chips=document.querySelectorAll('.category-chip'),cards=document.querySelectorAll('.ngo-card'),count=document.getElementById('resultCount'),empty=document.getElementById('clientEmpty'),selectedCategory='@((Model.SelectedCategory??"").Replace("'","\\'"))'.toLowerCase();
+ function filterCards(){var q=(search.value||'').toLowerCase().trim(),selectedCity=(city.value||'').toLowerCase(),selectedCause=cause.value||'',visible=0;cards.forEach(function(card){var haystack=card.getAttribute('data-search')||'',cardCity=card.getAttribute('data-city')||'',cardCategory=card.getAttribute('data-category')||'',cardCauses=(card.getAttribute('data-causes')||'').split(','),show=(!q||haystack.indexOf(q)>=0)&&(!selectedCity||cardCity===selectedCity)&&(!selectedCategory||cardCategory===selectedCategory)&&(!selectedCause||cardCauses.indexOf(selectedCause)>=0);card.style.display=show?'flex':'none';if(show)visible++;});if(count)count.textContent=visible;if(empty)empty.style.display=visible?'none':'block';}
+ if(form)form.addEventListener('submit',function(event){event.preventDefault();filterCards();});
+ if(apply)apply.addEventListener('click',filterCards);if(search)search.addEventListener('input',filterCards);if(city)city.addEventListener('change',filterCards);if(cause)cause.addEventListener('change',filterCards);
+ chips.forEach(function(chip){chip.addEventListener('click',function(){selectedCategory=(chip.getAttribute('data-category')||'').toLowerCase();chips.forEach(function(x){x.classList.remove('active');});chip.classList.add('active');filterCards();});});
+ if(clear)clear.addEventListener('click',function(){search.value='';city.value='';cause.value='';selectedCategory='';chips.forEach(function(x){x.classList.toggle('active',!x.getAttribute('data-category'));});filterCards();});
+})();
     </script>
 }

@@ -1,0 +1,86 @@
+@using System
+
+@{
+    var adminName = Convert.ToString(Session["UserName"]);
+
+    if (string.IsNullOrWhiteSpace(adminName))
+    {
+        adminName = "GiveAID Administrator";
+    }
+
+    var adminInitial = adminName.Substring(0, 1).ToUpperInvariant();
+    var pageTitle = Convert.ToString(ViewBag.AdminPageTitle);
+    var pageSubtitle = Convert.ToString(ViewBag.AdminPageSubtitle);
+
+    if (string.IsNullOrWhiteSpace(pageTitle))
+    {
+        pageTitle = "Administration";
+    }
+
+    if (string.IsNullOrWhiteSpace(pageSubtitle))
+    {
+        pageSubtitle = "GiveAID management workspace";
+    }
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>@ViewBag.Title</title>
+
+    <link href="@Url.Content("~/Content/AdminDashboard.css?v=20260826-4")"
+          rel="stylesheet" />
+    <link href="@Url.Content("~/Content/AdminShellFix.css?v=20260826-1")"
+          rel="stylesheet" />
+
+    @RenderSection("Styles", required: false)
+</head>
+<body>
+    <div class="admin-shell">
+        @Html.Partial("_AdminSidebar")
+
+        <section class="content">
+            <header class="topbar">
+                <div class="top-title">
+                    <strong>@pageTitle</strong>
+                    <span>@pageSubtitle</span>
+                </div>
+
+                <div class="account">
+                    <div class="avatar" aria-hidden="true">@adminInitial</div>
+
+                    <div class="account-meta">
+                        <b>@adminName</b>
+                        <span>Platform administrator</span>
+                    </div>
+
+                    <a class="logout" href="@Url.Action("Logout", "Account")">
+                        <span class="logout-mark" aria-hidden="true">OUT</span>
+                        <span>Sign out</span>
+                    </a>
+                </div>
+            </header>
+
+            @if (TempData["SuccessMessage"] != null)
+            {
+                <div class="flash flash-success" role="status">
+                    @TempData["SuccessMessage"]
+                </div>
+            }
+
+            @if (TempData["ErrorMessage"] != null)
+            {
+                <div class="flash flash-error" role="alert">
+                    @TempData["ErrorMessage"]
+                </div>
+            }
+
+            @RenderBody()
+        </section>
+    </div>
+
+    @RenderSection("Scripts", required: false)
+</body>
+</html>

@@ -9,65 +9,18 @@ namespace GiveAID_Project.Models
     [AttributeUsage(AttributeTargets.Method | AttributeTargets.Class, Inherited = true, AllowMultiple = true)]
     public class AuthorizeRolesAttribute : AuthorizeAttribute
     {
-        public AuthorizeRolesAttribute(params string[] roles)
+        public AuthorizeRolesAttribute(params string[] roles) { Roles = string.Join(",", roles ?? new string[0]); }
+        protected override bool AuthorizeCore(HttpContextBase context)
         {
-            Roles = string.Join(",", roles);
+            if (context == null || context.User == null || !context.User.Identity.IsAuthenticated) return false;
+            if (string.IsNullOrWhiteSpace(Roles)) return true;
+            return Roles.Split(',').Select(x => x.Trim()).Where(x => x.Length > 0).Any(context.User.IsInRole);
         }
-
-        protected override bool AuthorizeCore(HttpContextBase httpContext)
+        protected override void HandleUnauthorizedRequest(AuthorizationContext filter)
         {
-            if (httpContext == null)
-                return false;
-
-            if (!httpContext.User.Identity.IsAuthenticated)
-                return false;
-
-            if (string.IsNullOrEmpty(Roles))
-                return true;
-
-            var rolesAllowed = Roles.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
-                                    .Select(r => r.Trim())
-                                    .ToList();
-
-            // Check HttpContext.User.IsInRole
-            if (rolesAllowed.Any(r => httpContext.User.IsInRole(r)))
-                return true;
-
-            // Also check Session["UserRole"] or Session["UserRoles"] as fallback
-            var sessionRole = httpContext.Session?["UserRole"] as string;
-            if (!string.IsNullOrEmpty(sessionRole) && rolesAllowed.Any(r => string.Equals(r, sessionRole, StringComparison.OrdinalIgnoreCase)))
-                return true;
-
-            var sessionRoles = httpContext.Session?["UserRoles"] as System.Collections.Generic.List<string>;
-            if (sessionRoles != null && sessionRoles.Any(sr => rolesAllowed.Any(ar => string.Equals(ar, sr, StringComparison.OrdinalIgnoreCase))))
-                return true;
-
-            return false;
-        }
-
-        protected override void HandleUnauthorizedRequest(AuthorizationContext filterContext)
-        {
-            if (!filterContext.HttpContext.User.Identity.IsAuthenticated)
-            {
-                // Not logged in -> redirect to login with returnUrl
-                filterContext.Result = new RedirectToRouteResult(
-                    new RouteValueDictionary
-                    {
-                        { "controller", "Account" },
-                        { "action", "Login" },
-                        { "returnUrl", filterContext.HttpContext.Request.RawUrl }
-                    });
-            }
-            else
-            {
-                // Logged in but insufficient permissions -> redirect to Access Denied
-                filterContext.Result = new RedirectToRouteResult(
-                    new RouteValueDictionary
-                    {
-                        { "controller", "Account" },
-                        { "action", "AccessDenied" }
-                    });
-            }
+            filter.Result = !filter.HttpContext.User.Identity.IsAuthenticated
+                ? (ActionResult)new RedirectToRouteResult(new RouteValueDictionary { { "controller", "Account" }, { "action", "Login" }, { "returnUrl", filter.HttpContext.Request.RawUrl } })
+                : new RedirectToRouteResult(new RouteValueDictionary { { "controller", "Account" }, { "action", "AccessDenied" } });
         }
     }
 }

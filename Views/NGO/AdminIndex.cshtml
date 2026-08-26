@@ -1,0 +1,319 @@
+@model GiveAID_Project.Models.AdminNgoListViewModel
+@using System
+@using System.Linq
+
+@{
+    ViewBag.Title = "NGO Management | GiveAID";
+    ViewBag.AdminPageTitle = "NGO management";
+    ViewBag.AdminPageSubtitle = "Manage associated organisations and public visibility";
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+
+    var selectedStatus = string.IsNullOrWhiteSpace(Model.SelectedStatus)
+        ? "all"
+        : Model.SelectedStatus.ToLowerInvariant();
+}
+
+@section Styles {
+    <link href="@Url.Content("~/Content/NgoAdminManagement.css?v=20260826-1")"
+          rel="stylesheet" />
+}
+
+<main class="ngo-admin-page">
+    <header class="ngo-admin-hero">
+        <div>
+            <span class="ngo-admin-eyebrow">Organisation records</span>
+            <h1>Associated NGO management</h1>
+            <p>
+                Create, update and control the public visibility of organisations connected to GiveAID.
+            </p>
+        </div>
+
+        <a class="ngo-primary-button"
+           href="@Url.Action("AdminCreate", "NGO")">
+            <span class="ngo-button-icon" aria-hidden="true">+</span>
+            <span>Add new NGO</span>
+        </a>
+    </header>
+
+    <section class="ngo-admin-stats" aria-label="NGO statistics">
+        <article class="ngo-stat-card ngo-stat-total">
+            <span class="ngo-stat-code">ALL</span>
+            <strong>@Model.TotalNGOs</strong>
+            <span>Total organisations</span>
+        </article>
+
+        <article class="ngo-stat-card ngo-stat-active">
+            <span class="ngo-stat-code">ON</span>
+            <strong>@Model.ActiveNGOs</strong>
+            <span>Active and public</span>
+        </article>
+
+        <article class="ngo-stat-card ngo-stat-inactive">
+            <span class="ngo-stat-code">OFF</span>
+            <strong>@Model.InactiveNGOs</strong>
+            <span>Inactive records</span>
+        </article>
+
+        <article class="ngo-stat-card ngo-stat-programmes">
+            <span class="ngo-stat-code">PR</span>
+            <strong>@Model.TotalProgrammes</strong>
+            <span>Connected programmes</span>
+        </article>
+    </section>
+
+    <section class="ngo-filter-panel">
+        <form method="get"
+              action="@Url.Action("AdminIndex", "NGO")"
+              class="ngo-filter-form">
+            <div class="ngo-filter-field ngo-filter-search">
+                <label for="ngoSearch">Search records</label>
+                <input id="ngoSearch"
+                       type="search"
+                       name="search"
+                       value="@Model.SearchQuery"
+                       placeholder="Name, registration, category, city or email"
+                       autocomplete="off" />
+            </div>
+
+            <div class="ngo-filter-field">
+                <label for="ngoCategory">Category</label>
+                <select id="ngoCategory" name="category">
+                    <option value="">All categories</option>
+                    @foreach (var category in Model.AvailableCategories)
+                    {
+                        <option value="@category"
+                                @(string.Equals(Model.SelectedCategory, category, StringComparison.OrdinalIgnoreCase)
+                                    ? "selected"
+                                    : "")>
+                            @category
+                        </option>
+                    }
+                </select>
+            </div>
+
+            <div class="ngo-filter-field">
+                <label for="ngoStatus">Visibility</label>
+                <select id="ngoStatus" name="status">
+                    <option value="all" @(selectedStatus == "all" ? "selected" : "")>All statuses</option>
+                    <option value="active" @(selectedStatus == "active" ? "selected" : "")>Active</option>
+                    <option value="inactive" @(selectedStatus == "inactive" ? "selected" : "")>Inactive</option>
+                </select>
+            </div>
+
+            <div class="ngo-filter-actions">
+                <button class="ngo-filter-submit" type="submit">Apply filters</button>
+                <a class="ngo-filter-reset" href="@Url.Action("AdminIndex", "NGO")">Reset</a>
+            </div>
+        </form>
+    </section>
+
+    <section class="ngo-record-panel">
+        <header class="ngo-record-header">
+            <div>
+                <span class="ngo-admin-eyebrow">Directory inventory</span>
+                <h2>Organisation records</h2>
+                <p>
+                    Showing @(Model.NGOs == null ? 0 : Model.NGOs.Count)
+                    record(s) for the selected filters.
+                </p>
+            </div>
+
+            <span class="ngo-record-count">
+                @(Model.NGOs == null ? 0 : Model.NGOs.Count) record(s)
+            </span>
+        </header>
+
+        @if (Model.NGOs != null && Model.NGOs.Any())
+        {
+            <div class="ngo-admin-grid">
+                @foreach (var ngo in Model.NGOs)
+                {
+                    var displayName = string.IsNullOrWhiteSpace(ngo.NGOName)
+                        ? "Associated NGO"
+                        : ngo.NGOName;
+
+                    var words = displayName.Split(
+                        new[] { ' ' },
+                        StringSplitOptions.RemoveEmptyEntries);
+
+                    var initials = string.Join(
+                        "",
+                        words.Take(2).Select(word => word.Substring(0, 1)))
+                        .ToUpperInvariant();
+
+                    if (string.IsNullOrWhiteSpace(initials))
+                    {
+                        initials = "NG";
+                    }
+
+                    <article class="ngo-admin-card @(ngo.IsActive ? "is-active" : "is-inactive")">
+                        <header class="ngo-card-top">
+                            <div class="ngo-card-identity">
+                                <span class="ngo-card-logo">@initials</span>
+
+                                <div>
+                                    <span class="ngo-card-category">
+                                        @(string.IsNullOrWhiteSpace(ngo.Category)
+                                            ? "Community support"
+                                            : ngo.Category)
+                                    </span>
+                                    <h3>@displayName</h3>
+                                    <p>
+                                        @(string.IsNullOrWhiteSpace(ngo.City) ? "Location not provided" : ngo.City)
+                                        @if (!string.IsNullOrWhiteSpace(ngo.Country))
+                                        {
+                                            <text>, @ngo.Country</text>
+                                        }
+                                    </p>
+                                </div>
+                            </div>
+
+                            <span class="ngo-status-pill @(ngo.IsActive ? "active" : "inactive")">
+                                @(ngo.IsActive ? "Active" : "Inactive")
+                            </span>
+                        </header>
+
+                        <div class="ngo-card-contact">
+                            <div>
+                                <span>Email</span>
+                                <strong title="@ngo.Email">
+                                    @(string.IsNullOrWhiteSpace(ngo.Email) ? "Not provided" : ngo.Email)
+                                </strong>
+                            </div>
+
+                            <div>
+                                <span>Phone</span>
+                                <strong>
+                                    @(string.IsNullOrWhiteSpace(ngo.Phone) ? "Not provided" : ngo.Phone)
+                                </strong>
+                            </div>
+
+                            <div>
+                                <span>Registration</span>
+                                <strong>
+                                    @(string.IsNullOrWhiteSpace(ngo.RegistrationNumber)
+                                        ? "Not provided"
+                                        : ngo.RegistrationNumber)
+                                </strong>
+                            </div>
+
+                            <div>
+                                <span>Contact person</span>
+                                <strong>
+                                    @(string.IsNullOrWhiteSpace(ngo.ContactPerson)
+                                        ? "Not provided"
+                                        : ngo.ContactPerson)
+                                </strong>
+                            </div>
+                        </div>
+
+                        <div class="ngo-card-metrics">
+                            <div>
+                                <strong>@ngo.ProgrammesCount</strong>
+                                <span>Total programmes</span>
+                            </div>
+
+                            <div>
+                                <strong>@ngo.ActiveProgrammesCount</strong>
+                                <span>Active programmes</span>
+                            </div>
+
+                            <div>
+                                <strong>PKR @ngo.CompletedFunds.ToString("N0")</strong>
+                                <span>Completed funds</span>
+                            </div>
+                        </div>
+
+                        <footer class="ngo-card-footer">
+                            <div class="ngo-card-links">
+                                <a class="ngo-edit-button"
+                                   href="@Url.Action("AdminEdit", "NGO", new { id = ngo.NGOID })">
+                                    Edit record
+                                </a>
+
+                                @if (ngo.IsActive)
+                                {
+                                    <a class="ngo-view-button"
+                                       href="@Url.Action("Details", "NGO", new { id = ngo.NGOID })"
+                                       target="_blank"
+                                       rel="noopener">
+                                        Public profile
+                                    </a>
+                                }
+                            </div>
+
+                            @using (Html.BeginForm(
+                                "ToggleAdminStatus",
+                                "NGO",
+                                FormMethod.Post,
+                                new { @class = "ngo-status-form" }))
+                            {
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="ngoId" value="@ngo.NGOID" />
+                                <input type="hidden" name="makeActive" value="@(!ngo.IsActive)" />
+                                <input type="hidden" name="search" value="@Model.SearchQuery" />
+                                <input type="hidden" name="status" value="@Model.SelectedStatus" />
+                                <input type="hidden" name="category" value="@Model.SelectedCategory" />
+
+                                <button type="submit"
+                                        class="ngo-status-button @(ngo.IsActive ? "deactivate" : "activate")"
+                                        data-ngo-name="@displayName"
+                                        data-next-state="@(ngo.IsActive ? "deactivate" : "activate")">
+                                    @(ngo.IsActive ? "Deactivate" : "Activate")
+                                </button>
+                            }
+                        </footer>
+
+                        <div class="ngo-card-date">
+                            Added @ngo.CreatedAt.ToString("dd MMM yyyy")
+                            @if (ngo.UpdatedAt.HasValue)
+                            {
+                                <text>&middot; Updated @ngo.UpdatedAt.Value.ToString("dd MMM yyyy")</text>
+                            }
+                        </div>
+                    </article>
+                }
+            </div>
+        }
+        else
+        {
+            <div class="ngo-admin-empty">
+                <span class="ngo-empty-mark">NG</span>
+                <h3>No NGO records found</h3>
+                <p>Try clearing the current filters or create a new organisation record.</p>
+
+                <div>
+                    <a class="ngo-filter-reset" href="@Url.Action("AdminIndex", "NGO")">
+                        Clear filters
+                    </a>
+                    <a class="ngo-primary-button" href="@Url.Action("AdminCreate", "NGO")">
+                        Add new NGO
+                    </a>
+                </div>
+            </div>
+        }
+    </section>
+</main>
+
+@section Scripts {
+    <script>
+        (function () {
+            var forms = document.querySelectorAll('.ngo-status-form');
+
+            for (var index = 0; index < forms.length; index++) {
+                forms[index].addEventListener('submit', function (event) {
+                    var button = this.querySelector('.ngo-status-button');
+                    var ngoName = button.getAttribute('data-ngo-name');
+                    var nextState = button.getAttribute('data-next-state');
+                    var question = nextState === 'activate'
+                        ? 'Activate ' + ngoName + ' and show it on the public website?'
+                        : 'Deactivate ' + ngoName + ' and hide it from the public directory?';
+
+                    if (!window.confirm(question)) {
+                        event.preventDefault();
+                    }
+                });
+            }
+        })();
+    </script>
+}

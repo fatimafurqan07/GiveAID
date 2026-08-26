@@ -1,0 +1,17 @@
+@model GiveAID_Project.Models.UserInterestsViewModel
+@using System.Linq
+@{ ViewBag.Title="My Interests | GiveAID"; Layout="~/Views/Shared/_Layout.cshtml"; }
+@section Styles{<link href="@Url.Content("~/Content/UserDashboard.css")" rel="stylesheet" /><style>.interest-page-head{display:flex;justify-content:space-between;gap:24px;align-items:end;margin-bottom:25px}.interest-page-head h1{font-size:38px;margin:7px 0}.interest-page-head p{color:#61777b}.interest-cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}.saved-card{background:#fff;border:1px solid #cfe0da;border-radius:22px;padding:24px;box-shadow:0 16px 36px rgba(7,31,44,.07)}.saved-card h2{margin:10px 0 6px;font-size:21px}.saved-card p{color:#6c8185;font-size:11px}.saved-meta{display:flex;justify-content:space-between;margin:18px 0 9px;font-size:9px}.saved-actions{display:flex;gap:9px;margin-top:18px}.saved-actions a,.saved-actions button{min-height:42px;padding:0 14px;border-radius:10px;border:0;font-size:9px;font-weight:900;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center}.saved-actions a{background:#087f5b;color:#fff}.saved-actions button{background:#fff0ea;color:#b34e36}.saved-actions form{margin:0}.interest-empty{padding:55px;background:#fff;border:1px solid #cfe0da;border-radius:22px;text-align:center}.interest-empty a{display:inline-flex;margin-top:15px;padding:12px 16px;background:#087f5b;color:#fff;border-radius:10px;text-decoration:none;font-weight:900}
+    @@media(max-width:760px) {
+        .interest-cards {
+            grid-template-columns: 1fr
+        }
+
+        .interest-page-head {
+            display: block
+        }
+    }</style>}
+<main class="user-workspace"><div class="user-shell">@Html.Partial("_UserDashboardSidebar")<section class="user-main"><header class="interest-page-head"><div><span class="eyebrow">Saved programmes</span><h1>My interests</h1><p>Programmes you are following, stored against your signed-in account.</p></div><span class="member-pill">@Model.TotalPrograms saved</span></header>
+@if(Model.Programs!=null && Model.Programs.Any()){<div class="interest-cards">@foreach(var item in Model.Programs){<article class="saved-card"><span class="eyebrow">@item.CauseName</span><h2>@item.ProgramName</h2><p>@item.NGOName &middot; saved @item.InterestDate.ToString("dd MMM yyyy")</p><div class="bar"><i style="width:@item.ProgressPercent%"></i></div><div class="saved-meta"><span>PKR @item.CurrentAmount.ToString("N0") raised</span><span>@item.ProgressPercent% of PKR @item.TargetAmount.ToString("N0")</span></div><div class="saved-actions"><a href="@Url.Action("Create","Donation",new{programId=item.ProgramID})">Contribute</a>@using(Html.BeginForm("RemoveInterest","Dashboard",FormMethod.Post)){@Html.AntiForgeryToken()<input type="hidden" name="programId" value="@item.ProgramID"/><button type="submit">Remove</button>}</div></article>}</div>}
+else{<div class="interest-empty"><h2>No saved programmes yet</h2><p>Open a cause, choose a programme and select Save interest.</p><a href="@Url.Action("Index","Causes")">Browse programmes</a></div>}
+</section></div></main>

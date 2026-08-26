@@ -1,0 +1,329 @@
+@model GiveAID_Project.Models.CauseAdminFormViewModel
+
+@{
+    var isEdit = Model != null && Model.IsEditMode;
+    var actionName = isEdit ? "EditCause" : "CreateCause";
+    var pageHeading = isEdit ? "Edit cause" : "Create a new cause";
+    var pageDescription = isEdit
+        ? "Update this cause record and control how it appears across GiveAID."
+        : "Add a structured cause that can be connected to NGOs and programmes.";
+
+    ViewBag.Title = (isEdit ? "Edit Cause" : "Create Cause") + " | GiveAID";
+    ViewBag.AdminPageTitle = isEdit ? "Edit cause" : "Create cause";
+    ViewBag.AdminPageSubtitle = "Cause content and public visibility settings";
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+}
+
+@section Styles {
+    <link href="@Url.Content("~/Content/CauseProgrammeAdmin.css?v=20260826-1")"
+          rel="stylesheet" />
+}
+
+<main class="admin-page admin-form-page">
+    <header class="admin-hero admin-form-hero">
+        <div class="admin-hero-copy">
+            <span class="admin-eyebrow">Cause record</span>
+            <h1>@pageHeading</h1>
+            <p>@pageDescription</p>
+        </div>
+
+        <div class="admin-hero-actions">
+            <a class="admin-button admin-button-secondary"
+               href="@Url.Action("AdminCauses", "Causes")">
+                Back to causes
+            </a>
+
+            @if (isEdit)
+            {
+                <a class="admin-button admin-button-ghost"
+                   href="@Url.Action("Details", "Causes", new { id = Model.CauseID })"
+                   target="_blank"
+                   rel="noopener">
+                    View public page
+                </a>
+            }
+        </div>
+    </header>
+
+    @using (Html.BeginForm(actionName, "Causes", FormMethod.Post, new { @class = "admin-editor-form", novalidate = "novalidate" }))
+    {
+        @Html.AntiForgeryToken()
+        @Html.HiddenFor(model => model.CauseID)
+
+        if (!ViewData.ModelState.IsValid)
+        {
+            <div class="admin-validation-panel" role="alert">
+                <strong>Please correct the highlighted information.</strong>
+                @Html.ValidationSummary(false, "", new { @class = "admin-validation-list" })
+            </div>
+        }
+
+        <div class="admin-editor-grid">
+            <section class="admin-editor-card">
+                <header class="admin-editor-heading">
+                    <span class="admin-step">01</span>
+                    <div>
+                        <h2>Core information</h2>
+                        <p>Name, URL slug and descriptions shown on public pages.</p>
+                    </div>
+                </header>
+
+                <div class="admin-form-grid two-columns">
+                    <div class="admin-form-field">
+                        @Html.LabelFor(model => model.CauseName)
+                        @Html.TextBoxFor(model => model.CauseName, new
+                        {
+                            id = "CauseName",
+                            maxlength = "120",
+                            placeholder = "For example: Clean Water",
+                            autocomplete = "off"
+                        })
+                        @Html.ValidationMessageFor(model => model.CauseName, "", new { @class = "field-validation" })
+                    </div>
+
+                    <div class="admin-form-field">
+                        @Html.LabelFor(model => model.Slug)
+                        <div class="slug-input-wrap">
+                            <span>/causes/</span>
+                            @Html.TextBoxFor(model => model.Slug, new
+                            {
+                                id = "Slug",
+                                maxlength = "140",
+                                placeholder = "clean-water",
+                                autocomplete = "off"
+                            })
+                        </div>
+                        <small>Lowercase letters, numbers and hyphens only.</small>
+                        @Html.ValidationMessageFor(model => model.Slug, "", new { @class = "field-validation" })
+                    </div>
+
+                    <div class="admin-form-field full-width">
+                        @Html.LabelFor(model => model.ShortDescription)
+                        @Html.TextAreaFor(model => model.ShortDescription, new
+                        {
+                            rows = "3",
+                            maxlength = "300",
+                            placeholder = "Write a concise summary for listing cards."
+                        })
+                        <div class="field-help-row">
+                            <small>Recommended: 90 to 180 characters.</small>
+                            <small id="shortDescriptionCount">0 / 300</small>
+                        </div>
+                        @Html.ValidationMessageFor(model => model.ShortDescription, "", new { @class = "field-validation" })
+                    </div>
+
+                    <div class="admin-form-field full-width">
+                        @Html.LabelFor(model => model.Description)
+                        @Html.TextAreaFor(model => model.Description, new
+                        {
+                            rows = "8",
+                            maxlength = "2000",
+                            placeholder = "Explain the cause, the need it addresses and the impact of its programmes."
+                        })
+                        <div class="field-help-row">
+                            <small>Minimum 20 characters.</small>
+                            <small id="descriptionCount">0 / 2000</small>
+                        </div>
+                        @Html.ValidationMessageFor(model => model.Description, "", new { @class = "field-validation" })
+                    </div>
+                </div>
+            </section>
+
+            <aside class="admin-editor-side">
+                <section class="admin-editor-card preview-card">
+                    <header class="admin-editor-heading compact">
+                        <span class="admin-step">02</span>
+                        <div>
+                            <h2>Visual identity</h2>
+                            <p>Image and short identifier used by the cause.</p>
+                        </div>
+                    </header>
+
+                    <div class="admin-image-preview" id="causeImagePreview">
+                        @if (!string.IsNullOrWhiteSpace(Model.ImageURL))
+                        {
+                            <img src="@Model.ImageURL" alt="Cause preview" />
+                        }
+                        else
+                        {
+                            <div class="admin-image-placeholder">
+                                <span>IMG</span>
+                                <small>Image preview</small>
+                            </div>
+                        }
+                    </div>
+
+                    <div class="admin-form-field">
+                        @Html.LabelFor(model => model.ImageURL)
+                        @Html.TextBoxFor(model => model.ImageURL, new
+                        {
+                            id = "ImageURL",
+                            maxlength = "500",
+                            type = "url",
+                            placeholder = "https://example.com/cause-image.jpg"
+                        })
+                        <small>Use a complete HTTPS image URL.</small>
+                        @Html.ValidationMessageFor(model => model.ImageURL, "", new { @class = "field-validation" })
+                    </div>
+
+                    <div class="admin-form-field">
+                        @Html.LabelFor(model => model.Icon)
+                        @Html.TextBoxFor(model => model.Icon, new
+                        {
+                            maxlength = "100",
+                            placeholder = "For example: CW"
+                        })
+                        <small>A short text code is safest for consistent rendering.</small>
+                        @Html.ValidationMessageFor(model => model.Icon, "", new { @class = "field-validation" })
+                    </div>
+                </section>
+
+                <section class="admin-editor-card settings-card">
+                    <header class="admin-editor-heading compact">
+                        <span class="admin-step">03</span>
+                        <div>
+                            <h2>Publishing settings</h2>
+                            <p>Control visibility, placement and display order.</p>
+                        </div>
+                    </header>
+
+                    <div class="admin-form-field">
+                        @Html.LabelFor(model => model.DisplayOrder)
+                        @Html.TextBoxFor(model => model.DisplayOrder, new
+                        {
+                            type = "number",
+                            min = "0",
+                            max = "10000",
+                            step = "1"
+                        })
+                        <small>Lower values appear first on public pages.</small>
+                        @Html.ValidationMessageFor(model => model.DisplayOrder, "", new { @class = "field-validation" })
+                    </div>
+
+                    <label class="admin-switch-row" for="IsFeatured">
+                        <span>
+                            <strong>Featured cause</strong>
+                            <small>Give this cause additional prominence.</small>
+                        </span>
+                        @Html.CheckBoxFor(model => model.IsFeatured, new { id = "IsFeatured", @class = "admin-switch-input" })
+                        <span class="admin-switch" aria-hidden="true"></span>
+                    </label>
+
+                    <label class="admin-switch-row" for="IsActive">
+                        <span>
+                            <strong>Publicly active</strong>
+                            <small>Allow visitors to discover this cause.</small>
+                        </span>
+                        @Html.CheckBoxFor(model => model.IsActive, new { id = "IsActive", @class = "admin-switch-input" })
+                        <span class="admin-switch" aria-hidden="true"></span>
+                    </label>
+                </section>
+            </aside>
+        </div>
+
+        <footer class="admin-form-footer">
+            <div>
+                <strong>@(isEdit ? "Update database record" : "Create database record")</strong>
+                <span>Your changes will affect the public cause directory.</span>
+            </div>
+
+            <div class="admin-form-footer-actions">
+                <a class="admin-button admin-button-ghost"
+                   href="@Url.Action("AdminCauses", "Causes")">
+                    Cancel
+                </a>
+
+                <button class="admin-button admin-button-primary" type="submit">
+                    @(isEdit ? "Save changes" : "Create cause")
+                </button>
+            </div>
+        </footer>
+    }
+</main>
+
+@section Scripts {
+    <script>
+        (function () {
+            var nameInput = document.getElementById('CauseName');
+            var slugInput = document.getElementById('Slug');
+            var imageInput = document.getElementById('ImageURL');
+            var preview = document.getElementById('causeImagePreview');
+            var shortDescription = document.getElementById('ShortDescription');
+            var description = document.getElementById('Description');
+            var shortCounter = document.getElementById('shortDescriptionCount');
+            var descriptionCounter = document.getElementById('descriptionCount');
+            var slugWasEdited = slugInput && slugInput.value.length > 0;
+
+            function makeSlug(value) {
+                return (value || '')
+                    .toLowerCase()
+                    .replace(/[^a-z0-9]+/g, '-')
+                    .replace(/^-+|-+$/g, '')
+                    .substring(0, 140);
+            }
+
+            function updateCounter(field, counter, maximum) {
+                if (field && counter) {
+                    counter.textContent = field.value.length + ' / ' + maximum;
+                }
+            }
+
+            function updatePreview() {
+                if (!preview || !imageInput) {
+                    return;
+                }
+
+                var source = imageInput.value.trim();
+
+                if (!source) {
+                    preview.innerHTML = '<div class="admin-image-placeholder"><span>IMG</span><small>Image preview</small></div>';
+                    return;
+                }
+
+                var image = document.createElement('img');
+                image.alt = 'Cause preview';
+                image.src = source;
+                image.onerror = function () {
+                    preview.innerHTML = '<div class="admin-image-placeholder error"><span>!</span><small>Image could not be loaded</small></div>';
+                };
+
+                preview.innerHTML = '';
+                preview.appendChild(image);
+            }
+
+            if (slugInput) {
+                slugInput.addEventListener('input', function () {
+                    slugWasEdited = this.value.length > 0;
+                    this.value = makeSlug(this.value);
+                });
+            }
+
+            if (nameInput && slugInput) {
+                nameInput.addEventListener('input', function () {
+                    if (!slugWasEdited) {
+                        slugInput.value = makeSlug(this.value);
+                    }
+                });
+            }
+
+            if (imageInput) {
+                imageInput.addEventListener('change', updatePreview);
+                imageInput.addEventListener('blur', updatePreview);
+            }
+
+            if (shortDescription) {
+                updateCounter(shortDescription, shortCounter, 300);
+                shortDescription.addEventListener('input', function () {
+                    updateCounter(shortDescription, shortCounter, 300);
+                });
+            }
+
+            if (description) {
+                updateCounter(description, descriptionCounter, 2000);
+                description.addEventListener('input', function () {
+                    updateCounter(description, descriptionCounter, 2000);
+                });
+            }
+        }());
+    </script>
+}

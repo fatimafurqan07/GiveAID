@@ -1,0 +1,1046 @@
+:root {
+    --flow-navy: #062f3c;
+    --flow-navy-deep: #032733;
+    --flow-emerald: #078565;
+    --flow-green: #11aa7d;
+    --flow-mint: #e7f7f0;
+    --flow-coral: #f47f61;
+    --flow-cream: #fff8ee;
+    --flow-ink: #0b303b;
+    --flow-muted: #647c81;
+    --flow-line: #cfdfda;
+    --flow-white: #ffffff;
+}
+
+/* =========================================================
+   GLOBAL DONATION NOTIFICATIONS
+   ========================================================= */
+
+.flash {
+    position: relative;
+    z-index: 20;
+    max-width: 1180px;
+    margin: 16px auto;
+    padding: 13px 17px;
+    border-radius: 14px;
+    font-size: 12px;
+    font-weight: 750;
+    box-shadow: 0 12px 30px rgba(6, 43, 56, 0.09);
+}
+
+.flash-ok {
+    border: 1px solid #a9e4cb;
+    color: #076c50;
+    background: #e7f9f1;
+}
+
+.flash-no {
+    border: 1px solid #ffc6ba;
+    color: #a33e31;
+    background: #fff0ed;
+}
+
+/* =========================================================
+   DASHBOARD-EMBEDDED DONATION PAGE
+   ========================================================= */
+
+.donation-user-main {
+    position: relative;
+    overflow: hidden;
+    padding: 34px 30px 80px;
+    background: radial-gradient(circle at 3% 4%, rgba(17, 170, 125, 0.12), transparent 27%), radial-gradient(circle at 96% 10%, rgba(244, 127, 97, 0.12), transparent 26%), linear-gradient(135deg, #eef8f4 0%, #fff9f1 52%, #f2f8f6 100%);
+}
+
+.dashboard-donation-page {
+    width: 100%;
+    max-width: 1180px;
+    margin: 0 auto;
+    color: var(--flow-ink);
+}
+
+.dashboard-donation-hero {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 28px;
+    max-width: none;
+    margin: 0 0 25px;
+    padding: 0 3px;
+    text-align: left;
+}
+
+    .dashboard-donation-hero > div {
+        max-width: 720px;
+    }
+
+.donation-flow-hero {
+    color: var(--flow-ink);
+}
+
+.flow-kicker {
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+    padding: 8px 13px;
+    border: 1px solid #b9ddd1;
+    border-radius: 999px;
+    color: #087657;
+    background: rgba(255, 255, 255, 0.82);
+    font-size: 9px;
+    font-weight: 900;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    box-shadow: 0 7px 20px rgba(6, 43, 56, 0.05);
+}
+
+    .flow-kicker::before {
+        content: "";
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--flow-coral);
+        box-shadow: 0 0 0 5px rgba(244, 127, 97, 0.14);
+    }
+
+.donation-flow-hero h1 {
+    margin: 15px 0 9px;
+    color: var(--flow-navy);
+    font-size: clamp(31px, 4vw, 48px);
+    line-height: 1.02;
+    letter-spacing: -0.05em;
+}
+
+    .donation-flow-hero h1 span {
+        color: var(--flow-emerald);
+    }
+
+.donation-flow-hero p {
+    max-width: 670px;
+    margin: 0;
+    color: var(--flow-muted);
+    font-size: 13px;
+    line-height: 1.7;
+}
+
+.donation-history-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    min-height: 45px;
+    padding: 0 17px;
+    border: 1px solid #bdd6ce;
+    border-radius: 12px;
+    color: #176258;
+    background: rgba(255, 255, 255, 0.8);
+    text-decoration: none;
+    font-size: 10px;
+    font-weight: 900;
+    transition: 0.2s ease;
+}
+
+    .donation-history-link:hover {
+        border-color: var(--flow-emerald);
+        color: var(--flow-emerald);
+        background: #ffffff;
+        text-decoration: none;
+        transform: translateY(-2px);
+    }
+
+/* =========================================================
+   MAIN FORM GRID AND CARDS
+   ========================================================= */
+
+.donation-flow-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.48fr) minmax(285px, 0.72fr);
+    gap: 20px;
+    align-items: start;
+}
+
+.flow-card {
+    overflow: hidden;
+    border: 1px solid rgba(174, 205, 196, 0.9);
+    border-radius: 24px;
+    background: rgba(255, 255, 255, 0.96);
+    box-shadow: 0 22px 55px rgba(6, 43, 56, 0.10);
+}
+
+.donation-form-card {
+    min-width: 0;
+}
+
+.flow-form-head {
+    position: relative;
+    overflow: hidden;
+    padding: 25px 27px;
+    color: #ffffff;
+    background: radial-gradient(circle at 95% 20%, rgba(255, 255, 255, 0.12), transparent 25%), linear-gradient(125deg, var(--flow-navy-deep), #076a60);
+}
+
+    .flow-form-head::after {
+        content: "";
+        position: absolute;
+        right: -50px;
+        bottom: -95px;
+        width: 180px;
+        height: 180px;
+        border: 34px solid rgba(255, 255, 255, 0.06);
+        border-radius: 50%;
+    }
+
+    .flow-form-head > * {
+        position: relative;
+        z-index: 2;
+    }
+
+    .flow-form-head > span {
+        color: #84e0c0;
+        font-size: 9px;
+        font-weight: 900;
+        letter-spacing: 0.13em;
+        text-transform: uppercase;
+    }
+
+    .flow-form-head h2 {
+        margin: 7px 0 5px;
+        color: #ffffff;
+        font-size: 24px;
+        letter-spacing: -0.035em;
+    }
+
+    .flow-form-head p {
+        max-width: 620px;
+        margin: 0;
+        color: #c5e1dc;
+        font-size: 12px;
+        line-height: 1.65;
+    }
+
+.flow-form-body {
+    padding: 26px;
+}
+
+.flow-section {
+    margin-bottom: 25px;
+    padding-bottom: 25px;
+    border-bottom: 1px solid #e2ebe8;
+}
+
+    .flow-section:last-of-type {
+        margin-bottom: 20px;
+        padding-bottom: 0;
+        border-bottom: 0;
+    }
+
+.flow-section-title {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    margin-bottom: 15px;
+    color: #123b44;
+    font-size: 14px;
+    font-weight: 900;
+}
+
+.flow-step {
+    display: grid;
+    place-items: center;
+    flex: 0 0 31px;
+    width: 31px;
+    height: 31px;
+    border-radius: 10px;
+    color: #ffffff;
+    background: var(--flow-navy);
+    font-size: 8px;
+    box-shadow: 0 8px 18px rgba(6, 47, 60, 0.16);
+}
+
+.flow-fields {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+}
+
+.flow-field {
+    min-width: 0;
+}
+
+    .flow-field.full {
+        grid-column: 1 / -1;
+    }
+
+    .flow-field label {
+        display: block;
+        margin-bottom: 7px;
+        color: #35545b;
+        font-size: 10px;
+        font-weight: 900;
+        letter-spacing: 0.045em;
+        text-transform: uppercase;
+    }
+
+.flow-control {
+    box-sizing: border-box;
+    width: 100% !important;
+    max-width: none !important;
+    min-height: 50px;
+    margin: 0 !important;
+    padding: 12px 14px !important;
+    border: 1px solid #c6d9d2 !important;
+    border-radius: 13px !important;
+    outline: 0;
+    color: #173e45;
+    background: #fbfdfc !important;
+    font-family: inherit;
+    font-size: 13px !important;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+    .flow-control:hover {
+        border-color: #9fc9bb !important;
+    }
+
+    .flow-control:focus {
+        border-color: #12a578 !important;
+        box-shadow: 0 0 0 4px rgba(18, 165, 120, 0.11) !important;
+    }
+
+textarea.flow-control {
+    min-height: 92px;
+    resize: vertical;
+}
+
+/* =========================================================
+   VALIDATION
+   ========================================================= */
+
+.field-validation-error,
+.validation-summary-errors,
+.flow-validation-summary {
+    display: block;
+    color: #ae4436;
+    font-size: 9px;
+    line-height: 1.5;
+}
+
+.field-validation-error {
+    margin-top: 6px;
+}
+
+.validation-summary-errors,
+.flow-validation-summary {
+    margin: 0 0 19px;
+    padding: 12px 14px;
+    border: 1px solid #ffc2b6;
+    border-radius: 12px;
+    background: #fff0ed;
+}
+
+.validation-summary-valid {
+    display: none;
+}
+
+.validation-summary-errors ul,
+.flow-validation-summary ul {
+    margin: 0;
+    padding-left: 18px;
+}
+
+/* =========================================================
+   AMOUNT SELECTION
+   ========================================================= */
+
+.amount-presets {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 9px;
+    margin-bottom: 12px;
+}
+
+.preset-btn {
+    min-height: 43px;
+    padding: 7px 8px;
+    border: 1px solid #c5d8d1;
+    border-radius: 11px;
+    color: #31545b;
+    background: #f8fbfa;
+    font-family: inherit;
+    font-size: 10px;
+    font-weight: 900;
+    cursor: pointer;
+    transition: 0.2s ease;
+}
+
+    .preset-btn:hover,
+    .preset-btn.active {
+        border-color: var(--flow-green);
+        color: #ffffff;
+        background: linear-gradient(135deg, var(--flow-emerald), var(--flow-green));
+        box-shadow: 0 9px 20px rgba(7, 133, 101, 0.18);
+        transform: translateY(-1px);
+    }
+
+.amount-input-wrap {
+    position: relative;
+}
+
+.currency-code {
+    position: absolute;
+    z-index: 2;
+    left: 14px;
+    top: 17px;
+    color: #087657;
+    font-size: 10px;
+    font-weight: 900;
+}
+
+.amount-input-wrap .flow-control {
+    padding-left: 55px !important;
+    color: #087657;
+    font-size: 17px !important;
+    font-weight: 900;
+}
+
+/* =========================================================
+   PAYMENT OPTIONS
+   ========================================================= */
+
+.payment-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+}
+
+.payment-option {
+    min-width: 0;
+    min-height: 94px;
+    padding: 13px;
+    border: 1px solid #cadcd6;
+    border-radius: 14px;
+    color: var(--flow-ink);
+    background: #f9fcfb;
+    font-family: inherit;
+    text-align: left;
+    cursor: pointer;
+    transition: 0.2s ease;
+}
+
+    .payment-option:hover,
+    .payment-option.active {
+        border-color: #14a477;
+        color: var(--flow-ink);
+        background: #e9f8f2;
+        box-shadow: 0 10px 22px rgba(7, 133, 101, 0.10);
+        transform: translateY(-2px);
+    }
+
+    .payment-option:focus-visible {
+        outline: 3px solid rgba(20, 164, 119, 0.22);
+        outline-offset: 2px;
+    }
+
+.payment-code {
+    display: grid;
+    place-items: center;
+    width: 31px;
+    height: 31px;
+    margin-bottom: 10px;
+    border-radius: 9px;
+    color: #ffffff;
+    background: var(--flow-navy);
+    font-size: 8px;
+    font-weight: 900;
+}
+
+.payment-option strong {
+    display: block;
+    color: #173d45;
+    font-size: 11px;
+}
+
+.payment-option small {
+    display: block;
+    margin-top: 4px;
+    color: #71878b;
+    font-size: 9px;
+    line-height: 1.45;
+}
+
+/* =========================================================
+   SUBMIT BUTTON
+   ========================================================= */
+
+.flow-submit {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    min-height: 54px;
+    padding: 12px 18px;
+    border: 0;
+    border-radius: 14px;
+    color: #ffffff;
+    background: linear-gradient(135deg, #087a5a, #13ad7e);
+    box-shadow: 0 14px 30px rgba(8, 127, 91, 0.24);
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 900;
+    cursor: pointer;
+    transition: 0.2s ease;
+}
+
+    .flow-submit:hover {
+        box-shadow: 0 18px 36px rgba(8, 127, 91, 0.30);
+        transform: translateY(-2px);
+    }
+
+    .flow-submit:disabled,
+    .flow-submit.is-submitting {
+        cursor: wait;
+        opacity: 0.72;
+        transform: none;
+    }
+
+    .flow-submit #btnAmountText {
+        margin-left: 4px;
+    }
+
+.flow-disclaimer {
+    max-width: 590px;
+    margin: 12px auto 0;
+    color: #72878b;
+    font-size: 9px;
+    line-height: 1.65;
+    text-align: center;
+}
+
+/* =========================================================
+   SUMMARY AND WORKFLOW SIDEBAR
+   ========================================================= */
+
+.flow-summary-stack {
+    position: sticky;
+    top: 92px;
+    display: grid;
+    gap: 15px;
+    min-width: 0;
+}
+
+.flow-summary {
+    padding: 22px;
+}
+
+.flow-summary-title {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    margin-bottom: 16px;
+}
+
+    .flow-summary-title > b {
+        display: grid;
+        place-items: center;
+        flex: 0 0 38px;
+        width: 38px;
+        height: 38px;
+        border-radius: 11px;
+        color: #ffffff;
+        background: linear-gradient(135deg, var(--flow-coral), #ff9d77);
+        font-size: 9px;
+        box-shadow: 0 9px 20px rgba(244, 127, 97, 0.22);
+    }
+
+    .flow-summary-title > div > span {
+        display: block;
+        margin-bottom: 2px;
+        color: var(--flow-coral);
+        font-size: 7px;
+        font-weight: 900;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+    }
+
+    .flow-summary-title h3 {
+        margin: 0;
+        color: var(--flow-navy);
+        font-size: 17px;
+    }
+
+.summary-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 18px;
+    padding: 11px 0;
+    border-bottom: 1px dashed #d7e3df;
+    font-size: 10px;
+    line-height: 1.45;
+}
+
+    .summary-row > span {
+        color: #6d8387;
+    }
+
+    .summary-row > strong {
+        max-width: 175px;
+        color: #183e46;
+        text-align: right;
+        overflow-wrap: anywhere;
+    }
+
+.summary-total {
+    align-items: center;
+    padding-top: 16px;
+    border-bottom: 0;
+    font-size: 11px;
+    font-weight: 900;
+}
+
+    .summary-total > strong {
+        color: var(--flow-emerald);
+        font-size: 19px;
+    }
+
+.workflow-card {
+    padding: 20px;
+    border: 1px solid #b8e4d3;
+    border-radius: 20px;
+    background: linear-gradient(145deg, #e9faf2, #fbfffd);
+    box-shadow: 0 14px 32px rgba(6, 43, 56, 0.05);
+}
+
+    .workflow-card h4 {
+        margin: 0 0 14px;
+        color: #087657;
+        font-size: 12px;
+    }
+
+.workflow-step {
+    display: grid;
+    grid-template-columns: 29px 1fr;
+    gap: 10px;
+    margin-top: 12px;
+}
+
+    .workflow-step > b {
+        display: grid;
+        place-items: center;
+        width: 29px;
+        height: 29px;
+        border-radius: 9px;
+        color: #ffffff;
+        background: #0a8766;
+        font-size: 7px;
+    }
+
+    .workflow-step strong {
+        display: block;
+        color: #19433f;
+        font-size: 10px;
+    }
+
+    .workflow-step span {
+        display: block;
+        margin-top: 3px;
+        color: #5f7c77;
+        font-size: 9px;
+        line-height: 1.5;
+    }
+
+.donation-safety-note {
+    display: block;
+    padding: 17px;
+    border: 1px solid #f1d6aa;
+    border-radius: 17px;
+    background: linear-gradient(135deg, #fff9ed, #fffdf8);
+}
+
+    .donation-safety-note strong {
+        display: block;
+        color: #98621c;
+        font-size: 9px;
+    }
+
+    .donation-safety-note span {
+        display: block;
+        margin-top: 5px;
+        color: #8a744f;
+        font-size: 8px;
+        line-height: 1.55;
+    }
+
+/* =========================================================
+   RECEIPT / SUCCESS PAGE
+   Kept here so Success.cshtml can use the same design system.
+   ========================================================= */
+
+.receipt-page {
+    min-height: 100vh;
+    padding: 45px 24px 80px;
+    background: radial-gradient(circle at 15% 10%, rgba(17, 167, 124, 0.13), transparent 28%), linear-gradient(135deg, #f3fbf7, #fff9ef);
+}
+
+.receipt-shell {
+    max-width: 940px;
+    margin: auto;
+    overflow: hidden;
+    border: 1px solid #cfe1db;
+    border-radius: 28px;
+    background: #ffffff;
+    box-shadow: 0 28px 75px rgba(6, 43, 56, 0.13);
+}
+
+.receipt-hero {
+    position: relative;
+    overflow: hidden;
+    padding: 39px 34px;
+    color: #ffffff;
+    background: linear-gradient(125deg, #05323f, #08795f);
+    text-align: center;
+}
+
+    .receipt-hero::after {
+        content: "";
+        position: absolute;
+        right: -60px;
+        bottom: -105px;
+        width: 230px;
+        height: 230px;
+        border: 44px solid rgba(255, 255, 255, 0.07);
+        border-radius: 50%;
+    }
+
+.receipt-mark {
+    position: relative;
+    z-index: 2;
+    display: grid;
+    place-items: center;
+    width: 64px;
+    height: 64px;
+    margin: 0 auto 16px;
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    border-radius: 20px;
+    color: #073b43;
+    background: #8de3bd;
+    font-size: 12px;
+    font-weight: 950;
+    box-shadow: 0 14px 32px rgba(0, 0, 0, 0.14);
+}
+
+.receipt-hero h1 {
+    position: relative;
+    z-index: 2;
+    margin: 0;
+    color: #ffffff;
+    font-size: clamp(28px, 4vw, 42px);
+    letter-spacing: -0.045em;
+}
+
+.receipt-hero p {
+    position: relative;
+    z-index: 2;
+    max-width: 610px;
+    margin: 10px auto 0;
+    color: #c9e4df;
+    font-size: 11px;
+    line-height: 1.7;
+}
+
+.receipt-content {
+    padding: 28px;
+}
+
+.receipt-status {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 21px;
+    padding: 16px;
+    border: 1px solid #f2d79d;
+    border-radius: 16px;
+    background: #fff8e8;
+}
+
+.receipt-status-code {
+    display: grid;
+    place-items: center;
+    flex: 0 0 42px;
+    width: 42px;
+    height: 42px;
+    border-radius: 12px;
+    color: #9a5e0b;
+    background: #ffe7b6;
+    font-size: 9px;
+    font-weight: 900;
+}
+
+.receipt-status strong {
+    color: #8d570c;
+    font-size: 11px;
+}
+
+.receipt-status p {
+    margin: 4px 0 0;
+    color: #a36c1f;
+    font-size: 9px;
+    line-height: 1.55;
+}
+
+.receipt-grid {
+    display: grid;
+    grid-template-columns: 1.35fr 0.65fr;
+    gap: 19px;
+}
+
+.receipt-details,
+.receipt-next {
+    border: 1px solid #d6e4df;
+    border-radius: 19px;
+    background: #f9fcfb;
+}
+
+.receipt-details,
+.receipt-next {
+    padding: 21px;
+}
+
+    .receipt-details h2,
+    .receipt-next h2 {
+        margin: 0 0 15px;
+        color: var(--flow-navy);
+        font-size: 16px;
+    }
+
+.receipt-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 20px;
+    padding: 10px 0;
+    border-bottom: 1px dashed #d5e1dd;
+    font-size: 9px;
+}
+
+    .receipt-row span {
+        color: #6b8185;
+    }
+
+    .receipt-row strong {
+        max-width: 62%;
+        color: #173d45;
+        text-align: right;
+        overflow-wrap: anywhere;
+    }
+
+    .receipt-row.total {
+        align-items: center;
+        padding-top: 15px;
+        border: 0;
+        font-size: 11px;
+        font-weight: 900;
+    }
+
+        .receipt-row.total strong {
+            color: #087b59;
+            font-size: 20px;
+        }
+
+.receipt-next {
+    background: linear-gradient(145deg, #e8f8f1, #ffffff);
+}
+
+    .receipt-next > p {
+        color: #5e777b;
+        font-size: 9px;
+        line-height: 1.7;
+    }
+
+.next-step {
+    display: grid;
+    grid-template-columns: 29px 1fr;
+    gap: 10px;
+    margin-top: 13px;
+}
+
+    .next-step b {
+        display: grid;
+        place-items: center;
+        width: 29px;
+        height: 29px;
+        border-radius: 9px;
+        color: #ffffff;
+        background: #0a8565;
+        font-size: 7px;
+    }
+
+    .next-step strong {
+        display: block;
+        color: #163f43;
+        font-size: 9px;
+    }
+
+    .next-step span {
+        display: block;
+        margin-top: 3px;
+        color: #708589;
+        font-size: 8px;
+        line-height: 1.5;
+    }
+
+.receipt-actions {
+    display: flex;
+    justify-content: center;
+    gap: 11px;
+    flex-wrap: wrap;
+    margin-top: 24px;
+}
+
+.receipt-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 46px;
+    padding: 0 18px;
+    border: 1px solid #c9dbd5;
+    border-radius: 12px;
+    color: #31555b;
+    background: #ffffff;
+    text-decoration: none;
+    font-size: 9px;
+    font-weight: 900;
+    transition: 0.2s ease;
+}
+
+    .receipt-button:hover {
+        color: #087b59;
+        text-decoration: none;
+        transform: translateY(-2px);
+    }
+
+    .receipt-button.primary {
+        border-color: transparent;
+        color: #ffffff;
+        background: linear-gradient(135deg, #087b5a, #14a879);
+        box-shadow: 0 12px 26px rgba(8, 123, 90, 0.20);
+    }
+
+        .receipt-button.primary:hover {
+            color: #ffffff;
+        }
+
+/* =========================================================
+   RESPONSIVE BEHAVIOUR
+   ========================================================= */
+
+@media (max-width: 1180px) {
+    .donation-flow-grid {
+        grid-template-columns: minmax(0, 1.3fr) minmax(260px, 0.7fr);
+    }
+
+    .amount-presets {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .payment-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .payment-option {
+        min-height: 72px;
+    }
+}
+
+@media (max-width: 980px) {
+    .donation-user-main {
+        padding: 28px 22px 65px;
+    }
+
+    .dashboard-donation-hero {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 16px;
+    }
+
+    .donation-flow-grid,
+    .receipt-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .flow-summary-stack {
+        position: static;
+    }
+
+    .payment-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+@media (max-width: 720px) {
+    .donation-user-main {
+        padding: 25px 16px 55px;
+    }
+
+    .flow-form-body,
+    .receipt-content {
+        padding: 19px;
+    }
+
+    .flow-form-head {
+        padding: 22px 19px;
+    }
+
+    .flow-fields,
+    .payment-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .flow-field.full {
+        grid-column: auto;
+    }
+
+    .receipt-page {
+        padding: 32px 14px 55px;
+    }
+
+    .receipt-hero {
+        padding: 33px 20px;
+    }
+
+    .summary-row,
+    .receipt-row {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 5px;
+    }
+
+        .summary-row > strong,
+        .receipt-row strong {
+            max-width: 100%;
+            text-align: left;
+        }
+}
+
+@media (max-width: 480px) {
+    .amount-presets {
+        grid-template-columns: 1fr;
+    }
+
+    .donation-flow-hero h1 {
+        font-size: 30px;
+    }
+
+    .flow-card,
+    .workflow-card,
+    .receipt-shell {
+        border-radius: 18px;
+    }
+
+    .receipt-status {
+        align-items: flex-start;
+    }
+
+    .receipt-actions,
+    .receipt-button {
+        width: 100%;
+    }
+}

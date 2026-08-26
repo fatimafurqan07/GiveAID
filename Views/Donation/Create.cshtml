@@ -1,246 +1,563 @@
 @model GiveAID_Project.Models.DonationFormDataViewModel
+@using System
+@using System.Linq
 
 @{
-    ViewBag.Title = "Donate to Verified Causes & NGOs in Pakistan";
+    ViewBag.Title = "Make a Donation | GiveAID";
     Layout = "~/Views/Shared/_Layout.cshtml";
+
+    var selectedNgo = Model.NGOs.FirstOrDefault(n => n.ID == Model.FormModel.NGOID);
+    var selectedCause = Model.Causes.FirstOrDefault(c => c.ID == Model.FormModel.CauseID);
+
+    var selectedNgoName = selectedNgo == null
+        ? "Not selected"
+        : selectedNgo.Name;
+
+    var selectedCauseName = selectedCause == null
+        ? "Not selected"
+        : selectedCause.Name;
+
+    var initialAmount = Model.FormModel.Amount > 0
+        ? Model.FormModel.Amount
+        : 2500;
+
+    var initialPaymentRail = string.IsNullOrWhiteSpace(Model.FormModel.PaymentRail)
+        ? "Raast / 1Link"
+        : Model.FormModel.PaymentRail;
 }
 
-<div class="auth-page-container" style="max-width: 1040px; margin: 40px auto; padding: 0 20px;">
-    <div style="text-align: center; margin-bottom: 36px;">
-        <span class="hero-pill" style="margin-bottom: 12px; display: inline-flex;">
-            <span class="pulse-dot"></span>
-            <span>100% Transparent Giving in Pakistan</span>
-        </span>
-        <h1 style="font-size: 32px; font-weight: 800; color: #0f172a; margin-bottom: 8px;">
-            Make a Direct & Verifiable Impact
-        </h1>
-        <p style="color: #64748b; font-size: 16px; max-width: 650px; margin: auto;">
-            Choose a vetted non-profit partner, select a humanitarian cause, and contribute securely. Every rupee is audited by GiveAID administrators.
-        </p>
+@section Styles {
+    <link href="@Url.Content("~/Content/UserDashboard.css")"
+          rel="stylesheet" />
+
+    <link href="@Url.Content("~/Content/DonationFlow.css?v=20260825")"
+          rel="stylesheet" />
+}
+
+<main class="user-workspace">
+    <div class="user-shell">
+
+        @Html.Partial("_UserDashboardSidebar")
+
+        <section class="user-main donation-user-main">
+            <div class="dashboard-donation-page">
+
+                <header class="donation-flow-hero dashboard-donation-hero">
+                    <div>
+                        <span class="flow-kicker">
+                            Responsible community support
+                        </span>
+
+                        <h1>
+                            Make a contribution with
+                            <span>measurable impact.</span>
+                        </h1>
+
+                        <p>
+                            Choose an associated organisation,
+                            select a cause or programme and create
+                            a transparent contribution record for
+                            administrator review.
+                        </p>
+                    </div>
+
+                    <a class="donation-history-link"
+                       href="@Url.Action("Donations", "Dashboard")">
+                        View my donations
+                    </a>
+                </header>
+
+                <div class="donation-flow-grid">
+                    <section class="flow-card donation-form-card">
+                        <header class="flow-form-head">
+                            <span>Contribution details</span>
+                            <h2>Create your donation record</h2>
+                            <p>
+                                Complete the required information below.
+                                No real payment is processed in this
+                                academic demonstration.
+                            </p>
+                        </header>
+
+                        <div class="flow-form-body">
+                            @using (Html.BeginForm(
+                                "Create",
+                                "Donation",
+                                FormMethod.Post,
+                                new { id = "mainDonationForm" }))
+                            {
+                                @Html.AntiForgeryToken()
+
+                                @Html.ValidationSummary(
+                                         true,
+                                         "Please correct the following information:",
+                                         new { @class = "flow-validation-summary" })
+
+                                <section class="flow-section">
+                                    <div class="flow-section-title">
+                                        <span class="flow-step">01</span>
+                                        <span>Select a contribution amount</span>
+                                    </div>
+
+                                    <div class="amount-presets">
+                                        <button type="button"
+                                                class="preset-btn @(initialAmount == 1000 ? "active" : "")"
+                                                data-amount="1000">
+                                            PKR 1,000
+                                        </button>
+
+                                        <button type="button"
+                                                class="preset-btn @(initialAmount == 2500 ? "active" : "")"
+                                                data-amount="2500">
+                                            PKR 2,500
+                                        </button>
+
+                                        <button type="button"
+                                                class="preset-btn @(initialAmount == 5000 ? "active" : "")"
+                                                data-amount="5000">
+                                            PKR 5,000
+                                        </button>
+
+                                        <button type="button"
+                                                class="preset-btn @(initialAmount == 10000 ? "active" : "")"
+                                                data-amount="10000">
+                                            PKR 10,000
+                                        </button>
+                                    </div>
+
+                                    <div class="amount-input-wrap">
+                                        <span class="currency-code">PKR</span>
+
+                                        @Html.TextBoxFor(
+                                                 m => m.FormModel.Amount,
+                                                 new
+                                                 {
+                                                     @class = "flow-control",
+                                                     id = "formAmountInput",
+                                                     type = "number",
+                                                     min = "10",
+                                                     step = "10",
+                                                     required = "required"
+                                                 })
+                                    </div>
+
+                                    @Html.ValidationMessageFor(
+                                             m => m.FormModel.Amount,
+                                             "",
+                                             new { @class = "field-validation-error" })
+                                </section>
+
+                                <section class="flow-section">
+                                    <div class="flow-section-title">
+                                        <span class="flow-step">02</span>
+                                        <span>Choose where your support goes</span>
+                                    </div>
+
+                                    <div class="flow-fields">
+                                        <div class="flow-field">
+                                            <label for="ngoSelect">
+                                                Partner organisation
+                                            </label>
+
+                                            @Html.DropDownListFor(
+                                                     m => m.FormModel.NGOID,
+                                                     new SelectList(
+                                                         Model.NGOs,
+                                                         "ID",
+                                                         "Name",
+                                                         Model.FormModel.NGOID),
+                                                     new
+                                                     {
+                                                         @class = "flow-control",
+                                                         id = "ngoSelect",
+                                                         required = "required"
+                                                     })
+
+                                            @Html.ValidationMessageFor(
+                                                     m => m.FormModel.NGOID,
+                                                     "",
+                                                     new { @class = "field-validation-error" })
+                                        </div>
+
+                                        <div class="flow-field">
+                                            <label for="causeSelect">
+                                                Cause or sector
+                                            </label>
+
+                                            @Html.DropDownListFor(
+                                                     m => m.FormModel.CauseID,
+                                                     new SelectList(
+                                                         Model.Causes,
+                                                         "ID",
+                                                         "Name",
+                                                         Model.FormModel.CauseID),
+                                                     new
+                                                     {
+                                                         @class = "flow-control",
+                                                         id = "causeSelect",
+                                                         required = "required"
+                                                     })
+
+                                            @Html.ValidationMessageFor(
+                                                     m => m.FormModel.CauseID,
+                                                     "",
+                                                     new { @class = "field-validation-error" })
+                                        </div>
+
+                                        <div class="flow-field full">
+                                            <label for="programSelect">
+                                                Specific programme (optional)
+                                            </label>
+
+                                            <select id="programSelect"
+                                                    name="FormModel.ProgramID"
+                                                    class="flow-control">
+                                                <option value="">
+                                                    General cause fund
+                                                </option>
+
+                                                @foreach (var programme in Model.Programs)
+                                                {
+                                                    <option value="@programme.ID"
+                                                            data-ngoid="@programme.SecondaryID"
+                                                            @(Model.FormModel.ProgramID == programme.ID ? "selected" : "")>
+                                                        @programme.Name
+                                                    </option>
+                                                }
+                                            </select>
+                                        </div>
+                                    </div>
+                                </section>
+
+                                <section class="flow-section">
+                                    <div class="flow-section-title">
+                                        <span class="flow-step">03</span>
+                                        <span>Your receipt information</span>
+                                    </div>
+
+                                    <div class="flow-fields">
+                                        <div class="flow-field">
+                                            @Html.LabelFor(
+                                                     m => m.FormModel.DonorName)
+
+                                            @Html.TextBoxFor(
+                                                     m => m.FormModel.DonorName,
+                                                     new
+                                                     {
+                                                         @class = "flow-control",
+                                                         placeholder = "Enter your full name",
+                                                         required = "required"
+                                                     })
+
+                                            @Html.ValidationMessageFor(
+                                                     m => m.FormModel.DonorName,
+                                                     "",
+                                                     new { @class = "field-validation-error" })
+                                        </div>
+
+                                        <div class="flow-field">
+                                            @Html.LabelFor(
+                                                     m => m.FormModel.DonorEmail)
+
+                                            @Html.TextBoxFor(
+                                                     m => m.FormModel.DonorEmail,
+                                                     new
+                                                     {
+                                                         @class = "flow-control",
+                                                         placeholder = "name@example.com",
+                                                         type = "email",
+                                                         required = "required"
+                                                     })
+
+                                            @Html.ValidationMessageFor(
+                                                     m => m.FormModel.DonorEmail,
+                                                     "",
+                                                     new { @class = "field-validation-error" })
+                                        </div>
+
+                                        <div class="flow-field full">
+                                            @Html.LabelFor(
+                                                     m => m.FormModel.Message)
+
+                                            @Html.TextAreaFor(
+                                                     m => m.FormModel.Message,
+                                                     new
+                                                     {
+                                                         @class = "flow-control",
+                                                         rows = "3",
+                                                         placeholder = "Add an optional note of encouragement"
+                                                     })
+
+                                            @Html.ValidationMessageFor(
+                                                     m => m.FormModel.Message,
+                                                     "",
+                                                     new { @class = "field-validation-error" })
+                                        </div>
+                                    </div>
+                                </section>
+
+                                <section class="flow-section">
+                                    <div class="flow-section-title">
+                                        <span class="flow-step">04</span>
+                                        <span>
+                                            Choose a demonstration payment method
+                                        </span>
+                                    </div>
+
+                                    @Html.HiddenFor(
+                                             m => m.FormModel.PaymentRail,
+                                             new { id = "hiddenPaymentRail" })
+
+                                    <div class="payment-grid">
+                                        <button type="button"
+                                                class="payment-option @(initialPaymentRail == "Raast / 1Link" ? "active" : "")"
+                                                data-rail="Raast / 1Link">
+                                            <span class="payment-code">RT</span>
+                                            <strong>Raast / 1Link</strong>
+                                            <small>Demo bank transfer</small>
+                                        </button>
+
+                                        <button type="button"
+                                                class="payment-option @(initialPaymentRail == "JazzCash / SadaPay" ? "active" : "")"
+                                                data-rail="JazzCash / SadaPay">
+                                            <span class="payment-code">JC</span>
+                                            <strong>JazzCash / SadaPay</strong>
+                                            <small>Demo mobile wallet</small>
+                                        </button>
+
+                                        <button type="button"
+                                                class="payment-option @(initialPaymentRail == "Debit/Credit Card" ? "active" : "")"
+                                                data-rail="Debit/Credit Card">
+                                            <span class="payment-code">CD</span>
+                                            <strong>Debit / Credit Card</strong>
+                                            <small>Demo card record</small>
+                                        </button>
+                                    </div>
+                                </section>
+
+                                <button type="submit"
+                                        class="flow-submit"
+                                        id="submitDonationButton">
+                                    Create contribution record - PKR
+                                    <span id="btnAmountText">
+                                        @initialAmount.ToString("N0")
+                                    </span>
+                                </button>
+
+                                <p class="flow-disclaimer">
+                                    Academic demonstration only. No real payment
+                                    is processed. Your record will be saved for
+                                    administrator review.
+                                </p>
+                            }
+                        </div>
+                    </section>
+
+                    <aside class="flow-summary-stack">
+                        <section class="flow-card flow-summary">
+                            <div class="flow-summary-title">
+                                <b>DN</b>
+                                <div>
+                                    <span>Live preview</span>
+                                    <h3>Donation summary</h3>
+                                </div>
+                            </div>
+
+                            <div class="summary-row">
+                                <span>Organisation</span>
+                                <strong id="summaryNgo">
+                                    @selectedNgoName
+                                </strong>
+                            </div>
+
+                            <div class="summary-row">
+                                <span>Cause</span>
+                                <strong id="summaryCause">
+                                    @selectedCauseName
+                                </strong>
+                            </div>
+
+                            <div class="summary-row">
+                                <span>Programme</span>
+                                <strong id="summaryProgram">
+                                    General cause fund
+                                </strong>
+                            </div>
+
+                            <div class="summary-row">
+                                <span>Payment method</span>
+                                <strong id="summaryRail">
+                                    @initialPaymentRail
+                                </strong>
+                            </div>
+
+                            <div class="summary-row summary-total">
+                                <span>Total contribution</span>
+                                <strong id="summaryAmount">
+                                    PKR @initialAmount.ToString("N0")
+                                </strong>
+                            </div>
+                        </section>
+
+                        <section class="workflow-card">
+                            <h4>Transparent review workflow</h4>
+
+                            <div class="workflow-step">
+                                <b>01</b>
+                                <div>
+                                    <strong>Create record</strong>
+                                    <span>
+                                        Your contribution begins with Pending status.
+                                    </span>
+                                </div>
+                            </div>
+
+                            <div class="workflow-step">
+                                <b>02</b>
+                                <div>
+                                    <strong>Track personally</strong>
+                                    <span>
+                                        The record appears inside My Donations.
+                                    </span>
+                                </div>
+                            </div>
+
+                            <div class="workflow-step">
+                                <b>03</b>
+                                <div>
+                                    <strong>Administrator review</strong>
+                                    <span>
+                                        An administrator reviews and updates its status.
+                                    </span>
+                                </div>
+                            </div>
+                        </section>
+
+                        <section class="donation-safety-note">
+                            <strong>Academic demonstration</strong>
+                            <span>
+                                This workflow records contribution data but
+                                does not process a real financial transaction.
+                            </span>
+                        </section>
+                    </aside>
+                </div>
+            </div>
+        </section>
     </div>
-
-    <div style="display: grid; grid-template-columns: 1.6fr 1fr; gap: 32px; align-items: start;">
-        <!-- Left: Donation Form -->
-        <div class="auth-card" style="background: #ffffff; border-radius: 16px; padding: 32px; border: 1px solid #e2e8f0; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05);">
-            @using (Html.BeginForm("Create", "Donation", FormMethod.Post, new { id = "mainDonationForm" }))
-            {
-                @Html.AntiForgeryToken()
-
-                <!-- 1. Amount Selector -->
-                <div class="form-group" style="margin-bottom: 24px;">
-                    <label class="form-label" style="font-weight: 700; font-size: 15px; color: #1e293b; margin-bottom: 8px;">
-                        1. Select Donation Amount (PKR) *
-                    </label>
-                    <div class="amount-presets" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 12px;">
-                        <button type="button" class="preset-btn" onclick="setFormAmount(1000, this)">PKR 1,000</button>
-                        <button type="button" class="preset-btn active" onclick="setFormAmount(2500, this)">PKR 2,500</button>
-                        <button type="button" class="preset-btn" onclick="setFormAmount(5000, this)">PKR 5,000</button>
-                        <button type="button" class="preset-btn" onclick="setFormAmount(10000, this)">PKR 10,000</button>
-                    </div>
-
-                    <div style="position: relative;">
-                        <span style="position: absolute; left: 14px; top: 11px; font-weight: 700; color: #64748b; font-size: 14px;">PKR</span>
-                        @Html.TextBoxFor(m => m.FormModel.Amount, new { @class = "form-control", id = "formAmountInput", style = "padding-left: 54px; font-size: 18px; font-weight: 700; color: #166534;", type = "number", min = "10", step = "10", value = Model.FormModel.Amount > 0 ? Model.FormModel.Amount : 2500, required = "required" })
-                    </div>
-                    @Html.ValidationMessageFor(m => m.FormModel.Amount, "", new { @class = "text-danger" })
-                </div>
-
-                <!-- 2. Target NGO & Cause -->
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px;">
-                    <div class="form-group">
-                        <label class="form-label" for="FormModel_NGOID" style="font-weight: 700; color: #1e293b;">
-                            2. Partner NGO *
-                        </label>
-                        @Html.DropDownListFor(m => m.FormModel.NGOID, new SelectList(Model.NGOs, "ID", "Name", Model.FormModel.NGOID), new { @class = "form-control", id = "ngoSelect", onchange = "onNgoChange()", required = "required" })
-                        @Html.ValidationMessageFor(m => m.FormModel.NGOID, "", new { @class = "text-danger" })
-                    </div>
-
-                    <div class="form-group">
-                        <label class="form-label" for="FormModel_CauseID" style="font-weight: 700; color: #1e293b;">
-                            3. Cause / Sector *
-                        </label>
-                        @Html.DropDownListFor(m => m.FormModel.CauseID, new SelectList(Model.Causes, "ID", "Name", Model.FormModel.CauseID), new { @class = "form-control", id = "causeSelect", required = "required" })
-                        @Html.ValidationMessageFor(m => m.FormModel.CauseID, "", new { @class = "text-danger" })
-                    </div>
-                </div>
-
-                <!-- Optional Program Selector -->
-                <div class="form-group" style="margin-bottom: 20px;">
-                    <label class="form-label" for="FormModel_ProgramID" style="font-weight: 600; color: #475569;">
-                        Specific Project Campaign (Optional)
-                    </label>
-                    <select id="programSelect" name="FormModel.ProgramID" class="form-control" onchange="updateSummary()">
-                        <option value="">-- General Cause Fund (Any verified program) --</option>
-                        @foreach (var prog in Model.Programs)
-                        {
-                            <option value="@prog.ID" data-ngoid="@prog.SecondaryID" @(Model.FormModel.ProgramID == prog.ID ? "selected" : "")>
-                                @prog.Name
-                            </option>
-                        }
-                    </select>
-                </div>
-
-                <!-- 3. Donor Details -->
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px;">
-                    <div class="form-group">
-                        <label class="form-label" for="FormModel_DonorName" style="font-weight: 700; color: #1e293b;">
-                            4. Your Full Name *
-                        </label>
-                        @Html.TextBoxFor(m => m.FormModel.DonorName, new { @class = "form-control", placeholder = "e.g. Ali Ahmed", required = "required" })
-                        @Html.ValidationMessageFor(m => m.FormModel.DonorName, "", new { @class = "text-danger" })
-                    </div>
-
-                    <div class="form-group">
-                        <label class="form-label" for="FormModel_DonorEmail" style="font-weight: 700; color: #1e293b;">
-                            5. Email for Receipt *
-                        </label>
-                        @Html.TextBoxFor(m => m.FormModel.DonorEmail, new { @class = "form-control", placeholder = "e.g. ali@example.com", type = "email", required = "required" })
-                        @Html.ValidationMessageFor(m => m.FormModel.DonorEmail, "", new { @class = "text-danger" })
-                    </div>
-                </div>
-
-                <!-- 4. Optional Message -->
-                <div class="form-group" style="margin-bottom: 20px;">
-                    <label class="form-label" for="FormModel_Message" style="font-weight: 600; color: #475569;">
-                        Message / Note of Encouragement (Optional)
-                    </label>
-                    @Html.TextAreaFor(m => m.FormModel.Message, new { @class = "form-control", rows = 2, placeholder = "Add a personal prayer or dedicated note for this cause..." })
-                </div>
-
-                <!-- 5. Payment Rail / Placeholder -->
-                <div class="form-group" style="margin-bottom: 24px;">
-                    <label class="form-label" style="font-weight: 700; color: #1e293b; margin-bottom: 8px;">
-                        6. Payment Method Rail
-                    </label>
-                    @Html.HiddenFor(m => m.FormModel.PaymentRail, new { id = "hiddenPaymentRail" })
-                    <div class="rails-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;">
-                        <div class="rail-option active" onclick="selectPaymentRail('Raast / 1Link', this)">
-                            <span class="rail-icon">⚡</span>
-                            <span class="rail-name">Raast / 1Link</span>
-                        </div>
-                        <div class="rail-option" onclick="selectPaymentRail('JazzCash / SadaPay', this)">
-                            <span class="rail-icon">📱</span>
-                            <span class="rail-name">JazzCash / SadaPay</span>
-                        </div>
-                        <div class="rail-option" onclick="selectPaymentRail('Debit/Credit Card', this)">
-                            <span class="rail-icon">💳</span>
-                            <span class="rail-name">Debit/Credit Card</span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Submit Action -->
-                <button type="submit" class="auth-btn" id="submitDonationBtn" style="font-size: 16px; padding: 14px; width: 100%;">
-                    Confirm Donation of PKR <span id="btnAmountText">2,500</span> →
-                </button>
-                <p style="text-align: center; font-size: 12px; color: #64748b; margin-top: 10px;">
-                    🔒 256-bit SSL Protected. Your donation will be routed to Admin review and the partner NGO dashboard.
-                </p>
-            }
-        </div>
-
-        <!-- Right: Real-time Giving Summary & Verification Details -->
-        <div style="display: flex; flex-direction: column; gap: 20px;">
-            <div style="background: #ffffff; border-radius: 16px; padding: 24px; border: 1px solid #e2e8f0; box-shadow: 0 4px 12px rgba(0,0,0,0.04);">
-                <h3 style="font-size: 18px; font-weight: 700; color: #0f172a; margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
-                    <span>🧾</span> Donation Summary
-                </h3>
-
-                <div style="display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px dashed #e2e8f0; font-size: 14px;">
-                    <span style="color: #64748b;">Selected NGO:</span>
-                    <strong id="summaryNgo" style="color: #0f172a;">@Model.NGOs.FirstOrDefault(n => n.ID == Model.FormModel.NGOID)?.Name</strong>
-                </div>
-
-                <div style="display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px dashed #e2e8f0; font-size: 14px;">
-                    <span style="color: #64748b;">Target Cause:</span>
-                    <strong id="summaryCause" style="color: #0f172a;">@Model.Causes.FirstOrDefault(c => c.ID == Model.FormModel.CauseID)?.Name</strong>
-                </div>
-
-                <div style="display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px dashed #e2e8f0; font-size: 14px;">
-                    <span style="color: #64748b;">Payment Method:</span>
-                    <strong id="summaryRail" style="color: #0f172a;">Raast / 1Link</strong>
-                </div>
-
-                <div style="display: flex; justify-content: space-between; padding: 14px 0 6px 0; font-size: 16px;">
-                    <span style="font-weight: 700; color: #0f172a;">Total Donation:</span>
-                    <strong id="summaryAmount" style="color: #166534; font-size: 20px;">PKR 2,500</strong>
-                </div>
-            </div>
-
-            <!-- Workflow Transparency Box -->
-            <div style="background: #f0fdf4; border-radius: 16px; padding: 24px; border: 1px solid #bbf7d0;">
-                <h4 style="font-size: 15px; font-weight: 700; color: #166534; margin-bottom: 12px; display: flex; align-items: center; gap: 6px;">
-                    <span>🛡️</span> 2-Tier Verification Workflow
-                </h4>
-                <ul style="padding-left: 18px; font-size: 13px; color: #166534; line-height: 1.6;">
-                    <li><strong>Step 1:</strong> Donation record created in <em>Pending</em> status.</li>
-                    <li><strong>Step 2:</strong> Appears directly inside the NGO's dashboard for transparency.</li>
-                    <li><strong>Step 3:</strong> Platform Administrator performs final review and audit approval.</li>
-                </ul>
-            </div>
-
-            <div style="background: #f8fafc; border-radius: 16px; padding: 18px; border: 1px solid #e2e8f0; font-size: 13px; color: #64748b; text-align: center;">
-                🇵🇰 Built with pride for Pakistani non-profits & generous changemakers.
-            </div>
-        </div>
-    </div>
-</div>
+</main>
 
 @section Scripts {
+    <script src="@Url.Content("~/Scripts/jquery-3.7.0.min.js")"></script>
+    <script src="@Url.Content("~/Scripts/jquery.validate.min.js")"></script>
+    <script src="@Url.Content("~/Scripts/jquery.validate.unobtrusive.min.js")"></script>
+
     <script>
-        function setFormAmount(amt, btn) {
-            $('.preset-btn').removeClass('active');
-            $(btn).addClass('active');
-            $('#formAmountInput').val(amt);
-            updateSummary();
-        }
+        (function ($) {
+            "use strict";
 
-        function selectPaymentRail(rail, el) {
-            $('.rail-option').removeClass('active');
-            $(el).addClass('active');
-            $('#hiddenPaymentRail').val(rail);
-            $('#summaryRail').text(rail);
-        }
+            function formatAmount(amount) {
+                return Number(amount || 0).toLocaleString();
+            }
 
-        function onNgoChange() {
-            var selectedNgoId = $('#ngoSelect').val();
-            // Filter program dropdown options if matching NGO
-            $('#programSelect option').each(function () {
-                var progNgoId = $(this).data('ngoid');
-                if (!progNgoId || progNgoId == selectedNgoId) {
-                    $(this).show();
-                } else {
-                    $(this).hide();
+            function updateSummary() {
+                var amount = parseFloat($("#formAmountInput").val()) || 0;
+                var ngoText = $("#ngoSelect option:selected").text();
+                var causeText = $("#causeSelect option:selected").text();
+                var programText = $("#programSelect option:selected").text();
+
+                $("#summaryAmount").text(
+                    "PKR " + formatAmount(amount)
+                );
+
+                $("#btnAmountText").text(
+                    formatAmount(amount)
+                );
+
+                $("#summaryNgo").text(
+                    $.trim(ngoText) || "Not selected"
+                );
+
+                $("#summaryCause").text(
+                    $.trim(causeText) || "Not selected"
+                );
+
+                $("#summaryProgram").text(
+                    $.trim(programText) || "General cause fund"
+                );
+            }
+
+            function filterProgrammes() {
+                var selectedNgoId = $("#ngoSelect").val();
+                var selectedOption = $("#programSelect option:selected");
+
+                $("#programSelect option").each(function () {
+                    var programmeNgoId = $(this).data("ngoid");
+                    var shouldShow = !programmeNgoId ||
+                        String(programmeNgoId) === String(selectedNgoId);
+
+                    $(this).toggle(shouldShow);
+                });
+
+                if (selectedOption.length && selectedOption.is(":hidden")) {
+                    $("#programSelect").val("");
                 }
-            });
-            updateSummary();
-        }
+            }
 
-        function updateSummary() {
-            var amt = parseFloat($('#formAmountInput').val()) || 0;
-            var formattedAmt = 'PKR ' + amt.toLocaleString();
-            $('#summaryAmount').text(formattedAmt);
-            $('#btnAmountText').text(amt.toLocaleString());
+            $(function () {
+                $(".preset-btn").on("click", function () {
+                    $(".preset-btn").removeClass("active");
+                    $(this).addClass("active");
 
-            var ngoText = $('#ngoSelect option:selected').text();
-            if (ngoText) $('#summaryNgo').text(ngoText);
+                    $("#formAmountInput").val(
+                        $(this).data("amount")
+                    );
 
-            var causeText = $('#causeSelect option:selected').text();
-            if (causeText) $('#summaryCause').text(causeText);
-        }
+                    updateSummary();
+                });
 
-        $(document).ready(function () {
-            $('#formAmountInput').on('input', function () {
-                $('.preset-btn').removeClass('active');
+                $(".payment-option").on("click", function () {
+                    var paymentRail = $(this).data("rail");
+
+                    $(".payment-option").removeClass("active");
+                    $(this).addClass("active");
+
+                    $("#hiddenPaymentRail").val(paymentRail);
+                    $("#summaryRail").text(paymentRail);
+                });
+
+                $("#formAmountInput").on("input", function () {
+                    $(".preset-btn").removeClass("active");
+                    updateSummary();
+                });
+
+                $("#ngoSelect").on("change", function () {
+                    filterProgrammes();
+                    updateSummary();
+                });
+
+                $("#causeSelect, #programSelect").on(
+                    "change",
+                    updateSummary
+                );
+
+                $("#mainDonationForm").on("submit", function () {
+                    var button = $("#submitDonationButton");
+
+                    if ($(this).valid && !$(this).valid()) {
+                        return false;
+                    }
+
+                    button.prop("disabled", true);
+                    button.addClass("is-submitting");
+                    button.html("Creating your contribution record...");
+
+                    return true;
+                });
+
+                filterProgrammes();
                 updateSummary();
             });
-
-            $('#ngoSelect, #causeSelect').on('change', function () {
-                updateSummary();
-            });
-
-            onNgoChange();
-            updateSummary();
-        });
+        })(jQuery);
     </script>
 }

@@ -1,431 +1,572 @@
-@{
-    ViewBag.Title = "Our Partners - Verified Non-Profits in Pakistan | GiveAID";
-    Layout = "~/Views/Shared/_Layout.cshtml";
-}
+@model GiveAID_Project.Models.PartnersPageViewModel
+@using System
+@using System.Linq
+@{ ViewBag.Title = "Partners | GiveAID"; Layout = "~/Views/Shared/_Layout.cshtml"; }
 
-<!-- =========================================================
-     PARTNERS HERO SECTION
-     ========================================================= -->
-<section class="partners-hero-section">
-    <div class="section-container">
-        <div class="partners-hero-content">
-            <span class="section-badge">Verified NGO Coalition</span>
-            <h1 class="partners-hero-title">
-                Partnering with Pakistan’s Most <span class="highlight-text">Reputable</span> Non-Profits
-            </h1>
-            <p class="partners-hero-lead">
-                Every NGO on GiveAID undergoes thorough compliance screening, SECP status verification, and financial audit reviews before launching public fundraising campaigns.
-            </p>
-        </div>
-    </div>
-</section>
+@section Styles {
+    <style>
+        .partners-page {
+            background: #f5f9f7;
+            color: var(--navy);
+            overflow: hidden
+        }
 
+        .p-shell {
+            max-width: 1200px;
+            margin: auto;
+            padding: 0 24px
+        }
 
-<!-- =========================================================
-     PARTNERS DIRECTORY / GRID
-     ========================================================= -->
-<section class="partners-grid-section">
-    <div class="section-container">
-        <div class="partners-filter-bar">
-            <div class="partner-count-info">
-                Showing <strong>Verified Partner Organizations</strong>
-            </div>
-            <div class="partner-category-filters">
-                <button class="filter-pill active" onclick="filterPartners('all', this)">All Sectors</button>
-                <button class="filter-pill" onclick="filterPartners('healthcare', this)">Healthcare</button>
-                <button class="filter-pill" onclick="filterPartners('education', this)">Education</button>
-                <button class="filter-pill" onclick="filterPartners('relief', this)">Relief & Welfare</button>
-                <button class="filter-pill" onclick="filterPartners('microfinance', this)">Micro-Grants</button>
-                <a href="@Url.Action("Index", "NGO")" class="filter-pill" style="background: #ecfdf5; color: #065f46; border-color: #a7f3d0; text-decoration: none; font-weight: 700;">🏢 NGO Directory →</a>
-            </div>
-        </div>
+        .p-hero {
+            padding: 76px 0 86px;
+            background: radial-gradient(circle at 8% 10%,#d9f7e9 0,transparent 36%),linear-gradient(135deg,#fffaf2,#f7fffb)
+        }
 
-        <div class="partners-grid">
-            <!-- Partner 1: Edhi Foundation -->
-            <div class="partner-card" data-sector="relief">
-                <div class="partner-card-header">
-                    <div class="partner-logo-badge logo-edhi">
-                        <span>🚑</span>
-                    </div>
-                    <div class="partner-badges">
-                        <span class="verified-tag">🛡️ SECP Verified</span>
-                        <span class="partner-tier">Premier Partner</span>
-                    </div>
-                </div>
-                <div class="partner-card-body">
-                    <h3 class="partner-name">Edhi Foundation</h3>
-                    <div class="partner-meta">
-                        <span class="meta-tag">📍 Head Office: Karachi</span>
-                        <span class="meta-tag">🏥 Emergency & Welfare</span>
-                    </div>
-                    <p class="partner-description">
-                        Operating the world’s largest voluntary ambulance service, homeless shelters, orphanages, and 24/7 disaster response operations across all provinces of Pakistan.
-                    </p>
-                    <div class="partner-stats-row">
-                        <div class="p-stat">
-                            <span class="p-stat-val">450+</span>
-                            <span class="p-stat-lbl">Campaigns</span>
-                        </div>
-                        <div class="p-stat">
-                            <span class="p-stat-val">PKR 45M+</span>
-                            <span class="p-stat-lbl">Distributed</span>
-                        </div>
-                        <div class="p-stat">
-                            <span class="p-stat-val">100%</span>
-                            <span class="p-stat-lbl">Audit Score</span>
-                        </div>
-                    </div>
-                </div>
-                <div class="partner-card-footer">
-                    <a href="@Url.Action("Index", "Home")#causes" class="btn-partner-action">Explore Active Causes →</a>
-                </div>
-            </div>
+        .p-hero-grid {
+            display: grid;
+            grid-template-columns: 1fr .95fr;
+            gap: 62px;
+            align-items: center
+        }
 
-            <!-- Partner 2: Saylani Welfare -->
-            <div class="partner-card" data-sector="education relief">
-                <div class="partner-card-header">
-                    <div class="partner-logo-badge logo-saylani">
-                        <span>🍲</span>
-                    </div>
-                    <div class="partner-badges">
-                        <span class="verified-tag">🛡️ SECP Verified</span>
-                        <span class="partner-tier">Premier Partner</span>
-                    </div>
-                </div>
-                <div class="partner-card-body">
-                    <h3 class="partner-name">Saylani Welfare Trust</h3>
-                    <div class="partner-meta">
-                        <span class="meta-tag">📍 Head Office: Karachi</span>
-                        <span class="meta-tag">💻 Youth Tech & Dastarkhwan</span>
-                    </div>
-                    <p class="partner-description">
-                        Pioneering mass vocational technology training (SMIT) for 100,000+ youth, providing 300,000 daily free meals, clean RO water plants, and emergency relief.
-                    </p>
-                    <div class="partner-stats-row">
-                        <div class="p-stat">
-                            <span class="p-stat-val">320+</span>
-                            <span class="p-stat-lbl">Campaigns</span>
-                        </div>
-                        <div class="p-stat">
-                            <span class="p-stat-val">PKR 38M+</span>
-                            <span class="p-stat-lbl">Distributed</span>
-                        </div>
-                        <div class="p-stat">
-                            <span class="p-stat-val">100%</span>
-                            <span class="p-stat-lbl">Audit Score</span>
-                        </div>
-                    </div>
-                </div>
-                <div class="partner-card-footer">
-                    <a href="@Url.Action("Index", "Home")#causes" class="btn-partner-action">Explore Active Causes →</a>
-                </div>
-            </div>
+        .p-kicker {
+            display: inline-flex;
+            align-items: center;
+            gap: 9px;
+            padding: 8px 13px;
+            border: 1px solid #c6dfd5;
+            border-radius: 30px;
+            background: #fff;
+            color: #087457;
+            font-size: 10px;
+            font-weight: 900;
+            letter-spacing: .13em;
+            text-transform: uppercase
+        }
 
-            <!-- Partner 3: The Citizens Foundation -->
-            <div class="partner-card" data-sector="education">
-                <div class="partner-card-header">
-                    <div class="partner-logo-badge logo-tcf">
-                        <span>📚</span>
-                    </div>
-                    <div class="partner-badges">
-                        <span class="verified-tag">🛡️ SECP Verified</span>
-                        <span class="partner-tier">Gold Partner</span>
-                    </div>
-                </div>
-                <div class="partner-card-body">
-                    <h3 class="partner-name">The Citizens Foundation (TCF)</h3>
-                    <div class="partner-meta">
-                        <span class="meta-tag">📍 Head Office: Karachi</span>
-                        <span class="meta-tag">🎓 Purpose-Built Schools</span>
-                    </div>
-                    <p class="partner-description">
-                        Operating 1,900+ purpose-built formal school units across Pakistan's urban slums and rural villages with a strict 50% female student enrollment target and all-female faculty.
-                    </p>
-                    <div class="partner-stats-row">
-                        <div class="p-stat">
-                            <span class="p-stat-val">280+</span>
-                            <span class="p-stat-lbl">Campaigns</span>
-                        </div>
-                        <div class="p-stat">
-                            <span class="p-stat-val">PKR 30M+</span>
-                            <span class="p-stat-lbl">Distributed</span>
-                        </div>
-                        <div class="p-stat">
-                            <span class="p-stat-val">100%</span>
-                            <span class="p-stat-lbl">Audit Score</span>
-                        </div>
-                    </div>
-                </div>
-                <div class="partner-card-footer">
-                    <a href="@Url.Action("Index", "Home")#causes" class="btn-partner-action">Explore Active Causes →</a>
-                </div>
-            </div>
+            .p-kicker:before {
+                content: "";
+                width: 8px;
+                height: 8px;
+                border-radius: 50%;
+                background: #ef8062;
+                box-shadow: 0 0 0 6px rgba(239,128,98,.14)
+            }
 
-            <!-- Partner 4: Akhuwat Foundation -->
-            <div class="partner-card" data-sector="microfinance education">
-                <div class="partner-card-header">
-                    <div class="partner-logo-badge logo-akhuwat">
-                        <span>🤝</span>
-                    </div>
-                    <div class="partner-badges">
-                        <span class="verified-tag">🛡️ SECP Verified</span>
-                        <span class="partner-tier">Gold Partner</span>
-                    </div>
-                </div>
-                <div class="partner-card-body">
-                    <h3 class="partner-name">Akhuwat Foundation</h3>
-                    <div class="partner-meta">
-                        <span class="meta-tag">📍 Head Office: Lahore</span>
-                        <span class="meta-tag">🪙 Interest-Free Microfinance</span>
-                    </div>
-                    <p class="partner-description">
-                        The world’s largest interest-free (Qarz-e-Hasna) microfinance organization, offering tuition-free residential college education, clothes bank, and transgender health support.
-                    </p>
-                    <div class="partner-stats-row">
-                        <div class="p-stat">
-                            <span class="p-stat-val">190+</span>
-                            <span class="p-stat-lbl">Campaigns</span>
-                        </div>
-                        <div class="p-stat">
-                            <span class="p-stat-val">PKR 25M+</span>
-                            <span class="p-stat-lbl">Distributed</span>
-                        </div>
-                        <div class="p-stat">
-                            <span class="p-stat-val">100%</span>
-                            <span class="p-stat-lbl">Audit Score</span>
-                        </div>
-                    </div>
-                </div>
-                <div class="partner-card-footer">
-                    <a href="@Url.Action("Index", "Home")#causes" class="btn-partner-action">Explore Active Causes →</a>
-                </div>
-            </div>
+        .p-hero h1 {
+            font-size: 60px;
+            line-height: 1.02;
+            letter-spacing: -.06em;
+            margin: 24px 0 20px
+        }
 
-            <!-- Partner 5: Indus Hospital & Health Network -->
-            <div class="partner-card" data-sector="healthcare">
-                <div class="partner-card-header">
-                    <div class="partner-logo-badge logo-indus">
-                        <span>🏥</span>
-                    </div>
-                    <div class="partner-badges">
-                        <span class="verified-tag">🛡️ SECP Verified</span>
-                        <span class="partner-tier">Premier Partner</span>
-                    </div>
-                </div>
-                <div class="partner-card-body">
-                    <h3 class="partner-name">Indus Hospital & Health Network</h3>
-                    <div class="partner-meta">
-                        <span class="meta-tag">📍 Head Office: Karachi</span>
-                        <span class="meta-tag">🩺 100% Free Quality Care</span>
-                    </div>
-                    <p class="partner-description">
-                        Delivering multidisciplinary tertiary healthcare, pediatric oncology, and robotic surgery completely free of cost without discrimination to millions of patients nationwide.
-                    </p>
-                    <div class="partner-stats-row">
-                        <div class="p-stat">
-                            <span class="p-stat-val">140+</span>
-                            <span class="p-stat-lbl">Campaigns</span>
-                        </div>
-                        <div class="p-stat">
-                            <span class="p-stat-val">PKR 22M+</span>
-                            <span class="p-stat-lbl">Distributed</span>
-                        </div>
-                        <div class="p-stat">
-                            <span class="p-stat-val">100%</span>
-                            <span class="p-stat-lbl">Audit Score</span>
-                        </div>
-                    </div>
-                </div>
-                <div class="partner-card-footer">
-                    <a href="@Url.Action("Index", "Home")#causes" class="btn-partner-action">Explore Active Causes →</a>
-                </div>
-            </div>
+            .p-hero h1 span {
+                color: #078b66
+            }
 
-            <!-- Partner 6: Shaukat Khanum Memorial Hospital -->
-            <div class="partner-card" data-sector="healthcare">
-                <div class="partner-card-header">
-                    <div class="partner-logo-badge logo-skmch">
-                        <span>🎗️</span>
-                    </div>
-                    <div class="partner-badges">
-                        <span class="verified-tag">🛡️ SECP Verified</span>
-                        <span class="partner-tier">Gold Partner</span>
-                    </div>
-                </div>
-                <div class="partner-card-body">
-                    <h3 class="partner-name">Shaukat Khanum Cancer Hospital</h3>
-                    <div class="partner-meta">
-                        <span class="meta-tag">📍 Lahore, Peshawar & Karachi</span>
-                        <span class="meta-tag">🔬 Cancer Treatment & Research</span>
-                    </div>
-                    <p class="partner-description">
-                        State-of-the-art comprehensive cancer centers providing financially subsidized and free cancer diagnostics, chemotherapy, radiotherapy, and pediatric surgery.
-                    </p>
-                    <div class="partner-stats-row">
-                        <div class="p-stat">
-                            <span class="p-stat-val">95+</span>
-                            <span class="p-stat-lbl">Campaigns</span>
-                        </div>
-                        <div class="p-stat">
-                            <span class="p-stat-val">PKR 18M+</span>
-                            <span class="p-stat-lbl">Distributed</span>
-                        </div>
-                        <div class="p-stat">
-                            <span class="p-stat-val">100%</span>
-                            <span class="p-stat-lbl">Audit Score</span>
-                        </div>
-                    </div>
-                </div>
-                <div class="partner-card-footer">
-                    <a href="@Url.Action("Index", "Home")#causes" class="btn-partner-action">Explore Active Causes →</a>
-                </div>
-            </div>
+        .p-lead {
+            font-size: 17px;
+            line-height: 1.75;
+            color: #587176;
+            max-width: 570px
+        }
 
-            <!-- Partner 7: Alkhidmat Foundation -->
-            <div class="partner-card" data-sector="relief healthcare">
-                <div class="partner-card-header">
-                    <div class="partner-logo-badge logo-alkhidmat">
-                        <span>💧</span>
-                    </div>
-                    <div class="partner-badges">
-                        <span class="verified-tag">🛡️ SECP Verified</span>
-                        <span class="partner-tier">Gold Partner</span>
-                    </div>
-                </div>
-                <div class="partner-card-body">
-                    <h3 class="partner-name">Alkhidmat Foundation Pakistan</h3>
-                    <div class="partner-meta">
-                        <span class="meta-tag">📍 Head Office: Lahore</span>
-                        <span class="meta-tag">🌊 Disaster Response & Clean Water</span>
-                    </div>
-                    <p class="partner-description">
-                        A nationwide network of emergency responders, orphan sponsorship programs, solar water wells in Tharparkar and Balochistan, and diagnostic clinics.
-                    </p>
-                    <div class="partner-stats-row">
-                        <div class="p-stat">
-                            <span class="p-stat-val">210+</span>
-                            <span class="p-stat-lbl">Campaigns</span>
-                        </div>
-                        <div class="p-stat">
-                            <span class="p-stat-val">PKR 20M+</span>
-                            <span class="p-stat-lbl">Distributed</span>
-                        </div>
-                        <div class="p-stat">
-                            <span class="p-stat-val">100%</span>
-                            <span class="p-stat-lbl">Audit Score</span>
-                        </div>
-                    </div>
-                </div>
-                <div class="partner-card-footer">
-                    <a href="@Url.Action("Index", "Home")#causes" class="btn-partner-action">Explore Active Causes →</a>
-                </div>
-            </div>
+        .p-actions {
+            display: flex;
+            gap: 12px;
+            margin-top: 28px
+        }
 
-            <!-- Partner 8: SOS Children's Villages -->
-            <div class="partner-card" data-sector="education relief">
-                <div class="partner-card-header">
-                    <div class="partner-logo-badge logo-sos">
-                        <span>🏡</span>
-                    </div>
-                    <div class="partner-badges">
-                        <span class="verified-tag">🛡️ SECP Verified</span>
-                        <span class="partner-tier">Verified Partner</span>
-                    </div>
-                </div>
-                <div class="partner-card-body">
-                    <h3 class="partner-name">SOS Children's Villages Pakistan</h3>
-                    <div class="partner-meta">
-                        <span class="meta-tag">📍 Nationwide Villages</span>
-                        <span class="meta-tag">👨‍👩‍👧‍👦 Orphan Foster Homes</span>
-                    </div>
-                    <p class="partner-description">
-                        Providing loving family-based homes, healthcare, and higher education for abandoned and orphaned children across purpose-built village homes in Pakistan.
-                    </p>
-                    <div class="partner-stats-row">
-                        <div class="p-stat">
-                            <span class="p-stat-val">85+</span>
-                            <span class="p-stat-lbl">Campaigns</span>
-                        </div>
-                        <div class="p-stat">
-                            <span class="p-stat-val">PKR 12M+</span>
-                            <span class="p-stat-lbl">Distributed</span>
-                        </div>
-                        <div class="p-stat">
-                            <span class="p-stat-val">100%</span>
-                            <span class="p-stat-lbl">Audit Score</span>
-                        </div>
-                    </div>
-                </div>
-                <div class="partner-card-footer">
-                    <a href="@Url.Action("Index", "Home")#causes" class="btn-partner-action">Explore Active Causes →</a>
-                </div>
-            </div>
-        </div>
-    </div>
-</section>
+        .p-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 51px;
+            padding: 0 20px;
+            border-radius: 12px;
+            text-decoration: none;
+            font-size: 12px;
+            font-weight: 850
+        }
 
+        .p-btn-primary {
+            background: #087f5b;
+            color: #fff;
+            box-shadow: 0 12px 26px rgba(8,127,91,.2)
+        }
 
-<!-- =========================================================
-     PARTNER VERIFICATION CRITERIA & ONBOARDING CALLOUT
-     ========================================================= -->
-<section class="partner-onboarding-section">
-    <div class="section-container">
-        <div class="onboarding-banner-box">
-            <div class="onboarding-text-wrap">
-                <span class="section-badge">Join Our Coalition</span>
-                <h2>Become a GiveAID Partner Organization</h2>
-                <p>
-                    Are you a registered charitable trust, non-profit society, or section 42 company in Pakistan? Partner with GiveAID to gain access to transparent fundraising tools, Gen Z donors, and corporate CSR allocations.
-                </p>
-                <div class="criteria-checklist">
-                    <div class="criterion-item">
-                        <span class="check-icon">✓</span>
-                        <span>SECP Section 42 / Societies Registration Act 1860 documentation</span>
-                    </div>
-                    <div class="criterion-item">
-                        <span class="check-icon">✓</span>
-                        <span>FBR Tax Exemption / NPO certification (Rule 212 / Section 2(36))</span>
-                    </div>
-                    <div class="criterion-item">
-                        <span class="check-icon">✓</span>
-                        <span>Minimum 2 years of audited financial statements by a certified CA</span>
-                    </div>
-                    <div class="criterion-item">
-                        <span class="check-icon">✓</span>
-                        <span>Active, verifiable field operations with photographic milestone reporting</span>
-                    </div>
-                </div>
-                <div class="onboarding-actions">
-                    <a href="@Url.Action("Register", "Account")" class="btn-primary-hero">
-                        Apply for NGO Verification →
-                    </a>
-                    <a href="@Url.Action("Contact", "Home")" class="btn-secondary-hero">
-                        Contact Partnerships Team
-                    </a>
-                </div>
-            </div>
-        </div>
-    </div>
-</section>
+        .p-btn-secondary {
+            background: #fff;
+            color: #173d43;
+            border: 1px solid #c9dcd5
+        }
 
+        .network {
+            min-height: 390px;
+            border-radius: 30px;
+            padding: 35px;
+            background: linear-gradient(145deg,#062b39,#075d55);
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 26px 55px rgba(7,31,44,.2);
+            display: grid;
+            place-items: center
+        }
 
-@section Scripts {
-    <script>
-        function filterPartners(sector, btn) {
-            $('.partner-category-filters .filter-pill').removeClass('active');
-            $(btn).addClass('active');
+            .network:before, .network:after {
+                content: "";
+                position: absolute;
+                border: 1px solid rgba(255,255,255,.13);
+                border-radius: 50%
+            }
 
-            if (sector === 'all') {
-                $('.partner-card').fadeIn(200);
-            } else {
-                $('.partner-card').hide();
-                $('.partner-card').each(function () {
-                    var dataSector = $(this).attr('data-sector') || '';
-                    if (dataSector.indexOf(sector) !== -1) {
-                        $(this).fadeIn(200);
-                    }
-                });
+            .network:before {
+                width: 330px;
+                height: 330px
+            }
+
+            .network:after {
+                width: 220px;
+                height: 220px
+            }
+
+        .network-core {
+            width: 118px;
+            height: 118px;
+            border-radius: 30px;
+            background: #fff;
+            color: #087f5b;
+            display: grid;
+            place-items: center;
+            font-size: 27px;
+            font-weight: 950;
+            z-index: 2;
+            box-shadow: 0 20px 45px rgba(0,0,0,.2)
+        }
+
+        .network-node {
+            position: absolute;
+            z-index: 3;
+            width: 66px;
+            height: 66px;
+            border-radius: 19px;
+            background: #f8eee0;
+            color: #0b3440;
+            display: grid;
+            place-items: center;
+            font-size: 16px;
+            font-weight: 900;
+            border: 5px solid rgba(255,255,255,.18)
+        }
+
+        .n1 {
+            top: 46px;
+            left: 58px
+        }
+
+        .n2 {
+            top: 55px;
+            right: 50px;
+            background: #d8f6e9
+        }
+
+        .n3 {
+            bottom: 49px;
+            left: 62px;
+            background: #ffe0d6
+        }
+
+        .n4 {
+            bottom: 42px;
+            right: 60px;
+            background: #d9edf3
+        }
+
+        .network-note {
+            position: absolute;
+            bottom: 28px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: #b7d9d6;
+            font-size: 9px;
+            text-transform: uppercase;
+            letter-spacing: .12em;
+            font-weight: 800;
+            white-space: nowrap
+        }
+
+        .p-stat-wrap {
+            margin-top: -36px;
+            position: relative;
+            z-index: 4
+        }
+
+        .p-statbar {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1.4fr;
+            background: #fff;
+            border: 1px solid #d5e3de;
+            border-radius: 22px;
+            box-shadow: 0 20px 50px rgba(7,31,44,.12);
+            overflow: hidden
+        }
+
+        .p-stat {
+            padding: 25px 28px;
+            border-right: 1px solid #e0e9e5
+        }
+
+            .p-stat:last-child {
+                border: 0
+            }
+
+            .p-stat strong {
+                font-size: 27px;
+                display: block;
+                color: #073646
+            }
+
+            .p-stat span {
+                display: block;
+                margin-top: 5px;
+                font-size: 9px;
+                color: #688084;
+                text-transform: uppercase;
+                letter-spacing: .08em
+            }
+
+        .p-directory {
+            padding: 90px 0 105px
+        }
+
+        .p-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: end;
+            gap: 25px;
+            margin-bottom: 30px
+        }
+
+            .p-head h2 {
+                font-size: 42px;
+                letter-spacing: -.05em;
+                margin: 8px 0
+            }
+
+            .p-head p {
+                color: #60777c;
+                max-width: 520px;
+                line-height: 1.7
+            }
+
+        .p-search {
+            width: 330px;
+            height: 52px;
+            border: 1px solid #c9dad4;
+            border-radius: 13px;
+            padding: 0 17px;
+            background: #fff;
+            font: inherit;
+            font-size: 13px;
+            outline: none
+        }
+
+            .p-search:focus {
+                border-color: #078b66;
+                box-shadow: 0 0 0 4px rgba(7,139,102,.09)
+            }
+
+        .partner-grid {
+            display: grid;
+            grid-template-columns: repeat(3,1fr);
+            gap: 20px
+        }
+
+        .partner-card {
+            min-height: 325px;
+            background: #fff;
+            border: 1px solid #d5e3de;
+            border-radius: 23px;
+            padding: 26px;
+            box-shadow: 0 13px 34px rgba(7,31,44,.07);
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            overflow: hidden;
+            transition: .3s
+        }
+
+            .partner-card:before {
+                content: "";
+                position: absolute;
+                left: 0;
+                right: 0;
+                top: 0;
+                height: 5px;
+                background: linear-gradient(90deg,#078b66,#22c58b)
+            }
+
+            .partner-card:nth-child(3n+2):before {
+                background: linear-gradient(90deg,#ef7f61,#f7aa68)
+            }
+
+            .partner-card:nth-child(3n):before {
+                background: linear-gradient(90deg,#166b80,#31a5a4)
+            }
+
+            .partner-card:hover {
+                transform: translateY(-8px);
+                box-shadow: 0 23px 48px rgba(7,31,44,.13)
+            }
+
+        .partner-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            gap: 15px
+        }
+
+        .partner-logo {
+            width: 65px;
+            height: 65px;
+            border-radius: 18px;
+            display: grid;
+            place-items: center;
+            background: #e3f5ed;
+            color: #087457;
+            font-size: 19px;
+            font-weight: 950
+        }
+
+        .record-pill {
+            padding: 8px 10px;
+            border-radius: 20px;
+            background: #eef5f2;
+            color: #537074;
+            font-size: 8px;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: .07em
+        }
+
+        .partner-card h3 {
+            font-size: 21px;
+            line-height: 1.25;
+            margin: 25px 0 11px
+        }
+
+        .partner-card p {
+            font-size: 12px;
+            line-height: 1.75;
+            color: #647a7e;
+            margin: 0 0 22px
+        }
+
+        .partner-link {
+            margin-top: auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            text-decoration: none;
+            color: #087457;
+            font-size: 11px;
+            font-weight: 900;
+            padding-top: 18px;
+            border-top: 1px solid #e4ece9
+        }
+
+            .partner-link span {
+                width: 31px;
+                height: 31px;
+                border-radius: 50%;
+                display: grid;
+                place-items: center;
+                background: #e4f6ee
+            }
+
+        .partner-no-link {
+            color: #829194
+        }
+
+        .p-empty {
+            padding: 65px;
+            text-align: center;
+            background: #fff;
+            border: 1px dashed #b9cec5;
+            border-radius: 22px
+        }
+
+            .p-empty h3 {
+                font-size: 24px
+            }
+
+            .p-empty p {
+                color: #687e82
+            }
+
+        .p-principles {
+            padding: 86px 0;
+            background: #062b39;
+            color: #fff
+        }
+
+            .p-principles h2 {
+                font-size: 40px;
+                letter-spacing: -.04em;
+                margin: 8px 0 35px
+            }
+
+        .principle-grid {
+            display: grid;
+            grid-template-columns: repeat(3,1fr);
+            gap: 16px
+        }
+
+        .principle {
+            padding: 26px;
+            border: 1px solid rgba(255,255,255,.11);
+            border-radius: 20px;
+            background: rgba(255,255,255,.06)
+        }
+
+            .principle i {
+                font-style: normal;
+                color: #64deb5;
+                font-size: 10px;
+                font-weight: 900;
+                letter-spacing: .1em
+            }
+
+            .principle h3 {
+                font-size: 20px;
+                margin: 24px 0 10px
+            }
+
+            .principle p {
+                color: #a9c3c6;
+                line-height: 1.7;
+                font-size: 12px
+            }
+
+        .p-disclaimer {
+            margin-top: 28px;
+            padding: 16px 18px;
+            border-radius: 13px;
+            background: rgba(255,255,255,.06);
+            color: #afc8ca;
+            font-size: 10px
+        }
+
+        .reveal {
+            opacity: 0;
+            transform: translateY(22px);
+            transition: .7s
+        }
+
+            .reveal.show {
+                opacity: 1;
+                transform: none
+            }
+
+        @@media(max-width:920px) {
+            .p-hero-grid {
+                grid-template-columns: 1fr
+            }
+
+            .partner-grid {
+                grid-template-columns: 1fr 1fr
+            }
+
+            .p-head {
+                display: block
+            }
+
+            .p-search {
+                width: 100%;
+                margin-top: 18px
+            }
+
+            .p-statbar {
+                grid-template-columns: 1fr 1fr
+            }
+
+            .p-stat:last-child {
+                grid-column: 1/3
             }
         }
-    </script>
+
+        @@media(max-width:620px) {
+            .p-shell {
+                padding: 0 16px
+            }
+
+            .p-hero h1 {
+                font-size: 43px
+            }
+
+            .network {
+                min-height: 340px
+            }
+
+            .partner-grid, .principle-grid, .p-statbar {
+                grid-template-columns: 1fr
+            }
+
+            .p-stat:last-child {
+                grid-column: auto
+            }
+
+            .p-stat {
+                border-right: 0;
+                border-bottom: 1px solid #e0e9e5
+            }
+
+            .p-actions {
+                flex-direction: column
+            }
+
+            .p-btn {
+                width: 100%
+            }
+        }
+
+        @@media(prefers-reduced-motion:reduce) {
+            .reveal {
+                opacity: 1;
+                transform: none
+            }
+
+            .partner-card {
+                transition: none
+            }
+        }
+    </style>
+}
+
+<main class="partners-page">
+    <section class="p-hero"><div class="p-shell p-hero-grid"><div><span class="p-kicker">Platform partners</span><h1>Working together for<br /><span>community impact.</span></h1><p class="p-lead">Explore active partner records maintained by the GiveAID administrator. Each listing presents the organisation information currently available in the platform database.</p><div class="p-actions"><a class="p-btn p-btn-primary" href="#partnerDirectory">Meet our partners</a><a class="p-btn p-btn-secondary" href="@Url.Action("Index","NGO")">Explore NGOs</a></div></div><div class="network" aria-label="GiveAID partner network illustration"><div class="network-node n1">CO</div><div class="network-node n2">ED</div><div class="network-core">GiveAID</div><div class="network-node n3">CM</div><div class="network-node n4">HL</div><span class="network-note">One platform · connected records</span></div></div></section>
+    <div class="p-stat-wrap"><div class="p-shell"><div class="p-statbar"><div class="p-stat"><strong>@Model.ActivePartnerCount</strong><span>Active partner records</span></div><div class="p-stat"><strong>SQL</strong><span>Database-driven directory</span></div><div class="p-stat"><strong>Admin maintained</strong><span>Partner content can be managed centrally</span></div></div></div></div>
+    <section class="p-directory" id="partnerDirectory">
+        <div class="p-shell">
+            <div class="p-head"><div><span class="p-kicker">Partner directory</span><h2>Organisations on GiveAID</h2><p>Browse the active organisations currently included in the Partners table.</p></div>@if (Model.Partners != null && Model.Partners.Any())
+            {<input id="partnerSearch" class="p-search" type="search" placeholder="Search partner name or description" aria-label="Search partners" />}</div>
+            @if (Model.Partners != null && Model.Partners.Any())
+            {<div class="partner-grid" id="partnerGrid">@foreach (var partner in Model.Partners)
+                {
+                    var words = (partner.PartnerName ?? "P").Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries); var initials = string.Concat(words.Take(2).Select(x => x.Substring(0, 1))).ToUpperInvariant();<article class="partner-card reveal" data-search="@((partner.PartnerName+" "+partner.Description).ToLowerInvariant())"><div class="partner-top">@if (!string.IsNullOrWhiteSpace(partner.LogoURL))
+                    {<img class="partner-logo" src="@Url.Content(partner.LogoURL)" alt="@partner.PartnerName logo" />}
+                    else
+                    {<div class="partner-logo">@initials</div>}<span class="record-pill">Active record</span></div><h3>@partner.PartnerName</h3><p>@(!string.IsNullOrWhiteSpace(partner.Description)?partner.Description:"Partner information is maintained by the GiveAID administrator.")</p>@if (!string.IsNullOrWhiteSpace(partner.WebsiteURL))
+                    {<a class="partner-link" href="@partner.WebsiteURL" target="_blank" rel="noopener noreferrer">Visit organisation website <span>&#8599;</span></a>}
+                    else
+                    {<div class="partner-link partner-no-link">Website not provided <span>—</span></div>}</article>}</div><div class="p-empty" id="partnerEmpty" style="display:none"><h3>No matching partners</h3><p>Try another name or clear the search field.</p></div>}
+        else
+        {<div class="p-empty"><h3>No active partners available</h3><p>The administrator has not published an active partner record yet.</p></div>}
+        </div>
+    </section>
+    <section class="p-principles"><div class="p-shell"><span class="p-kicker">How this module works</span><h2>Clear records. Responsible presentation.</h2><div class="principle-grid"><article class="principle"><i>01 · DISCOVER</i><h3>Public directory</h3><p>Visitors can review active partner names, descriptions and available website links from one consistent page.</p></article><article class="principle"><i>02 · MAINTAIN</i><h3>Database controlled</h3><p>Partner visibility, ordering and details are controlled by records in the SQL Server database.</p></article><article class="principle"><i>03 · CONNECT</i><h3>Useful pathways</h3><p>The page connects visitors to official links when those URLs have been provided by the administrator.</p></article></div><div class="p-disclaimer">Important: appearance in this academic demonstration directory does not by itself represent accreditation, audit approval or regulatory verification.</div></div></section>
+</main>
+
+@section Scripts {
+    <script>(function () { var input = document.getElementById('partnerSearch'), cards = document.querySelectorAll('.partner-card'), empty = document.getElementById('partnerEmpty'); if (input) { input.addEventListener('input', function () { var q = input.value.toLowerCase().trim(), visible = 0; cards.forEach(function (card) { var show = !q || (card.getAttribute('data-search') || '').indexOf(q) >= 0; card.style.display = show ? 'flex' : 'none'; if (show) visible++; }); if (empty) empty.style.display = visible ? 'none' : 'block'; }); } var items = document.querySelectorAll('.reveal'); if ('IntersectionObserver' in window) { var observer = new IntersectionObserver(function (entries) { entries.forEach(function (entry) { if (entry.isIntersecting) { entry.target.classList.add('show'); observer.unobserve(entry.target); } }); }, { threshold: .1 }); items.forEach(function (item) { observer.observe(item); }); } else { items.forEach(function (item) { item.classList.add('show'); }); } })();</script>
 }
