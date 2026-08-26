@@ -1,0 +1,422 @@
+@model GiveAID_Project.Models.ProgrammeAdminFormViewModel
+@using System
+@using System.Collections.Generic
+@using System.Linq
+@using System.Web.Mvc
+
+@{
+    var isEdit = Model != null && Model.IsEditMode;
+    var actionName = isEdit ? "EditProgramme" : "CreateProgramme";
+    var pageHeading = isEdit ? "Edit programme" : "Create a new programme";
+    var pageDescription = isEdit
+        ? "Update programme information, relationships, funding and lifecycle settings."
+        : "Create an initiative and connect it to the correct NGO and social cause.";
+
+    var availableCauses = Model.AvailableCauses ?? new List<GiveAID_Project.Models.CauseAdminLookupItem>();
+    var availableNgos = Model.AvailableNGOs ?? new List<GiveAID_Project.Models.CauseAdminLookupItem>();
+
+    ViewBag.Title = (isEdit ? "Edit Programme" : "Create Programme") + " | GiveAID";
+    ViewBag.AdminPageTitle = isEdit ? "Edit programme" : "Create programme";
+    ViewBag.AdminPageSubtitle = "Programme relationships, funding and publishing settings";
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+}
+
+@section Styles {
+    <link href="@Url.Content("~/Content/CauseProgrammeAdmin.css?v=20260826-1")"
+          rel="stylesheet" />
+}
+
+<main class="admin-page admin-form-page programme-form-page">
+    <header class="admin-hero admin-form-hero programme-form-hero">
+        <div class="admin-hero-copy">
+            <span class="admin-eyebrow">Programme record</span>
+            <h1>@pageHeading</h1>
+            <p>@pageDescription</p>
+        </div>
+
+        <div class="admin-hero-actions">
+            <a class="admin-button admin-button-secondary"
+               href="@Url.Action("AdminProgrammes", "Causes")">
+                Back to programmes
+            </a>
+
+            <a class="admin-button admin-button-ghost"
+               href="@Url.Action("AdminCauses", "Causes")">
+                View causes
+            </a>
+        </div>
+    </header>
+
+    @if (!availableNgos.Any() || !availableCauses.Any())
+    {
+        <div class="admin-warning-panel" role="alert">
+            <strong>Programme relationships are not ready.</strong>
+            <p>
+                At least one NGO and one cause must exist before a programme can be
+                created. Add the missing record, then return to this form.
+            </p>
+        </div>
+    }
+
+    @using (Html.BeginForm(actionName, "Causes", FormMethod.Post, new { @class = "admin-editor-form", novalidate = "novalidate" }))
+    {
+        @Html.AntiForgeryToken()
+        @Html.HiddenFor(model => model.ProgrammeID)
+
+        if (!ViewData.ModelState.IsValid)
+        {
+            <div class="admin-validation-panel" role="alert">
+                <strong>Please correct the highlighted information.</strong>
+                @Html.ValidationSummary(false, "", new { @class = "admin-validation-list" })
+            </div>
+        }
+
+        <div class="admin-editor-grid programme-editor-grid">
+            <section class="admin-editor-card">
+                <header class="admin-editor-heading">
+                    <span class="admin-step">01</span>
+                    <div>
+                        <h2>Programme identity</h2>
+                        <p>Name, slug and the database relationships behind this initiative.</p>
+                    </div>
+                </header>
+
+                <div class="admin-form-grid two-columns">
+                    <div class="admin-form-field">
+                        @Html.LabelFor(model => model.ProgrammeName)
+                        @Html.TextBoxFor(model => model.ProgrammeName, new
+                        {
+                            id = "ProgrammeName",
+                            maxlength = "180",
+                            placeholder = "For example: Community Health Day",
+                            autocomplete = "off"
+                        })
+                        @Html.ValidationMessageFor(model => model.ProgrammeName, "", new { @class = "field-validation" })
+                    </div>
+
+                    <div class="admin-form-field">
+                        @Html.LabelFor(model => model.Slug)
+                        <div class="slug-input-wrap">
+                            <span>/programme/</span>
+                            @Html.TextBoxFor(model => model.Slug, new
+                            {
+                                id = "Slug",
+                                maxlength = "200",
+                                placeholder = "community-health-day",
+                                autocomplete = "off"
+                            })
+                        </div>
+                        <small>Lowercase letters, numbers and hyphens only.</small>
+                        @Html.ValidationMessageFor(model => model.Slug, "", new { @class = "field-validation" })
+                    </div>
+
+                    <div class="admin-form-field">
+                        @Html.LabelFor(model => model.NGOID)
+                        @Html.DropDownListFor(
+                            model => model.NGOID,
+                            new SelectList(availableNgos, "ID", "Name", Model.NGOID),
+                            "Select an NGO",
+                            new { id = "NGOID" })
+                        <small>The organisation responsible for this programme.</small>
+                        @Html.ValidationMessageFor(model => model.NGOID, "", new { @class = "field-validation" })
+                    </div>
+
+                    <div class="admin-form-field">
+                        @Html.LabelFor(model => model.CauseID)
+                        @Html.DropDownListFor(
+                            model => model.CauseID,
+                            new SelectList(availableCauses, "ID", "Name", Model.CauseID),
+                            "Select a cause",
+                            new { id = "CauseID" })
+                        <small>The public cause under which this programme appears.</small>
+                        @Html.ValidationMessageFor(model => model.CauseID, "", new { @class = "field-validation" })
+                    </div>
+
+                    <div class="admin-form-field full-width">
+                        @Html.LabelFor(model => model.ShortDescription)
+                        @Html.TextAreaFor(model => model.ShortDescription, new
+                        {
+                            rows = "3",
+                            maxlength = "350",
+                            placeholder = "Write a concise summary for programme cards."
+                        })
+                        <div class="field-help-row">
+                            <small>Recommended: 100 to 220 characters.</small>
+                            <small id="shortDescriptionCount">0 / 350</small>
+                        </div>
+                        @Html.ValidationMessageFor(model => model.ShortDescription, "", new { @class = "field-validation" })
+                    </div>
+
+                    <div class="admin-form-field full-width">
+                        @Html.LabelFor(model => model.Description)
+                        @Html.TextAreaFor(model => model.Description, new
+                        {
+                            rows = "8",
+                            maxlength = "3000",
+                            placeholder = "Explain the programme activities, intended beneficiaries and expected impact."
+                        })
+                        <div class="field-help-row">
+                            <small>Minimum 20 characters.</small>
+                            <small id="descriptionCount">0 / 3000</small>
+                        </div>
+                        @Html.ValidationMessageFor(model => model.Description, "", new { @class = "field-validation" })
+                    </div>
+                </div>
+            </section>
+
+            <aside class="admin-editor-side">
+                <section class="admin-editor-card">
+                    <header class="admin-editor-heading compact">
+                        <span class="admin-step">02</span>
+                        <div>
+                            <h2>Schedule and funding</h2>
+                            <p>Where, when and against what target the work takes place.</p>
+                        </div>
+                    </header>
+
+                    <div class="admin-form-field">
+                        @Html.LabelFor(model => model.Location)
+                        @Html.TextBoxFor(model => model.Location, new
+                        {
+                            maxlength = "500",
+                            placeholder = "City, district or service area"
+                        })
+                        @Html.ValidationMessageFor(model => model.Location, "", new { @class = "field-validation" })
+                    </div>
+
+                    <div class="admin-form-grid two-columns compact-grid">
+                        <div class="admin-form-field">
+                            @Html.LabelFor(model => model.StartDate)
+                            @Html.TextBoxFor(model => model.StartDate, "{0:yyyy-MM-dd}", new
+                            {
+                                type = "date",
+                                id = "StartDate"
+                            })
+                            @Html.ValidationMessageFor(model => model.StartDate, "", new { @class = "field-validation" })
+                        </div>
+
+                        <div class="admin-form-field">
+                            @Html.LabelFor(model => model.EndDate)
+                            @Html.TextBoxFor(model => model.EndDate, "{0:yyyy-MM-dd}", new
+                            {
+                                type = "date",
+                                id = "EndDate"
+                            })
+                            @Html.ValidationMessageFor(model => model.EndDate, "", new { @class = "field-validation" })
+                        </div>
+                    </div>
+
+                    <div class="admin-form-field">
+                        @Html.LabelFor(model => model.TargetAmount)
+                        <div class="money-input-wrap">
+                            <span>PKR</span>
+                            @Html.TextBoxFor(model => model.TargetAmount, "{0:0.##}", new
+                            {
+                                type = "number",
+                                min = "0",
+                                step = "1",
+                                placeholder = "0"
+                            })
+                        </div>
+                        <small>This is a programme target, not a processed payment.</small>
+                        @Html.ValidationMessageFor(model => model.TargetAmount, "", new { @class = "field-validation" })
+                    </div>
+                </section>
+
+                <section class="admin-editor-card preview-card">
+                    <header class="admin-editor-heading compact">
+                        <span class="admin-step">03</span>
+                        <div>
+                            <h2>Programme image</h2>
+                            <p>Use a relevant, high-quality image for public cards.</p>
+                        </div>
+                    </header>
+
+                    <div class="admin-image-preview programme-image-preview" id="programmeImagePreview">
+                        @if (!string.IsNullOrWhiteSpace(Model.ImageURL))
+                        {
+                            <img src="@Model.ImageURL" alt="Programme preview" />
+                        }
+                        else
+                        {
+                            <div class="admin-image-placeholder">
+                                <span>IMG</span>
+                                <small>Programme image preview</small>
+                            </div>
+                        }
+                    </div>
+
+                    <div class="admin-form-field">
+                        @Html.LabelFor(model => model.ImageURL)
+                        @Html.TextBoxFor(model => model.ImageURL, new
+                        {
+                            id = "ImageURL",
+                            maxlength = "500",
+                            type = "url",
+                            placeholder = "https://example.com/programme-image.jpg"
+                        })
+                        <small>Use a complete HTTPS image URL.</small>
+                        @Html.ValidationMessageFor(model => model.ImageURL, "", new { @class = "field-validation" })
+                    </div>
+                </section>
+
+                <section class="admin-editor-card settings-card">
+                    <header class="admin-editor-heading compact">
+                        <span class="admin-step">04</span>
+                        <div>
+                            <h2>Publishing settings</h2>
+                            <p>Set the lifecycle and featured placement.</p>
+                        </div>
+                    </header>
+
+                    <div class="admin-form-field">
+                        @Html.LabelFor(model => model.Status)
+                        @Html.DropDownListFor(
+                            model => model.Status,
+                            new List<SelectListItem>
+                            {
+                                new SelectListItem { Text = "Upcoming", Value = "Upcoming" },
+                                new SelectListItem { Text = "Active", Value = "Active" },
+                                new SelectListItem { Text = "Completed", Value = "Completed" },
+                                new SelectListItem { Text = "Cancelled", Value = "Cancelled" }
+                            },
+                            new { id = "Status" })
+                        @Html.ValidationMessageFor(model => model.Status, "", new { @class = "field-validation" })
+                    </div>
+
+                    <label class="admin-switch-row" for="IsFeatured">
+                        <span>
+                            <strong>Featured programme</strong>
+                            <small>Give this programme additional public prominence.</small>
+                        </span>
+                        @Html.CheckBoxFor(model => model.IsFeatured, new
+                        {
+                            id = "IsFeatured",
+                            @class = "admin-switch-input"
+                        })
+                        <span class="admin-switch" aria-hidden="true"></span>
+                    </label>
+                </section>
+            </aside>
+        </div>
+
+        <footer class="admin-form-footer">
+            <div>
+                <strong>@(isEdit ? "Update programme record" : "Create programme record")</strong>
+                <span>The record remains connected to the selected NGO and cause.</span>
+            </div>
+
+            <div class="admin-form-footer-actions">
+                <a class="admin-button admin-button-ghost"
+                   href="@Url.Action("AdminProgrammes", "Causes")">
+                    Cancel
+                </a>
+
+                <button class="admin-button admin-button-primary"
+                        type="submit"
+                        @(!availableNgos.Any() || !availableCauses.Any() ? "disabled" : null)>
+                    @(isEdit ? "Save changes" : "Create programme")
+                </button>
+            </div>
+        </footer>
+    }
+</main>
+
+@section Scripts {
+    <script>
+        (function () {
+            var nameInput = document.getElementById('ProgrammeName');
+            var slugInput = document.getElementById('Slug');
+            var imageInput = document.getElementById('ImageURL');
+            var preview = document.getElementById('programmeImagePreview');
+            var startDate = document.getElementById('StartDate');
+            var endDate = document.getElementById('EndDate');
+            var shortDescription = document.getElementById('ShortDescription');
+            var description = document.getElementById('Description');
+            var shortCounter = document.getElementById('shortDescriptionCount');
+            var descriptionCounter = document.getElementById('descriptionCount');
+            var slugWasEdited = slugInput && slugInput.value.length > 0;
+
+            function makeSlug(value) {
+                return (value || '')
+                    .toLowerCase()
+                    .replace(/[^a-z0-9]+/g, '-')
+                    .replace(/^-+|-+$/g, '')
+                    .substring(0, 200);
+            }
+
+            function updateCounter(field, counter, maximum) {
+                if (field && counter) {
+                    counter.textContent = field.value.length + ' / ' + maximum;
+                }
+            }
+
+            function updatePreview() {
+                if (!preview || !imageInput) {
+                    return;
+                }
+
+                var source = imageInput.value.trim();
+
+                if (!source) {
+                    preview.innerHTML = '<div class="admin-image-placeholder"><span>IMG</span><small>Programme image preview</small></div>';
+                    return;
+                }
+
+                var image = document.createElement('img');
+                image.alt = 'Programme preview';
+                image.src = source;
+                image.onerror = function () {
+                    preview.innerHTML = '<div class="admin-image-placeholder error"><span>!</span><small>Image could not be loaded</small></div>';
+                };
+
+                preview.innerHTML = '';
+                preview.appendChild(image);
+            }
+
+            if (slugInput) {
+                slugInput.addEventListener('input', function () {
+                    slugWasEdited = this.value.length > 0;
+                    this.value = makeSlug(this.value);
+                });
+            }
+
+            if (nameInput && slugInput) {
+                nameInput.addEventListener('input', function () {
+                    if (!slugWasEdited) {
+                        slugInput.value = makeSlug(this.value);
+                    }
+                });
+            }
+
+            if (imageInput) {
+                imageInput.addEventListener('change', updatePreview);
+                imageInput.addEventListener('blur', updatePreview);
+            }
+
+            if (startDate && endDate) {
+                startDate.addEventListener('change', function () {
+                    endDate.min = this.value;
+                });
+
+                if (startDate.value) {
+                    endDate.min = startDate.value;
+                }
+            }
+
+            if (shortDescription) {
+                updateCounter(shortDescription, shortCounter, 350);
+                shortDescription.addEventListener('input', function () {
+                    updateCounter(shortDescription, shortCounter, 350);
+                });
+            }
+
+            if (description) {
+                updateCounter(description, descriptionCounter, 3000);
+                description.addEventListener('input', function () {
+                    updateCounter(description, descriptionCounter, 3000);
+                });
+            }
+        }());
+    </script>
+}

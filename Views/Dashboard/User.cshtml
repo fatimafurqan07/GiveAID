@@ -1,238 +1,737 @@
 @model GiveAID_Project.Models.UserDashboardViewModel
+@using System
+@using System.Linq
 
 @{
-    ViewBag.Title = "Donor Dashboard";
+    ViewBag.Title = "My Account | GiveAID";
     Layout = "~/Views/Shared/_Layout.cshtml";
+
+    var displayName = string.IsNullOrWhiteSpace(Model.FullName)
+        ? "Member"
+        : Model.FullName;
+
+    var firstName = displayName.Split(' ')[0];
+
+    var initial = firstName
+        .Substring(0, 1)
+        .ToUpperInvariant();
 }
 
-<div class="dashboard-wrapper">
-    <!-- Header Banner -->
-    <div class="dashboard-header">
-        <div>
-            <div class="dashboard-badge user-badge">💚 Give-AID Donor Portal</div>
-            <h1 class="dashboard-title">Welcome back, @Model.FullName!</h1>
-            <p class="dashboard-subtitle">Track your charitable impact, review donation receipts, and manage your bookmarked humanitarian causes.</p>
-        </div>
-        <div class="dashboard-actions">
-            <span class="user-meta-pill">Member since @Model.MemberSince.ToString("MMM yyyy")</span>
-        </div>
-    </div>
+@section Styles {
+    <link href="@Url.Content("~/Content/UserDashboard.css")"
+          rel="stylesheet" />
 
-    <!-- Stat Cards Grid -->
-    <div class="stats-grid">
-        <div class="stat-card">
-            <div class="stat-icon icon-funds">💸</div>
-            <div class="stat-info">
-                <div class="stat-value">$@Model.TotalDonated.ToString("N2")</div>
-                <div class="stat-label">Total Impact Contributed</div>
-            </div>
-        </div>
+    <style>
+        .dashboard-welcome {
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 30px;
+            margin-bottom: 22px;
+            padding: 34px 36px;
+            border-radius: 26px;
+            color: #ffffff;
+            background: radial-gradient( circle at 92% 20%, rgba(255, 255, 255, 0.12), transparent 24% ), linear-gradient( 125deg, #063440 0%, #056c60 58%, #06936d 100% );
+            box-shadow: 0 22px 50px rgba(6, 52, 64, 0.20);
+        }
 
-        <div class="stat-card">
-            <div class="stat-icon icon-programs">🎁</div>
-            <div class="stat-info">
-                <div class="stat-value">@Model.TotalDonationsCount</div>
-                <div class="stat-label">Total Donations Made</div>
-            </div>
-        </div>
+            .dashboard-welcome::after {
+                content: "";
+                position: absolute;
+                right: -72px;
+                bottom: -125px;
+                width: 250px;
+                height: 250px;
+                border: 45px solid rgba(255, 255, 255, 0.07);
+                border-radius: 50%;
+                pointer-events: none;
+            }
 
-        <div class="stat-card">
-            <div class="stat-icon icon-ngo">🌍</div>
-            <div class="stat-info">
-                <div class="stat-value">@Model.CausesSupportedCount</div>
-                <div class="stat-label">Causes Supported</div>
-            </div>
-        </div>
+        .dashboard-welcome-content {
+            position: relative;
+            z-index: 2;
+            max-width: 620px;
+        }
 
-        <div class="stat-card">
-            <div class="stat-icon icon-apps">⭐</div>
-            <div class="stat-info">
-                <div class="stat-value">@Model.SavedProgramsCount</div>
-                <div class="stat-label">Saved Programs of Interest</div>
-            </div>
-        </div>
-    </div>
+        .dashboard-welcome .eyebrow {
+            color: #78e4c1;
+        }
 
-    <!-- Charts Section -->
-    <div class="dashboard-charts-grid">
-        <div class="dashboard-card chart-card">
-            <div class="card-header">
-                <h3>🌱 My Giving by Cause</h3>
-                <span class="card-subtitle">Breakdown of your philanthropic contributions</span>
-            </div>
-            <div class="chart-container">
-                <canvas id="userCauseChart"></canvas>
-            </div>
-        </div>
+        .dashboard-welcome h1 {
+            margin: 9px 0 8px;
+            color: #ffffff;
+            font-size: clamp(30px, 4vw, 44px);
+            line-height: 1.05;
+            letter-spacing: -0.045em;
+        }
 
-        <div class="dashboard-card chart-card">
-            <div class="card-header">
-                <h3>📅 Contribution History</h3>
-                <span class="card-subtitle">Monthly distribution of your donations</span>
-            </div>
-            <div class="chart-container">
-                <canvas id="userMonthlyChart"></canvas>
-            </div>
-        </div>
-    </div>
+        .dashboard-welcome p {
+            max-width: 590px;
+            margin: 0;
+            color: #cce5e1;
+            font-size: 12px;
+            line-height: 1.7;
+        }
 
-    <!-- Tables Section -->
-    <div class="dashboard-tables-grid">
-        <!-- Donation History -->
-        <div class="dashboard-card">
-            <div class="card-header">
-                <h3>📜 My Donation History</h3>
-                <span class="card-subtitle">Official records and payment receipts</span>
-            </div>
-            <div class="table-responsive">
-                <table class="data-table">
-                    <thead>
-                        <tr>
-                            <th>Receipt Ref</th>
-                            <th>NGO & Program</th>
-                            <th>Amount</th>
-                            <th>Date</th>
-                            <th>Method</th>
-                            <th>Status</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @if (Model.Donations != null && Model.Donations.Any())
-                        {
-                            foreach (var d in Model.Donations)
-                            {
-                                <tr>
-                                    <td><code class="ref-code">@d.PaymentReference</code></td>
-                                    <td>
-                                        <strong>@d.NGOName</strong>
-                                        <div class="text-sub">@d.ProgramName</div>
-                                    </td>
-                                    <td class="amount-cell">$@d.Amount.ToString("N2")</td>
-                                    <td>@d.DonationDate.ToString("MMM dd, yyyy")</td>
-                                    <td><span class="text-sub">@d.CardType (•••• @d.CardLastFour)</span></td>
-                                    <td><span class="status-pill status-completed">@d.Status</span></td>
-                                </tr>
-                            }
-                        }
-                        else
-                        {
-                            <tr>
-                                <td colspan="6" class="text-center text-muted">You haven't made any donations yet. Explore causes to make your first donation!</td>
-                            </tr>
-                        }
-                    </tbody>
-                </table>
-            </div>
-        </div>
+        .welcome-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 22px;
+        }
 
-        <!-- Saved Programs of Interest -->
-        <div class="dashboard-card">
-            <div class="card-header">
-                <h3>⭐ Bookmarked Programs</h3>
-                <span class="card-subtitle">Causes you are following closely</span>
-            </div>
-            <div class="table-responsive">
-                <table class="data-table">
-                    <thead>
-                        <tr>
-                            <th>Program</th>
-                            <th>NGO</th>
-                            <th>Progress</th>
-                            <th>Status</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @if (Model.SavedPrograms != null && Model.SavedPrograms.Any())
-                        {
-                            foreach (var prog in Model.SavedPrograms)
-                            {
-                                <tr>
-                                    <td>
-                                        <strong>@prog.ProgramName</strong>
-                                        <div class="text-sub">@prog.CauseName</div>
-                                    </td>
-                                    <td>@prog.NGOName</td>
-                                    <td style="min-width: 140px;">
-                                        <div class="progress-bar-container">
-                                            <div class="progress-bar-fill" style="width: @(prog.ProgressPercent)%"></div>
-                                        </div>
-                                        <div class="progress-text">$@prog.CurrentAmount.ToString("N0") of $@prog.TargetAmount.ToString("N0") (@prog.ProgressPercent%)</div>
-                                    </td>
-                                    <td><span class="status-pill status-completed">@prog.Status</span></td>
-                                </tr>
-                            }
-                        }
-                        else
-                        {
-                            <tr>
-                                <td colspan="4" class="text-center text-muted">No bookmarked programs yet.</td>
-                            </tr>
-                        }
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-</div>
+        .welcome-action {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 46px;
+            padding: 0 18px;
+            border: 1px solid rgba(255, 255, 255, 0.24);
+            border-radius: 12px;
+            color: #ffffff;
+            background: rgba(255, 255, 255, 0.09);
+            text-decoration: none;
+            font-size: 10px;
+            font-weight: 900;
+            transition: transform 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+        }
 
-@section Scripts {
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script>
-        $(document).ready(function () {
-            // 1. User Giving by Cause Doughnut Chart
-            var causeLabels = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(Model.CauseLabels));
-            var causeAmounts = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(Model.CauseAmounts));
+            .welcome-action:hover {
+                color: #ffffff;
+                background: rgba(255, 255, 255, 0.16);
+                text-decoration: none;
+                transform: translateY(-2px);
+            }
 
-            var ctxCause = document.getElementById('userCauseChart').getContext('2d');
-            new Chart(ctxCause, {
-                type: 'doughnut',
-                data: {
-                    labels: causeLabels,
-                    datasets: [{
-                        data: causeAmounts,
-                        backgroundColor: ['#2e7d32', '#1976d2', '#f57c00', '#7b1fa2', '#00796b', '#c2185b']
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            position: 'bottom'
-                        }
-                    }
+            .welcome-action.primary {
+                border-color: #ffffff;
+                color: #063b3f;
+                background: #ffffff;
+                box-shadow: 0 12px 25px rgba(0, 0, 0, 0.14);
+            }
+
+                .welcome-action.primary:hover {
+                    color: #063b3f;
+                    background: #ecfff8;
                 }
-            });
 
-            // 2. User Monthly Giving History Bar Chart
-            var monthlyLabels = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(Model.MonthlyLabels));
-            var monthlyAmounts = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(Model.MonthlyAmounts));
+        .dashboard-welcome-member {
+            position: relative;
+            z-index: 2;
+            flex: 0 0 auto;
+            min-width: 155px;
+            padding: 17px;
+            border: 1px solid rgba(255, 255, 255, 0.20);
+            border-radius: 18px;
+            background: rgba(255, 255, 255, 0.10);
+            backdrop-filter: blur(10px);
+            text-align: center;
+        }
 
-            var ctxMonthly = document.getElementById('userMonthlyChart').getContext('2d');
-            new Chart(ctxMonthly, {
-                type: 'bar',
-                data: {
-                    labels: monthlyLabels,
-                    datasets: [{
-                        label: 'My Donations ($)',
-                        data: monthlyAmounts,
-                        backgroundColor: '#2e7d32',
-                        borderRadius: 6
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            ticks: {
-                                callback: function (val) { return '$' + val; }
-                            }
-                        }
-                    }
-                }
-            });
-        });
-    </script>
+        .member-avatar-large {
+            display: grid;
+            place-items: center;
+            width: 52px;
+            height: 52px;
+            margin: 0 auto 10px;
+            border-radius: 16px;
+            color: #ffffff;
+            background: linear-gradient( 135deg, #13b987, #f48668 );
+            font-size: 18px;
+            font-weight: 950;
+            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.16);
+        }
+
+        .dashboard-welcome-member strong {
+            display: block;
+            color: #ffffff;
+            font-size: 11px;
+        }
+
+        .dashboard-welcome-member span {
+            display: block;
+            margin-top: 5px;
+            color: #bee0db;
+            font-size: 8px;
+        }
+
+        .contribution-cta {
+            position: relative;
+            overflow: hidden;
+            display: grid;
+            grid-template-columns: auto minmax(0, 1fr) auto;
+            align-items: center;
+            gap: 18px;
+            margin-top: 18px;
+            padding: 22px 24px;
+            border: 1px solid #ffd0c2;
+            border-radius: 20px;
+            background: linear-gradient( 125deg, #fff4ed, #fffaf2 52%, #ecfaf4 );
+            box-shadow: 0 14px 34px rgba(9, 58, 67, 0.08);
+        }
+
+            .contribution-cta::after {
+                content: "";
+                position: absolute;
+                right: 150px;
+                bottom: -65px;
+                width: 130px;
+                height: 130px;
+                border: 25px solid rgba(244, 127, 97, 0.08);
+                border-radius: 50%;
+            }
+
+        .contribution-cta-icon {
+            position: relative;
+            z-index: 2;
+            display: grid;
+            place-items: center;
+            width: 52px;
+            height: 52px;
+            border-radius: 16px;
+            color: #ffffff;
+            background: linear-gradient( 135deg, #f47f61, #ff9e77 );
+            font-size: 11px;
+            font-weight: 950;
+            box-shadow: 0 12px 25px rgba(244, 127, 97, 0.25);
+        }
+
+        .contribution-cta-content {
+            position: relative;
+            z-index: 2;
+        }
+
+            .contribution-cta-content strong {
+                display: block;
+                color: #092f3a;
+                font-size: 16px;
+            }
+
+            .contribution-cta-content span {
+                display: block;
+                margin-top: 5px;
+                color: #617b80;
+                font-size: 10px;
+                line-height: 1.6;
+            }
+
+        .contribution-cta-button {
+            position: relative;
+            z-index: 2;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 47px;
+            padding: 0 19px;
+            border-radius: 12px;
+            color: #ffffff;
+            background: linear-gradient( 135deg, #087b5a, #13aa7c );
+            box-shadow: 0 12px 25px rgba(8, 123, 90, 0.22);
+            text-decoration: none;
+            font-size: 10px;
+            font-weight: 900;
+            white-space: nowrap;
+            transition: 0.2s ease;
+        }
+
+            .contribution-cta-button:hover {
+                color: #ffffff;
+                text-decoration: none;
+                transform: translateY(-2px);
+                box-shadow: 0 16px 30px rgba(8, 123, 90, 0.28);
+            }
+
+        @@media (max-width: 850px) {
+            .dashboard-welcome {
+                align-items: flex-start;
+                flex-direction: column;
+                padding: 28px 24px;
+            }
+
+            .dashboard-welcome-member {
+                width: 100%;
+                text-align: left;
+            }
+
+            .member-avatar-large {
+                margin: 0 0 10px;
+            }
+
+            .contribution-cta {
+                grid-template-columns: auto 1fr;
+            }
+
+            .contribution-cta-button {
+                grid-column: 1 / -1;
+                width: 100%;
+            }
+        }
+
+        @@media (max-width: 560px) {
+            .dashboard-welcome {
+                padding: 25px 19px;
+            }
+
+            .welcome-actions {
+                display: grid;
+                grid-template-columns: 1fr;
+            }
+
+            .welcome-action {
+                width: 100%;
+            }
+
+            .contribution-cta {
+                grid-template-columns: 1fr;
+                padding: 20px;
+            }
+        }
+    </style>
 }
+
+<main class="user-workspace">
+    <div class="user-shell">
+
+        @Html.Partial("_UserDashboardSidebar")
+
+        <section class="user-main">
+
+            <!-- PREMIUM WELCOME SECTION -->
+            <header class="dashboard-welcome">
+                <div class="dashboard-welcome-content">
+                    <span class="eyebrow">
+                        Personal dashboard
+                    </span>
+
+                    <h1>
+                        Welcome back, @firstName.
+                    </h1>
+
+                    <p>
+                        Track your contribution records,
+                        discover meaningful programmes and manage
+                        the social causes that matter to you.
+                    </p>
+
+                    <div class="welcome-actions">
+                        <a class="welcome-action primary"
+                           href="@Url.Action("Create", "Donation")">
+                            Make a donation
+                        </a>
+
+                        <a class="welcome-action"
+                           href="@Url.Action(
+                               "Donations",
+                               "Dashboard")">
+                            View my donations
+                        </a>
+
+                        <a class="welcome-action"
+                           href="@Url.Action(
+                               "Profile",
+                               "Dashboard")">
+                            Edit my profile
+                        </a>
+                    </div>
+                </div>
+
+                <aside class="dashboard-welcome-member">
+                    <div class="member-avatar-large">
+                        @initial
+                    </div>
+
+                    <strong>@displayName</strong>
+
+                    <span>
+                        Member since
+                        @Model.MemberSince.ToString("MMM yyyy")
+                    </span>
+                </aside>
+            </header>
+
+            <!-- ACCOUNT STATISTICS -->
+            <section class="stat-grid"
+                     aria-label="Account statistics">
+
+                <article class="stat-card">
+                    <div class="stat-top">
+                        <span class="stat-code">PKR</span>
+                    </div>
+
+                    <strong>
+                        PKR @Model.TotalDonated.ToString("N0")
+                    </strong>
+
+                    <span>Completed contributions</span>
+                </article>
+
+                <article class="stat-card">
+                    <div class="stat-top">
+                        <span class="stat-code">DN</span>
+                    </div>
+
+                    <strong>
+                        @Model.TotalDonationsCount
+                    </strong>
+
+                    <span>Completed donations</span>
+                </article>
+
+                <article class="stat-card">
+                    <div class="stat-top">
+                        <span class="stat-code">CS</span>
+                    </div>
+
+                    <strong>
+                        @Model.CausesSupportedCount
+                    </strong>
+
+                    <span>Causes supported</span>
+                </article>
+
+                <article class="stat-card">
+                    <div class="stat-top">
+                        <span class="stat-code">IN</span>
+                    </div>
+
+                    <strong>
+                        @Model.SavedProgramsCount
+                    </strong>
+
+                    <span>Programme interests</span>
+                </article>
+            </section>
+
+            <!-- PROMINENT DONATION ACTION -->
+            <section class="contribution-cta">
+                <div class="contribution-cta-icon">
+                    DN
+                </div>
+
+                <div class="contribution-cta-content">
+                    <strong>
+                        Ready to support a programme?
+                    </strong>
+
+                    <span>
+                        Choose an associated organisation,
+                        select a cause and create a transparent
+                        contribution record.
+                    </span>
+                </div>
+
+                <a class="contribution-cta-button"
+                   href="@Url.Action("Create", "Donation")">
+                    Start contribution
+                </a>
+            </section>
+
+            <!-- QUICK ACTIONS -->
+            <section class="quick-grid">
+                <article class="panel">
+                    <div class="panel-head">
+                        <div>
+                            <h2>Continue exploring</h2>
+                            <p>
+                                Choose a working action to continue
+                                your GiveAID journey.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="action-list">
+                        <a class="action-card"
+                           href="@Url.Action("Index", "Causes")">
+
+                            <span class="action-icon">CS</span>
+
+                            <span>
+                                <strong>
+                                    Explore active causes
+                                </strong>
+
+                                <span>
+                                    Browse database-driven
+                                    cause records
+                                </span>
+                            </span>
+                        </a>
+
+                        <a class="action-card"
+                           href="@Url.Action("Index", "NGO")">
+
+                            <span class="action-icon">NG</span>
+
+                            <span>
+                                <strong>
+                                    Discover organisations
+                                </strong>
+
+                                <span>
+                                    View associated NGO profiles
+                                    and programmes
+                                </span>
+                            </span>
+                        </a>
+
+                        <a class="action-card"
+                           href="@Url.Action(
+                               "Create",
+                               "Donation")">
+
+                            <span class="action-icon">DN</span>
+
+                            <span>
+                                <strong>
+                                    Start a contribution
+                                </strong>
+
+                                <span>
+                                    Open the demonstration
+                                    donation workflow
+                                </span>
+                            </span>
+                        </a>
+                    </div>
+                </article>
+
+                <!-- ACCOUNT SNAPSHOT -->
+                <article class="panel">
+                    <div class="panel-head">
+                        <div>
+                            <h2>Account snapshot</h2>
+                            <p>
+                                Information linked to your
+                                current session.
+                            </p>
+                        </div>
+
+                        <a href="@Url.Action(
+                            "Profile",
+                            "Dashboard")">
+                            Edit profile
+                        </a>
+                    </div>
+
+                    <div class="action-list">
+                        <div class="action-card">
+                            <span class="action-icon">ID</span>
+
+                            <span>
+                                <strong>@displayName</strong>
+                                <span>@Model.Email</span>
+                            </span>
+                        </div>
+
+                        <div class="action-card">
+                            <span class="action-icon">RL</span>
+
+                            <span>
+                                <strong>User account</strong>
+
+                                <span>
+                                    Protected role-based
+                                    personal access
+                                </span>
+                            </span>
+                        </div>
+                    </div>
+                </article>
+            </section>
+
+            <!-- RECENT DONATIONS -->
+            <section class="panel activity"
+                     id="donationHistory">
+
+                <div class="panel-head">
+                    <div>
+                        <h2>Recent donation records</h2>
+
+                        <p>
+                            Only contributions connected to your
+                            UserID are displayed.
+                        </p>
+                    </div>
+
+                    <a href="@Url.Action(
+                        "Create",
+                        "Donation")">
+                        New contribution
+                    </a>
+                </div>
+
+                @if (Model.Donations != null &&
+                     Model.Donations.Any())
+                {
+                    <div class="table-wrap">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Reference</th>
+                                    <th>
+                                        Organisation / programme
+                                    </th>
+                                    <th>Amount</th>
+                                    <th>Date</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+
+                            <tbody>
+                                @foreach (
+                                    var donation
+                                    in Model.Donations.Take(5))
+                                {
+                                    var statusClass =
+                                        "status status-" +
+                                        (donation.Status ?? "pending")
+                                        .ToLowerInvariant();
+
+                                    <tr>
+                                        <td>
+                                            <strong>
+                                                @donation.PaymentReference
+                                            </strong>
+                                        </td>
+
+                                        <td>
+                                            <strong>
+                                                @donation.NGOName
+                                            </strong>
+
+                                            <span class="sub">
+                                                @donation.ProgramName
+                                                &middot;
+                                                @donation.CauseName
+                                            </span>
+                                        </td>
+
+                                        <td class="amount">
+                                            PKR
+                                            @donation.Amount.ToString("N0")
+                                        </td>
+
+                                        <td>
+                                            @donation.DonationDate
+                                            .ToString("dd MMM yyyy")
+                                        </td>
+
+                                        <td>
+                                            <span class="@statusClass">
+                                                @donation.Status
+                                            </span>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+                else
+                {
+                    <div class="empty">
+                        <div class="empty-mark">DN</div>
+
+                        <h3>No donation records yet</h3>
+
+                        <p>
+                            Create your first contribution record.
+                            Its status will appear here after
+                            submission.
+                        </p>
+
+                        <a href="@Url.Action(
+                            "Create",
+                            "Donation")">
+                            Make first donation
+                        </a>
+                    </div>
+                }
+            </section>
+
+            <!-- PROGRAMMES OF INTEREST -->
+            <section class="panel activity"
+                     id="savedProgrammes">
+
+                <div class="panel-head">
+                    <div>
+                        <h2>Programmes of interest</h2>
+
+                        <p>
+                            Active programme records that you
+                            have chosen to follow.
+                        </p>
+                    </div>
+
+                    <a href="@Url.Action("Index", "Causes")">
+                        Browse causes
+                    </a>
+                </div>
+
+                @if (Model.SavedPrograms != null &&
+                     Model.SavedPrograms.Any())
+                {
+                    <div class="interest-grid">
+                        @foreach (
+                            var item
+                            in Model.SavedPrograms.Take(6))
+                        {
+                            <article class="interest">
+                                <b>@item.ProgramName</b>
+
+                                <small>
+                                    @item.NGOName
+                                    &middot;
+                                    @item.CauseName
+                                </small>
+
+                                <div class="bar">
+                                    <i style="
+                                        width:
+                                        @item.ProgressPercent%">
+                                    </i>
+                                </div>
+
+                                <div class="interest-meta">
+                                    <span>
+                                        PKR
+                                        @item.CurrentAmount
+                                        .ToString("N0")
+                                    </span>
+
+                                    <span>
+                                        @item.ProgressPercent%
+                                    </span>
+                                </div>
+                            </article>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <div class="empty">
+                        <div class="empty-mark">IN</div>
+
+                        <h3>
+                            No programme interests yet
+                        </h3>
+
+                        <p>
+                            Your selected programmes will appear
+                            here after programme participation
+                            is recorded.
+                        </p>
+
+                        <a href="@Url.Action(
+                            "Index",
+                            "Causes")">
+                            Find a programme
+                        </a>
+                    </div>
+                }
+            </section>
+        </section>
+    </div>
+</main>

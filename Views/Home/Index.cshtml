@@ -1,845 +1,1343 @@
-@{
-    ViewBag.Title = "GiveAID - Transparent NGO & Charity Giving in Pakistan";
-    Layout = "~/Views/Shared/_Layout.cshtml";
+@inherits System.Web.Mvc.WebViewPage<GiveAID_Project.Models.HomePageViewModel>
+@using System
+@using System.Linq
+@using System.Web.Mvc
+@using System.Web.Mvc.Html
+@{ViewBag.Title = "GiveAID | Connect with causes that matter"; Layout = "~/Views/Shared/_Layout.cshtml";}
+@section Styles{
+    <style>
+        .v3 {
+            overflow: hidden;
+            background: #fff
+        }
+
+        .hero-v3 {
+            padding: 72px 24px 84px;
+            background: radial-gradient(circle at 8% 5%,#e3f8ed 0,transparent 34%),linear-gradient(135deg,#fffaf1,#f8fffb);
+            position: relative
+        }
+
+        .hero-grid {
+            max-width: 1200px;
+            margin: auto;
+            display: grid;
+            grid-template-columns: .92fr 1.08fr;
+            gap: 62px;
+            align-items: center
+        }
+
+        .hero-label {
+            display: inline-flex;
+            align-items: center;
+            gap: 9px;
+            background: #fff;
+            border: 1px solid #cde4da;
+            border-radius: 30px;
+            padding: 8px 12px;
+            color: var(--emerald);
+            font-size: 11px;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: .1em;
+            box-shadow: 0 9px 25px rgba(28,80,61,.07);
+            animation: enter .65s ease both
+        }
+
+            .hero-label i {
+                width: 8px;
+                height: 8px;
+                background: var(--coral);
+                border-radius: 50%;
+                box-shadow: 0 0 0 6px rgba(239,127,97,.13)
+            }
+
+        .hero-v3 h1 {
+            font-size: 66px;
+            line-height: 1.01;
+            letter-spacing: -.065em;
+            color: var(--navy);
+            margin: 23px 0 21px;
+            animation: enter .7s .1s ease both
+        }
+
+            .hero-v3 h1 span {
+                color: var(--emerald)
+            }
+
+            .hero-v3 h1 b {
+                font-weight: 900;
+                position: relative
+            }
+
+                .hero-v3 h1 b:after {
+                    content: "";
+                    height: 10px;
+                    left: 0;
+                    right: 0;
+                    bottom: 3px;
+                    background: var(--gold);
+                    opacity: .55;
+                    position: absolute;
+                    border-radius: 20px;
+                    z-index: -1
+                }
+
+        .hero-text {
+            font-size: 17px;
+            line-height: 1.75;
+            color: #587176;
+            max-width: 570px;
+            animation: enter .7s .2s ease both
+        }
+
+        .hero-actions {
+            display: flex;
+            gap: 12px;
+            margin-top: 30px;
+            animation: enter .7s .3s ease both
+        }
+
+        .action-main, .action-alt {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 14px 21px;
+            border-radius: 11px;
+            text-decoration: none;
+            font-size: 13px;
+            font-weight: 850;
+            transition: .25s
+        }
+
+        .action-main {
+            background: var(--emerald);
+            color: #fff;
+            box-shadow: 0 13px 30px rgba(8,127,91,.25)
+        }
+
+            .action-main:hover {
+                background: #056c4d;
+                transform: translateY(-3px);
+                color: #fff
+            }
+
+        .action-alt {
+            background: #fff;
+            border: 1px solid #cbded8;
+            color: var(--navy)
+        }
+
+            .action-alt:hover {
+                transform: translateY(-3px);
+                border-color: var(--emerald)
+            }
+
+        .hero-notes {
+            display: flex;
+            gap: 22px;
+            margin-top: 30px;
+            color: #577177;
+            font-size: 11px;
+            animation: enter .7s .4s ease both
+        }
+
+            .hero-notes span {
+                display: flex;
+                gap: 7px;
+                align-items: center
+            }
+
+            .hero-notes i {
+                width: 19px;
+                height: 19px;
+                border-radius: 50%;
+                background: var(--mint);
+                color: var(--emerald);
+                display: grid;
+                place-items: center;
+                font-style: normal;
+                font-weight: 900
+            }
+
+        .visual-wrap {
+            position: relative;
+            animation: enterRight .85s .15s ease both
+        }
+
+        .hero-image-card {
+            border-radius: 30px;
+            overflow: hidden;
+            height: 570px;
+            box-shadow: 0 30px 70px rgba(7,31,44,.2);
+            border: 8px solid #fff;
+            position: relative;
+            background: var(--navy)
+        }
+
+            .hero-image-card img {
+                width: 100%;
+                height: 100%;
+                object-fit: cover;
+                object-position: 62% center;
+                display: block
+            }
+
+            .hero-image-card:after {
+                content: "";
+                position: absolute;
+                inset: 0;
+                background: linear-gradient(180deg,transparent 60%,rgba(7,31,44,.28))
+            }
+
+        .orbit {
+            position: absolute;
+            width: 105px;
+            height: 105px;
+            border: 1px solid rgba(8,127,91,.35);
+            border-radius: 50%;
+            left: -33px;
+            top: 45px;
+            animation: spin 15s linear infinite
+        }
+
+            .orbit:before {
+                content: "";
+                width: 17px;
+                height: 17px;
+                border-radius: 50%;
+                background: var(--coral);
+                position: absolute;
+                top: 4px;
+                left: 8px
+            }
+
+        .live-card {
+            position: absolute;
+            left: -38px;
+            bottom: 38px;
+            background: rgba(255,255,255,.9);
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(255,255,255,.9);
+            border-radius: 17px;
+            padding: 17px 19px;
+            box-shadow: 0 18px 45px rgba(7,31,44,.18);
+            min-width: 230px
+        }
+
+        .live-title {
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: .11em;
+            color: var(--emerald);
+            font-weight: 900
+        }
+
+        .live-row {
+            display: flex;
+            gap: 22px;
+            margin-top: 10px
+        }
+
+            .live-row strong {
+                display: block;
+                font-size: 23px;
+                color: var(--navy)
+            }
+
+            .live-row span {
+                font-size: 10px;
+                color: #698086
+            }
+
+        .color-chip {
+            position: absolute;
+            right: -22px;
+            top: 72px;
+            width: 76px;
+            height: 76px;
+            border-radius: 22px;
+            background: var(--coral);
+            box-shadow: 0 18px 36px rgba(239,127,97,.28);
+            animation: bob 4s ease-in-out infinite
+        }
+
+        .metrics {
+            background: var(--navy);
+            color: #fff
+        }
+
+        .metrics-grid {
+            max-width: 1200px;
+            margin: auto;
+            padding: 30px 24px;
+            display: grid;
+            grid-template-columns: repeat(4,1fr)
+        }
+
+        .metric {
+            padding: 9px 26px;
+            border-right: 1px solid rgba(255,255,255,.12)
+        }
+
+            .metric:last-child {
+                border: 0
+            }
+
+            .metric strong {
+                font-size: 29px;
+                color: #fff
+            }
+
+            .metric span {
+                display: block;
+                color: #91b2b8;
+                font-size: 11px;
+                margin-top: 5px;
+                text-transform: uppercase;
+                letter-spacing: .06em
+            }
+
+        .section-v3 {
+            max-width: 1200px;
+            margin: auto;
+            padding: 100px 24px
+        }
+
+        .headline {
+            display: flex;
+            justify-content: space-between;
+            align-items: end;
+            gap: 35px;
+            margin-bottom: 38px
+        }
+
+        .overline {
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: .16em;
+            color: var(--coral);
+            font-weight: 900
+        }
+
+        .headline h2 {
+            font-size: 43px;
+            line-height: 1.08;
+            letter-spacing: -.045em;
+            color: var(--navy);
+            margin: 10px 0 0
+        }
+
+        .headline p {
+            max-width: 480px;
+            color: #657a7f;
+            line-height: 1.7
+        }
+
+        .programme-grid {
+            display: grid;
+            grid-template-columns: repeat(3,1fr);
+            gap: 20px
+        }
+
+        .program-card {
+            border-radius: 22px;
+            background: #fff;
+            border: 1px solid var(--line);
+            overflow: hidden;
+            box-shadow: 0 12px 36px rgba(11,50,55,.07);
+            transition: .3s
+        }
+
+            .program-card:hover {
+                transform: translateY(-9px);
+                box-shadow: 0 22px 54px rgba(11,50,55,.14)
+            }
+
+        .program-top {
+            height: 180px;
+            padding: 20px;
+            background: linear-gradient(135deg,#0b7658,#10aa78);
+            color: #fff;
+            position: relative;
+            overflow: hidden
+        }
+
+        .program-card:nth-child(2) .program-top {
+            background: linear-gradient(135deg,#e17758,#f2a45f)
+        }
+
+        .program-card:nth-child(3) .program-top {
+            background: linear-gradient(135deg,#12415b,#2d8194)
+        }
+
+        .program-top:before, .program-top:after {
+            content: "";
+            position: absolute;
+            border-radius: 50%;
+            border: 30px solid rgba(255,255,255,.08)
+        }
+
+        .program-top:before {
+            width: 180px;
+            height: 180px;
+            right: -65px;
+            bottom: -82px
+        }
+
+        .program-top:after {
+            width: 90px;
+            height: 90px;
+            left: -30px;
+            top: -35px
+        }
+
+        .program-tag {
+            display: inline-block;
+            background: rgba(255,255,255,.16);
+            border: 1px solid rgba(255,255,255,.25);
+            padding: 6px 10px;
+            border-radius: 30px;
+            font-size: 9px;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: .1em
+        }
+
+        .program-symbol {
+            position: absolute;
+            left: 22px;
+            bottom: 17px;
+            font-size: 45px;
+            font-weight: 900;
+            opacity: .24
+        }
+
+        .program-body {
+            padding: 21px
+        }
+
+            .program-body h3 {
+                font-size: 18px;
+                line-height: 1.4;
+                margin: 0 0 8px;
+                color: var(--navy)
+            }
+
+            .program-body p {
+                font-size: 12px;
+                line-height: 1.65;
+                color: #6b7f83;
+                min-height: 59px
+            }
+
+        .program-meta {
+            font-size: 10px;
+            color: var(--emerald);
+            font-weight: 750;
+            margin: 13px 0
+        }
+
+        .fund-bar {
+            height: 7px;
+            background: #e8efed;
+            border-radius: 20px;
+            overflow: hidden
+        }
+
+            .fund-bar i {
+                display: block;
+                height: 100%;
+                background: var(--coral)
+            }
+
+        .fund-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 10px;
+            color: #738487;
+            margin-top: 9px
+        }
+
+        .how {
+            background: linear-gradient(135deg,#edf9f3,#fff8ee)
+        }
+
+        .steps {
+            display: grid;
+            grid-template-columns: repeat(3,1fr);
+            gap: 18px
+        }
+
+        .step {
+            background: #fff;
+            border: 1px solid #dfeae5;
+            border-radius: 20px;
+            padding: 27px;
+            position: relative
+        }
+
+        .step-no {
+            width: 43px;
+            height: 43px;
+            border-radius: 13px;
+            background: var(--navy);
+            color: #fff;
+            display: grid;
+            place-items: center;
+            font-weight: 900
+        }
+
+        .step h3 {
+            font-size: 18px;
+            color: var(--navy);
+            margin: 20px 0 9px
+        }
+
+        .step p {
+            font-size: 12px;
+            line-height: 1.7;
+            color: #687d81
+        }
+
+        .cause-mosaic {
+            display: grid;
+            grid-template-columns: repeat(12,1fr);
+            gap: 14px
+        }
+
+        .cause-card {
+            grid-column: span 4;
+            padding: 23px;
+            border-radius: 19px;
+            text-decoration: none;
+            color: var(--navy);
+            background: #eef9f4;
+            border: 1px solid #d9ebe3;
+            min-height: 180px;
+            transition: .3s
+        }
+
+            .cause-card:nth-child(2), .cause-card:nth-child(5) {
+                background: #fff3e8;
+                border-color: #f2ddc9
+            }
+
+            .cause-card:nth-child(3), .cause-card:nth-child(6) {
+                background: #edf5f9;
+                border-color: #d8e5ec
+            }
+
+            .cause-card:hover {
+                transform: scale(1.025);
+                box-shadow: 0 16px 38px rgba(12,53,58,.1)
+            }
+
+        .cause-code {
+            width: 42px;
+            height: 42px;
+            border-radius: 12px;
+            background: #fff;
+            display: grid;
+            place-items: center;
+            color: var(--emerald);
+            font-size: 10px;
+            font-weight: 900
+        }
+
+        .cause-card h3 {
+            font-size: 17px;
+            margin: 17px 0 7px
+        }
+
+        .cause-card p {
+            font-size: 11px;
+            color: #687d81;
+            line-height: 1.6
+        }
+
+        .cause-card b {
+            font-size: 10px;
+            color: var(--emerald)
+        }
+
+        .ngo-band {
+            background: var(--navy)
+        }
+
+            .ngo-band .headline h2 {
+                color: #fff
+            }
+
+            .ngo-band .headline p {
+                color: #9ab6bb
+            }
+
+        .ngo-grid {
+            display: grid;
+            grid-template-columns: repeat(3,1fr);
+            gap: 17px
+        }
+
+        .ngo-card {
+            background: var(--navy2);
+            border: 1px solid rgba(255,255,255,.1);
+            border-radius: 20px;
+            padding: 25px;
+            color: #fff;
+            transition: .3s
+        }
+
+            .ngo-card:hover {
+                background: #114452;
+                transform: translateY(-6px)
+            }
+
+        .ngo-logo {
+            width: 48px;
+            height: 48px;
+            border-radius: 14px;
+            background: linear-gradient(135deg,var(--coral),var(--gold));
+            color: var(--navy);
+            display: grid;
+            place-items: center;
+            font-weight: 900
+        }
+
+        .ngo-card h3 {
+            font-size: 18px;
+            margin: 18px 0 5px
+        }
+
+        .ngo-cat {
+            font-size: 9px;
+            color: #61d4a4;
+            text-transform: uppercase;
+            letter-spacing: .1em;
+            font-weight: 900
+        }
+
+        .ngo-card p {
+            font-size: 11px;
+            line-height: 1.7;
+            color: #a9c1c5;
+            min-height: 62px
+        }
+
+        .ngo-foot {
+            display: flex;
+            justify-content: space-between;
+            padding-top: 14px;
+            border-top: 1px solid rgba(255,255,255,.09);
+            color: #87a6ab;
+            font-size: 10px
+        }
+
+        .final-cta {
+            padding: 95px 24px;
+            background: #fff
+        }
+
+        .cta-card {
+            max-width: 1150px;
+            margin: auto;
+            background: linear-gradient(110deg,var(--coral),#f0a456);
+            border-radius: 28px;
+            padding: 52px;
+            color: var(--navy);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 30px;
+            position: relative;
+            overflow: hidden
+        }
+
+            .cta-card:after {
+                content: "";
+                position: absolute;
+                width: 310px;
+                height: 310px;
+                border-radius: 50%;
+                border: 60px solid rgba(255,255,255,.16);
+                right: -80px;
+                top: -120px
+            }
+
+            .cta-card h2 {
+                font-size: 35px;
+                margin: 0 0 8px
+            }
+
+            .cta-card p {
+                margin: 0;
+                color: #5e493e
+            }
+
+            .cta-card .action-alt {
+                position: relative;
+                z-index: 2;
+                border: 0
+            }
+
+        .reveal {
+            opacity: 0;
+            transform: translateY(28px);
+            transition: .75s
+        }
+
+            .reveal.show {
+                opacity: 1;
+                transform: none
+            }
+
+        .empty {
+            grid-column: 1/-1;
+            padding: 35px;
+            text-align: center;
+            border: 1px dashed #b9cbc4;
+            border-radius: 16px;
+            color: #647a7e;
+            background: #fff
+        }
+
+        @@keyframes enter {
+            from {
+                opacity: 0;
+                transform: translateY(25px)
+            }
+
+            to {
+                opacity: 1;
+                transform: none
+            }
+        }
+
+        @@keyframes enterRight {
+            from {
+                opacity: 0;
+                transform: translateX(35px)
+            }
+
+            to {
+                opacity: 1;
+                transform: none
+            }
+        }
+
+        @@keyframes spin {
+            to {
+                transform: rotate(360deg)
+            }
+        }
+
+        @@keyframes bob {
+            0%, 100% {
+                transform: translateY(0) rotate(8deg)
+            }
+
+            50% {
+                transform: translateY(-13px) rotate(2deg)
+            }
+        }
+
+        @@media(max-width:960px) {
+            .hero-grid {
+                grid-template-columns: 1fr
+            }
+
+            .hero-v3 h1 {
+                font-size: 54px
+            }
+
+            .hero-image-card {
+                height: 500px
+            }
+
+            .visual-wrap {
+                max-width: 720px
+            }
+
+            .metrics-grid {
+                grid-template-columns: 1fr 1fr
+            }
+
+            .metric:nth-child(2) {
+                border: 0
+            }
+
+            .programme-grid, .steps, .ngo-grid {
+                grid-template-columns: 1fr 1fr
+            }
+
+            .cause-card {
+                grid-column: span 6
+            }
+        }
+
+        @@media(max-width:620px) {
+            .hero-v3 {
+                padding: 55px 16px
+            }
+
+                .hero-v3 h1 {
+                    font-size: 43px
+                }
+
+            .hero-actions {
+                display: block
+            }
+
+            .action-main, .action-alt {
+                display: flex;
+                margin-top: 10px
+            }
+
+            .hero-image-card {
+                height: 430px
+            }
+
+            .live-card {
+                left: 12px;
+                right: 12px
+            }
+
+            .color-chip, .orbit {
+                display: none
+            }
+
+            .metrics-grid {
+                padding: 20px 12px
+            }
+
+            .metric {
+                padding: 12px
+            }
+
+                .metric strong {
+                    font-size: 23px
+                }
+
+            .section-v3 {
+                padding: 70px 16px
+            }
+
+            .headline {
+                display: block
+            }
+
+                .headline h2 {
+                    font-size: 34px
+                }
+
+            .programme-grid, .steps, .ngo-grid {
+                grid-template-columns: 1fr
+            }
+
+            .cause-card {
+                grid-column: span 12
+            }
+
+            .cta-card {
+                display: block;
+                padding: 34px
+            }
+
+                .cta-card .action-alt {
+                    margin-top: 22px
+                }
+        }
+
+        @@media(prefers-reduced-motion:reduce) {
+            * {
+                animation: none !important;
+                transition: none !important
+            }
+
+            .reveal {
+                opacity: 1;
+                transform: none
+            }
+        }
+
+        /* High-contrast NGO cards: clearer separation from the page background */
+        .ngo-band {
+            background: linear-gradient(135deg,#eef9f4 0%,#fff8ed 100%) !important;
+            border-top: 1px solid #dfeae5;
+            border-bottom: 1px solid #e7e2d8
+        }
+
+            .ngo-band .headline h2 {
+                color: var(--navy) !important
+            }
+
+            .ngo-band .headline p {
+                color: #61777b !important
+            }
+
+        .ngo-grid {
+            gap: 20px !important
+        }
+
+        .ngo-card {
+            background: #fff !important;
+            border: 1px solid #dbe8e2 !important;
+            border-radius: 22px !important;
+            padding: 27px !important;
+            color: var(--navy) !important;
+            box-shadow: 0 12px 34px rgba(13,55,57,.08) !important;
+            position: relative;
+            overflow: hidden
+        }
+
+            .ngo-card:before {
+                content: "";
+                position: absolute;
+                left: 0;
+                right: 0;
+                top: 0;
+                height: 6px;
+                background: linear-gradient(90deg,var(--emerald),#40c48d)
+            }
+
+            .ngo-card:nth-child(2):before {
+                background: linear-gradient(90deg,var(--coral),var(--gold))
+            }
+
+            .ngo-card:nth-child(3):before {
+                background: linear-gradient(90deg,#16627a,#4aa9a4)
+            }
+
+            .ngo-card:hover {
+                background: #fff !important;
+                transform: translateY(-8px);
+                box-shadow: 0 22px 48px rgba(13,55,57,.14) !important
+            }
+
+        .ngo-logo {
+            width: 52px !important;
+            height: 52px !important;
+            border-radius: 15px !important;
+            background: linear-gradient(135deg,var(--navy),#17624f) !important;
+            color: #fff !important
+        }
+
+        .ngo-card:nth-child(2) .ngo-logo {
+            background: linear-gradient(135deg,var(--coral),#e6a24f) !important;
+            color: var(--navy) !important
+        }
+
+        .ngo-card:nth-child(3) .ngo-logo {
+            background: linear-gradient(135deg,#15536b,#2b8e92) !important
+        }
+
+        .ngo-card h3 {
+            color: var(--navy) !important;
+            font-size: 19px !important
+        }
+
+        .ngo-cat {
+            color: var(--emerald) !important
+        }
+
+        .ngo-card p {
+            color: #687d81 !important;
+            font-size: 12px !important
+        }
+
+        .ngo-foot {
+            border-color: #e3ebe7 !important;
+            color: #62777b !important
+        }
+        /* Programme photography */
+        .program-top {
+            padding: 20px;
+            background: #0b7658 !important
+        }
+
+            .program-top > img {
+                position: absolute;
+                inset: 0;
+                width: 100%;
+                height: 100%;
+                object-fit: cover;
+                display: block;
+                transition: transform .55s ease
+            }
+
+            .program-top:before {
+                content: "";
+                position: absolute;
+                inset: 0;
+                width: auto;
+                height: auto;
+                right: 0;
+                bottom: 0;
+                border: 0;
+                border-radius: 0;
+                background: linear-gradient(180deg,rgba(7,31,44,.08),rgba(7,31,44,.66));
+                z-index: 1
+            }
+
+            .program-top:after {
+                display: none
+            }
+
+        .program-tag {
+            position: relative;
+            z-index: 2;
+            background: rgba(7,31,44,.6);
+            border-color: rgba(255,255,255,.45);
+            backdrop-filter: blur(8px)
+        }
+
+        .program-symbol {
+            z-index: 2;
+            color: #fff;
+            opacity: .92;
+            text-shadow: 0 3px 18px rgba(0,0,0,.35)
+        }
+
+        .program-card:hover .program-top > img {
+            transform: scale(1.07)
+        }
+
+        /* Strong, distinct step cards */
+        .how {
+            background: linear-gradient(135deg,#edf9f3 0%,#fff7e9 100%)
+        }
+
+        .step {
+            min-height: 225px;
+            border: 0;
+            box-shadow: 0 18px 40px rgba(7,31,44,.14);
+            overflow: hidden;
+            transition: transform .3s ease,box-shadow .3s ease
+        }
+
+            .step:hover {
+                transform: translateY(-8px);
+                box-shadow: 0 26px 55px rgba(7,31,44,.2)
+            }
+
+            .step:nth-child(1) {
+                background: #082d3b
+            }
+
+            .step:nth-child(2) {
+                background: #087f5b
+            }
+
+            .step:nth-child(3) {
+                background: #f08b68
+            }
+
+            .step:nth-child(1) h3, .step:nth-child(2) h3 {
+                color: #fff
+            }
+
+            .step:nth-child(1) p, .step:nth-child(2) p {
+                color: #c9e1df
+            }
+
+            .step:nth-child(3) h3 {
+                color: #082d3b
+            }
+
+            .step:nth-child(3) p {
+                color: #3f5154
+            }
+
+            .step:nth-child(1) .step-no {
+                background: #fff;
+                color: #082d3b
+            }
+
+            .step:nth-child(2) .step-no {
+                background: #dff7ec;
+                color: #087f5b
+            }
+
+            .step:nth-child(3) .step-no {
+                background: #082d3b;
+                color: #fff
+            }
+
+        /* Premium platform statistics */
+        .metrics {
+            padding: 34px 24px;
+            background: radial-gradient(circle at 14% 15%,rgba(32,190,137,.28),transparent 30%),radial-gradient(circle at 86% 80%,rgba(240,139,104,.22),transparent 31%),linear-gradient(120deg,#062a39,#074c49);
+            position: relative;
+            overflow: hidden
+        }
+
+            .metrics:before {
+                content: "";
+                position: absolute;
+                width: 260px;
+                height: 260px;
+                border: 54px solid rgba(255,255,255,.035);
+                border-radius: 50%;
+                right: -80px;
+                top: -120px
+            }
+
+        .metrics-grid {
+            position: relative;
+            z-index: 1;
+            padding: 0;
+            gap: 16px
+        }
+
+        .metric {
+            min-height: 122px;
+            padding: 22px !important;
+            border: 1px solid rgba(255,255,255,.13) !important;
+            border-radius: 18px;
+            background: rgba(255,255,255,.075);
+            backdrop-filter: blur(12px);
+            box-shadow: 0 16px 35px rgba(0,0,0,.13);
+            position: relative;
+            overflow: hidden;
+            transition: .3s
+        }
+
+            .metric:before {
+                content: "";
+                position: absolute;
+                left: 0;
+                right: 0;
+                top: 0;
+                height: 4px;
+                background: #38d39f
+            }
+
+            .metric:nth-child(2):before {
+                background: #f2c76e
+            }
+
+            .metric:nth-child(3):before {
+                background: #f08b68
+            }
+
+            .metric:nth-child(4):before {
+                background: #75bdd0
+            }
+
+            .metric:hover {
+                transform: translateY(-6px);
+                background: rgba(255,255,255,.12)
+            }
+
+        .metric-icon {
+            width: 34px;
+            height: 34px;
+            border-radius: 10px;
+            background: rgba(255,255,255,.12);
+            display: grid;
+            place-items: center;
+            color: #7ce4bd;
+            font-size: 11px;
+            font-weight: 900;
+            margin-bottom: 13px
+        }
+
+        .metric:nth-child(2) .metric-icon {
+            color: #f5d58f
+        }
+
+        .metric:nth-child(3) .metric-icon {
+            color: #ffb39e
+        }
+
+        .metric:nth-child(4) .metric-icon {
+            color: #9ed7e5
+        }
+
+        .metric strong {
+            font-size: 26px;
+            line-height: 1
+        }
+
+        .metric span {
+            color: #b8d5d6;
+            margin-top: 8px
+        }
+
+        /* High-contrast cause showcase */
+        .cause-mosaic {
+            gap: 18px;
+            padding: 4px
+        }
+
+        .cause-card {
+            min-height: 205px;
+            padding: 25px;
+            border: 0 !important;
+            box-shadow: 0 15px 34px rgba(7,31,44,.13);
+            position: relative;
+            overflow: hidden;
+            color: #fff !important
+        }
+
+            .cause-card:after {
+                content: "";
+                position: absolute;
+                width: 150px;
+                height: 150px;
+                border-radius: 50%;
+                border: 28px solid rgba(255,255,255,.07);
+                right: -55px;
+                bottom: -65px;
+                transition: .35s
+            }
+
+            .cause-card:hover {
+                transform: translateY(-8px) scale(1.012);
+                box-shadow: 0 25px 52px rgba(7,31,44,.22)
+            }
+
+                .cause-card:hover:after {
+                    transform: scale(1.18)
+                }
+
+            .cause-card:nth-child(1) {
+                background: linear-gradient(135deg,#087f5b,#0aa878)
+            }
+
+            .cause-card:nth-child(2) {
+                background: linear-gradient(135deg,#e66f52,#f39a62)
+            }
+
+            .cause-card:nth-child(3) {
+                background: linear-gradient(135deg,#155b72,#25859a)
+            }
+
+            .cause-card:nth-child(4) {
+                background: linear-gradient(135deg,#9b6a19,#d69c38)
+            }
+
+            .cause-card:nth-child(5) {
+                background: linear-gradient(135deg,#694b8e,#9573bc)
+            }
+
+            .cause-card:nth-child(6) {
+                background: linear-gradient(135deg,#126c68,#27a49a)
+            }
+
+        .cause-code {
+            position: relative;
+            z-index: 1;
+            background: rgba(255,255,255,.92);
+            color: #073d39;
+            box-shadow: 0 8px 20px rgba(0,0,0,.1)
+        }
+
+        .cause-card h3 {
+            position: relative;
+            z-index: 1;
+            color: #fff !important;
+            font-size: 19px;
+            margin-top: 20px
+        }
+
+        .cause-card p {
+            position: relative;
+            z-index: 1;
+            color: rgba(255,255,255,.84) !important;
+            font-size: 12px;
+            max-width: 88%
+        }
+
+        .cause-card b {
+            position: relative;
+            z-index: 1;
+            display: inline-block;
+            margin-top: 11px;
+            padding: 6px 10px;
+            border-radius: 20px;
+            background: rgba(255,255,255,.14);
+            color: #fff !important
+        }
+
+        .cause-art {
+            position: absolute;
+            z-index: 0;
+            right: 20px;
+            top: 18px;
+            width: 105px;
+            height: 105px;
+            fill: none;
+            stroke: #fff;
+            stroke-width: 1.55;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            opacity: .18;
+            transition: transform .4s ease,opacity .4s ease
+        }
+
+        .cause-card:hover .cause-art {
+            transform: translate(-5px,5px) rotate(-4deg) scale(1.08);
+            opacity: .3
+        }
+
+        .svg-sprite {
+            position: absolute;
+            width: 0;
+            height: 0;
+            overflow: hidden
+        }
+    </style>
 }
-
-<!-- =========================================================
-     HERO SECTION
-     ========================================================= -->
-<section class="hero-section">
-    <div class="hero-container">
-        <div class="hero-content">
-            <div class="hero-pill">
-                <span class="pulse-dot"></span>
-                <span>Pakistan's 1st Transparent Giving Platform</span>
-            </div>
-
-            <h1 class="hero-title">
-                Give with <span class="highlight-text">Trust</span>. Transform <span class="highlight-text-accent">Pakistan</span>.
-            </h1>
-
-            <p class="hero-subtitle">
-                Connecting Pakistan's next generation of changemakers with 100% verified NGOs, emergency relief funds, and grassroots education projects. Track every single Rupee in real-time.
-            </p>
-
-            <div class="hero-cta-group">
-                <a href="@Url.Action("Index", "Causes")" class="btn-primary-hero">
-                    <span>Explore Causes</span>
-                    <span class="btn-arrow">→</span>
-                </a>
-                <a href="@Url.Action("Index", "NGO")" class="btn-secondary-hero">
-                    <span>Discover NGOs</span>
-                </a>
-                @if (Session["UserID"] != null || Request.IsAuthenticated)
+<div class="v3">
+    <section class="hero-v3"><div class="hero-grid"><div><div class="hero-label"><i></i>Community support, made human</div><h1>Good people.<br /><span>Real programmes.</span><br /><b>Shared progress.</b></h1><p class="hero-text">GiveAID brings users, associated NGOs and meaningful social programmes into one vibrant platform-clear enough to trust, simple enough to join.</p><div class="hero-actions"><a class="action-main" href="@Url.Action("Index","Causes")">Explore causes &nbsp;&rarr;</a><a class="action-alt" href="@Url.Action("Index","NGO")">Discover NGOs</a></div><div class="hero-notes"><span><i>&check;</i>Database-driven</span><span><i>&check;</i>Role-based access</span><span><i>&check;</i>Responsive design</span></div></div><div class="visual-wrap"><div class="orbit"></div><div class="color-chip"></div><div class="hero-image-card"><img src="@Url.Content("~/Content/giveaid-hero.png")" alt="Community volunteers supporting education, health, food and clean water" /></div><div class="live-card"><div class="live-title">Live platform snapshot</div><div class="live-row"><div><strong>@Model.ActiveNgos</strong><span>NGOs</span></div><div><strong>@Model.ActiveProgrammes</strong><span>Programmes</span></div><div><strong>@Model.ActiveCauses</strong><span>Causes</span></div></div></div></div></div></section>
+    <section class="metrics"><div class="metrics-grid"><div class="metric"><div class="metric-icon">NG</div><strong>@Model.ActiveNgos</strong><span>Associated NGOs</span></div><div class="metric"><div class="metric-icon">PR</div><strong>@Model.ActiveProgrammes</strong><span>Open programmes</span></div><div class="metric"><div class="metric-icon">DN</div><strong>@Model.CompletedDonations</strong><span>Completed donations</span></div><div class="metric"><div class="metric-icon">PKR</div><strong>PKR @Model.FundsRaised.ToString("N0")</strong><span>Recorded contributions</span></div></div></section>
+    <section class="section-v3 reveal">
+        <div class="headline"><div><div class="overline">Featured programmes</div><h2>Work happening<br />right now.</h2></div><p>Explore active initiatives connected to real database records, associated NGOs and defined social causes.</p></div><div class="programme-grid">
+            @if (Model.Programmes.Any())
+            {
+                int i = 0; foreach (var p in Model.Programmes)
                 {
-                    <a href="@Url.Action("Index", "Dashboard")" class="btn-secondary-hero" style="background: rgba(255,255,255,0.15); color: #fff;">
-                        <span>Dashboard</span>
-                    </a>
-                }
-            </div>
-
-            <div class="hero-trust-badges">
-                <div class="trust-badge-item">
-                    <span class="badge-icon">🛡️</span>
-                    <span>SECP Verified NGOs</span>
-                </div>
-                <div class="trust-badge-item">
-                    <span class="badge-icon">⚡</span>
-                    <span>Raast / JazzCash / SadaPay Ready</span>
-                </div>
-                <div class="trust-badge-item">
-                    <span class="badge-icon">📊</span>
-                    <span>100% Open Financials</span>
-                </div>
-            </div>
-        </div>
-
-        <div class="hero-visual">
-            <div class="hero-card-stack">
-                <div class="hero-main-card">
-                    <div class="card-hero-header">
-                        <span class="category-tag tag-emergency">🚨 Urgent Relief</span>
-                        <span class="location-badge">📍 Sindh & Balochistan</span>
-                    </div>
-                    <div class="card-hero-body">
-                        <h3>Flood Reconstruction & Clean Water Hubs</h3>
-                        <p>Providing solar RO water plants and weather-resilient brick shelters for 2,400+ displaced families.</p>
-                        
-                        <div class="cause-progress-wrap">
-                            <div class="cause-progress-bar">
-                                <div class="cause-progress-fill" style="width: 76%;"></div>
-                            </div>
-                            <div class="cause-progress-labels">
-                                <span class="raised-text">Raised: <strong>PKR 3,800,000</strong></span>
-                                <span class="target-text">Goal: PKR 5,000,000 (76%)</span>
-                            </div>
-                        </div>
-
-                        <div class="card-hero-footer">
-                            <div class="donors-avatar-group">
-                                <span class="avatar-circle">👩🏽</span>
-                                <span class="avatar-circle">👨🏻</span>
-                                <span class="avatar-circle">🧕🏼</span>
-                                <span class="avatar-count">+412 Donors</span>
-                            </div>
-                            <a href="#causes" class="quick-support-link">Support Cause →</a>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Floating Micro Badges -->
-                <div class="floating-stat-card float-stat-left">
-                    <div class="float-icon">💚</div>
-                    <div>
-                        <div class="float-val">PKR 180M+</div>
-                        <div class="float-desc">Delivered to Ground</div>
-                    </div>
-                </div>
-
-                <div class="floating-stat-card float-stat-right">
-                    <div class="float-icon">✓</div>
-                    <div>
-                        <div class="float-val">150+ NGOs</div>
-                        <div class="float-desc">Strictly Audited</div>
-                    </div>
-                </div>
-            </div>
-        </div>
+                    i++; string imageName = i == 1 ? "programme-water.png" : (i == 2 ? "programme-learning.png" : "programme-health.png"); string imageUrl = Url.Content("~/Content/" + imageName);<article class="program-card"><div class="program-top"><img src="@imageUrl" alt="@p.ProgrammeName" /><span class="program-tag">@p.CauseName</span><span class="program-symbol">@("0" + i)</span></div><div class="program-body"><h3>@p.ProgrammeName</h3><p>@p.ShortDescription</p><div class="program-meta">@p.NgoName &middot; @p.Location</div><div class="fund-bar"><i style="width:@p.ProgressPercent%"></i></div><div class="fund-row"><strong>PKR @p.RaisedAmount.ToString("N0")</strong><span>@p.ProgressPercent% of @p.TargetAmount.ToString("N0")</span></div></div></article>}
+            }
+            else
+            {<div class="empty">No programmes are currently available.</div>}
     </div>
 </section>
-
-
-<!-- =========================================================
-     PLATFORM IMPACT / STATISTICS SECTION
-     ========================================================= -->
-<section class="impact-stats-section">
-    <div class="section-container">
-        <div class="section-header-center">
-            <span class="section-badge">Real-Time Metrics</span>
-            <h2 class="section-title">Measurable Impact Across Pakistan</h2>
-            <p class="section-subtitle">Every donation through GiveAID is tracked on-chain and in our transparent portal. Here is what we have achieved together.</p>
-        </div>
-
-        <div class="impact-grid">
-            <div class="impact-card">
-                <div class="impact-icon-wrapper icon-accent-green">
-                    <span>🏢</span>
-                </div>
-                <div class="impact-number" data-target="150">150+</div>
-                <div class="impact-title">Verified Partner NGOs</div>
-                <div class="impact-sub">Thoroughly vetted for SECP compliance, financial audits, and zero tax avoidance.</div>
-            </div>
-
-            <div class="impact-card">
-                <div class="impact-icon-wrapper icon-accent-blue">
-                    <span>🎯</span>
-                </div>
-                <div class="impact-number" data-target="1200">1,200+</div>
-                <div class="impact-title">Completed Projects</div>
-                <div class="impact-sub">Covering emergency disaster relief, girl child schooling, orphan care, and healthcare.</div>
-            </div>
-
-            <div class="impact-card">
-                <div class="impact-icon-wrapper icon-accent-gold">
-                    <span>👥</span>
-                </div>
-                <div class="impact-number" data-target="450000">450,000+</div>
-                <div class="impact-title">Lives Positively Touched</div>
-                <div class="impact-sub">Families fed, students educated, patients treated, and rural homes electrified.</div>
-            </div>
-
-            <div class="impact-card">
-                <div class="impact-icon-wrapper icon-accent-emerald">
-                    <span>💸</span>
-                </div>
-                <div class="impact-number">PKR 180M+</div>
-                <div class="impact-title">Charity Distributed</div>
-                <div class="impact-sub">Zero hidden deductions. 100% of donor funding routed directly to verified programs.</div>
-            </div>
-        </div>
-    </div>
-</section>
-
-
-<!-- =========================================================
-     FEATURED CAUSES SECTION
-     ========================================================= -->
-<section class="featured-causes-section" id="causes">
-    <div class="section-container">
-        <div class="causes-header-row">
-            <div>
-                <span class="section-badge">Active Campaigns</span>
-                <h2 class="section-title">Urgent Causes Needing Your Support</h2>
-                <p class="section-subtitle">Support vetted humanitarian initiatives across Karachi, Lahore, Quetta, Peshawar, and rural Pakistan.</p>
-            </div>
-            <div class="causes-filter-pills">
-                <button class="filter-pill active" onclick="filterCauses('all', this)">All Causes</button>
-                <button class="filter-pill" onclick="filterCauses('education', this)">Education</button>
-                <button class="filter-pill" onclick="filterCauses('relief', this)">Emergency Relief</button>
-                <button class="filter-pill" onclick="filterCauses('health', this)">Healthcare</button>
-                <button class="filter-pill" onclick="filterCauses('water', this)">Clean Water</button>
-            </div>
-        </div>
-
-        <div class="causes-grid">
-            <!-- Cause 1 -->
-            <div class="cause-card" data-category="relief">
-                <div class="cause-card-banner banner-relief">
-                    <span class="cause-tag">Emergency Relief</span>
-                    <span class="cause-org">Sindh Relief Coalition</span>
-                </div>
-                <div class="cause-card-content">
-                    <div class="cause-location">📍 Dadu & Sukkur, Sindh</div>
-                    <h3 class="cause-name">Flood Rehabilitation & Brick Shelter Homes</h3>
-                    <p class="cause-desc">Constructing durable, climate-resilient brick rooms for 180 farmer families displaced by devastating flash floods.</p>
-                    
-                    <div class="cause-financials">
-                        <div class="progress-bar-container">
-                            <div class="progress-bar-fill" style="width: 72%;"></div>
-                        </div>
-                        <div class="funding-meta">
-                            <span class="amount-raised">PKR 3,600,000</span>
-                            <span class="amount-target">Goal: PKR 5,000,000</span>
-                        </div>
-                        <div class="funding-footer-meta">
-                            <span class="funded-pct">72% Funded</span>
-                            <span class="donors-meta">👥 390 Donors</span>
-                        </div>
-                    </div>
-
-                    <div class="cause-actions">
-                        <button type="button" class="btn-donate-card" onclick="openDonationModal('Flood Rehabilitation & Brick Shelter Homes', 'PKR 5,000,000', 'Sindh Relief Coalition')">
-                            Donate Now
-                        </button>
-                        <a href="@Url.Action("Contact", "Home")" class="btn-info-card" title="Contact NGO / Inquire">💬 Inquire</a>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Cause 2 -->
-            <div class="cause-card" data-category="health">
-                <div class="cause-card-banner banner-health">
-                    <span class="cause-tag">Healthcare</span>
-                    <span class="cause-org">Edhi Emergency Network</span>
-                </div>
-                <div class="cause-card-content">
-                    <div class="cause-location">📍 Nationwide Highway Ambulances</div>
-                    <h3 class="cause-name">Emergency Ambulance & ICU Life-Support Fleet</h3>
-                    <p class="cause-desc">Equipping 25 national highway ambulances with oxygen concentrators, automated defibrillators, and trauma response kits.</p>
-                    
-                    <div class="cause-financials">
-                        <div class="progress-bar-container">
-                            <div class="progress-bar-fill" style="width: 85%;"></div>
-                        </div>
-                        <div class="funding-meta">
-                            <span class="amount-raised">PKR 8,500,000</span>
-                            <span class="amount-target">Goal: PKR 10,000,000</span>
-                        </div>
-                        <div class="funding-footer-meta">
-                            <span class="funded-pct">85% Funded</span>
-                            <span class="donors-meta">👥 1,120 Donors</span>
-                        </div>
-                    </div>
-
-                    <div class="cause-actions">
-                        <button type="button" class="btn-donate-card" onclick="openDonationModal('Emergency Ambulance & ICU Life-Support Fleet', 'PKR 10,000,000', 'Edhi Emergency Network')">
-                            Donate Now
-                        </button>
-                        <a href="@Url.Action("Contact", "Home")" class="btn-info-card" title="Contact NGO / Inquire">💬 Inquire</a>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Cause 3 -->
-            <div class="cause-card" data-category="education">
-                <div class="cause-card-banner banner-tech">
-                    <span class="cause-tag">Youth & IT</span>
-                    <span class="cause-org">Saylani Welfare Tech</span>
-                </div>
-                <div class="cause-card-content">
-                    <div class="cause-location">📍 Karachi, Lahore & Faisalabad</div>
-                    <h3 class="cause-name">Mass IT Training & AI Scholarships for Youth</h3>
-                    <p class="cause-desc">Sponsoring 500 underprivileged Gen Z students through comprehensive software engineering, cloud computing, and AI bootcamps.</p>
-                    
-                    <div class="cause-financials">
-                        <div class="progress-bar-container">
-                            <div class="progress-bar-fill" style="width: 80%;"></div>
-                        </div>
-                        <div class="funding-meta">
-                            <span class="amount-raised">PKR 4,800,000</span>
-                            <span class="amount-target">Goal: PKR 6,000,000</span>
-                        </div>
-                        <div class="funding-footer-meta">
-                            <span class="funded-pct">80% Funded</span>
-                            <span class="donors-meta">👥 680 Donors</span>
-                        </div>
-                    </div>
-
-                    <div class="cause-actions">
-                        <button type="button" class="btn-donate-card" onclick="openDonationModal('Mass IT Training & AI Scholarships for Youth', 'PKR 6,000,000', 'Saylani Welfare Tech')">
-                            Donate Now
-                        </button>
-                        <a href="@Url.Action("Contact", "Home")" class="btn-info-card" title="Contact NGO / Inquire">💬 Inquire</a>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Cause 4 -->
-            <div class="cause-card" data-category="education">
-                <div class="cause-card-banner banner-education">
-                    <span class="cause-tag">Education</span>
-                    <span class="cause-org">The Citizens Foundation</span>
-                </div>
-                <div class="cause-card-content">
-                    <div class="cause-location">📍 Rural Punjab & KPK</div>
-                    <h3 class="cause-name">Girls' Primary & Secondary Schooling Kits</h3>
-                    <p class="cause-desc">Providing full-year uniforms, textbooks, solar classroom power, and nutritious daily lunches for 350 rural female scholars.</p>
-                    
-                    <div class="cause-financials">
-                        <div class="progress-bar-container">
-                            <div class="progress-bar-fill" style="width: 90%;"></div>
-                        </div>
-                        <div class="funding-meta">
-                            <span class="amount-raised">PKR 3,150,000</span>
-                            <span class="amount-target">Goal: PKR 3,500,000</span>
-                        </div>
-                        <div class="funding-footer-meta">
-                            <span class="funded-pct">90% Funded</span>
-                            <span class="donors-meta">👥 520 Donors</span>
-                        </div>
-                    </div>
-
-                    <div class="cause-actions">
-                        <button type="button" class="btn-donate-card" onclick="openDonationModal('Girls Primary & Secondary Schooling Kits', 'PKR 3,500,000', 'The Citizens Foundation')">
-                            Donate Now
-                        </button>
-                        <a href="@Url.Action("Contact", "Home")" class="btn-info-card" title="Contact NGO / Inquire">💬 Inquire</a>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Cause 5 -->
-            <div class="cause-card" data-category="water">
-                <div class="cause-card-banner banner-water">
-                    <span class="cause-tag">Clean Water</span>
-                    <span class="cause-org">Thar Water Initiative</span>
-                </div>
-                <div class="cause-card-content">
-                    <div class="cause-location">📍 Tharparkar & Umerkot</div>
-                    <h3 class="cause-name">Solar-Powered Reverse Osmosis Water Plants</h3>
-                    <p class="cause-desc">Installing 4 high-capacity deep-well solar RO filtration plants to supply fluoride-free drinking water to 6 remote desert villages.</p>
-                    
-                    <div class="cause-financials">
-                        <div class="progress-bar-container">
-                            <div class="progress-bar-fill" style="width: 82%;"></div>
-                        </div>
-                        <div class="funding-meta">
-                            <span class="amount-raised">PKR 1,640,000</span>
-                            <span class="amount-target">Goal: PKR 2,000,000</span>
-                        </div>
-                        <div class="funding-footer-meta">
-                            <span class="funded-pct">82% Funded</span>
-                            <span class="donors-meta">👥 275 Donors</span>
-                        </div>
-                    </div>
-
-                    <div class="cause-actions">
-                        <button type="button" class="btn-donate-card" onclick="openDonationModal('Solar-Powered Reverse Osmosis Water Plants', 'PKR 2,000,000', 'Thar Water Initiative')">
-                            Donate Now
-                        </button>
-                        <a href="@Url.Action("Contact", "Home")" class="btn-info-card" title="Contact NGO / Inquire">💬 Inquire</a>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Cause 6 -->
-            <div class="cause-card" data-category="relief">
-                <div class="cause-card-banner banner-microfinance">
-                    <span class="cause-tag">Livelihood</span>
-                    <span class="cause-org">Akhuwat Micro-Grants</span>
-                </div>
-                <div class="cause-card-content">
-                    <div class="cause-location">📍 Multan, Quetta & Rawalpindi</div>
-                    <h3 class="cause-name">Qarz-e-Hasna Youth Micro-Enterprise Seed Capital</h3>
-                    <p class="cause-desc">Empowering 120 young artisans, solar technicians, and women tailors with 100% interest-free micro-seed grants.</p>
-                    
-                    <div class="cause-financials">
-                        <div class="progress-bar-container">
-                            <div class="progress-bar-fill" style="width: 78%;"></div>
-                        </div>
-                        <div class="funding-meta">
-                            <span class="amount-raised">PKR 5,460,000</span>
-                            <span class="amount-target">Goal: PKR 7,000,000</span>
-                        </div>
-                        <div class="funding-footer-meta">
-                            <span class="funded-pct">78% Funded</span>
-                            <span class="donors-meta">👥 580 Donors</span>
-                        </div>
-                    </div>
-
-                    <div class="cause-actions">
-                        <button type="button" class="btn-donate-card" onclick="openDonationModal('Qarz-e-Hasna Youth Micro-Enterprise Seed Capital', 'PKR 7,000,000', 'Akhuwat Micro-Grants')">
-                            Donate Now
-                        </button>
-                        <a href="@Url.Action("Contact", "Home")" class="btn-info-card" title="Contact NGO / Inquire">💬 Inquire</a>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Discovery Bottom Actions -->
-        <div style="text-align: center; margin-top: 48px; display: flex; justify-content: center; gap: 16px; flex-wrap: wrap;">
-            <a href="@Url.Action("Index", "Causes")" class="btn-primary-hero" style="display: inline-flex; align-items: center; gap: 8px;">
-                <span>🎯 Browse All Causes & Sectors</span>
-                <span class="btn-arrow">→</span>
-            </a>
-            <a href="@Url.Action("Index", "NGO")" class="btn-secondary-hero" style="background: #ffffff; color: #0f172a; border: 1px solid #cbd5e1; display: inline-flex; align-items: center; gap: 8px;">
-                <span>🏢 Explore Verified NGOs Directory</span>
-                <span class="btn-arrow">→</span>
-            </a>
-        </div>
-    </div>
-</section>
-
-
-<!-- =========================================================
-     HOW GIVEAID WORKS (4-STEP STREAMLINED MODEL)
-     ========================================================= -->
-<section class="how-it-works-section">
-    <div class="section-container">
-        <div class="section-header-center">
-            <span class="section-badge">Transparent Workflow</span>
-            <h2 class="section-title">How GiveAID Works</h2>
-            <p class="section-subtitle">We stripped away the red tape and opaque charity practices to build a frictionless giving experience.</p>
-        </div>
-
-        <div class="steps-grid">
-            <div class="step-card">
-                <div class="step-number-badge">01</div>
-                <div class="step-icon-wrap">🔍</div>
-                <h3>1. Discover a Verified Cause</h3>
-                <p>Browse rigorously vetted non-profit campaigns across Pakistan with transparent goal breakdowns and field reports.</p>
-            </div>
-
-            <div class="step-card">
-                <div class="step-number-badge">02</div>
-                <div class="step-icon-wrap">💳</div>
-                <h3>2. Choose How to Give</h3>
-                <p>Donate in PKR using your favorite everyday payment channels: Raast, JazzCash, SadaPay, NayaPay, or direct Bank Transfer.</p>
-            </div>
-
-            <div class="step-card">
-                <div class="step-number-badge">03</div>
-                <div class="step-icon-wrap">🛡️</div>
-                <h3>3. 100% Financial Tracking</h3>
-                <p>Every single Rupee is accounted for. Check itemized expenditure bills, contractor receipts, and NGO disbursements.</p>
-            </div>
-
-            <div class="step-card">
-                <div class="step-number-badge">04</div>
-                <div class="step-icon-wrap">🌟</div>
-                <h3>4. Witness Tangible Impact</h3>
-                <p>Receive verifiable photo receipts, beneficiary progress updates, and tax certificates directly inside your personal donor portal.</p>
-            </div>
-        </div>
-    </div>
-</section>
-
-
-<!-- =========================================================
-     WHY GIVEAID (TRUST & VALUE PILLARS)
-     ========================================================= -->
-<section class="why-giveaid-section">
-    <div class="section-container">
-        <div class="why-grid">
-            <div class="why-intro-col">
-                <span class="section-badge">Trust by Design</span>
-                <h2 class="section-title">Why Changemakers Choose GiveAID</h2>
-                <p class="section-subtitle">
-                    For decades, charitable giving in Pakistan has been hindered by a lack of audit transparency and digital friction. GiveAID solves this with verifiable, youth-led accountability.
-                </p>
-                <div class="why-cta-box">
-                    <p>Have questions about our NGO verification and safety standards?</p>
-                    <a href="@Url.Action("About", "Home")" class="btn-outline-green">Learn About Our Mission →</a>
-                </div>
-            </div>
-
-            <div class="why-features-col">
-                <div class="why-feature-card">
-                    <div class="feature-icon">🛡️</div>
-                    <div class="feature-text">
-                        <h4>100% SECP & Tax Verified NGOs</h4>
-                        <p>We do not onboard anonymous charities. Every organization submits legal registration, annual audit filings, and field verification.</p>
-                    </div>
-                </div>
-
-                <div class="why-feature-card">
-                    <div class="feature-icon">💎</div>
-                    <div class="feature-text">
-                        <h4>Zero Hidden Deductions</h4>
-                        <p>Unlike legacy charity portals that charge 10–15% management cuts, GiveAID passes 100% of your allocated funds directly to the field.</p>
-                    </div>
-                </div>
-
-                <div class="why-feature-card">
-                    <div class="feature-icon">📱</div>
-                    <div class="feature-text">
-                        <h4>Built for Gen Z & Digital Pakistan</h4>
-                        <p>A lightning-fast, mobile-first interface designed for effortless giving on mobile phones without cumbersome manual paperwork.</p>
-                    </div>
-                </div>
-
-                <div class="why-feature-card">
-                    <div class="feature-icon">📊</div>
-                    <div class="feature-text">
-                        <h4>Real-Time Donor Dashboard</h4>
-                        <p>Log in anytime to see your lifetime impact metrics, downloadable PDF receipts, and project milestone updates.</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</section>
-
-
-<!-- =========================================================
-     NGO PARTNER ONBOARDING CALLOUT ("Are you an NGO?")
-     ========================================================= -->
-<section class="ngo-cta-section">
-    <div class="section-container">
-        <div class="ngo-banner-card">
-            <div class="ngo-banner-content">
-                <span class="ngo-pill">For Pakistani Non-Profit Organizations</span>
-                <h2 class="ngo-banner-title">Are You an NGO Driving Real Change?</h2>
-                <p class="ngo-banner-desc">
-                    Connect with tens of thousands of active donors, youth volunteers, and corporate CSR partners across Pakistan and the worldwide diaspora. Get verified, launch campaigns, and manage impact effortlessly.
-                </p>
-                <div class="ngo-banner-actions">
-                    <a href="@Url.Action("Register", "Account")" class="btn-ngo-primary">
-                        Register Your NGO Now
-                    </a>
-                    <a href="@Url.Action("Partners", "Home")" class="btn-ngo-secondary">
-                        View Partner Network
-                    </a>
-                </div>
-            </div>
-            <div class="ngo-banner-perks">
-                <div class="ngo-perk-item">
-                    <span class="perk-check">✓</span>
-                    <span>Direct Raast & Pakistani Bank Payouts</span>
-                </div>
-                <div class="ngo-perk-item">
-                    <span class="perk-check">✓</span>
-                    <span>Dedicated NGO Analytics & Donor Hub</span>
-                </div>
-                <div class="ngo-perk-item">
-                    <span class="perk-check">✓</span>
-                    <span>SECP Verification Trust Badge</span>
-                </div>
-                <div class="ngo-perk-item">
-                    <span class="perk-check">✓</span>
-                    <span>Zero Setup or Listing Fees</span>
-                </div>
-            </div>
-        </div>
-    </div>
-</section>
-
-
-<!-- =========================================================
-     COMMUNITY VOICES & TESTIMONIALS
-     ========================================================= -->
-<section class="testimonials-section">
-    <div class="section-container">
-        <div class="section-header-center">
-            <span class="section-badge">Voices from the Field</span>
-            <h2 class="section-title">Trusted by Donors & Community Leaders</h2>
-            <p class="section-subtitle">Hear what Pakistani students, overseas donors, and partner NGO directors say about GiveAID.</p>
-        </div>
-
-        <div class="testimonials-grid">
-            <div class="testimonial-card">
-                <div class="stars">⭐⭐⭐⭐⭐</div>
-                <p class="testimonial-quote">"As an overseas Pakistani in Manchester, sending donations back home was always riddled with doubt about where the funds ended up. GiveAID gives me photographic proof and real-time expense sheets for every rupee."</p>
-                <div class="author-info">
-                    <div class="author-avatar">🇵🇰</div>
-                    <div>
-                        <div class="author-name">Zainab Tariq</div>
-                        <div class="author-role">Overseas Donor & Tech Lead</div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="testimonial-card">
-                <div class="stars">⭐⭐⭐⭐⭐</div>
-                <p class="testimonial-quote">"GiveAID changed how our university youth chapter organizes winter clothing drives. We raised PKR 450k in 72 hours with zero friction using SadaPay and JazzCash integration!"</p>
-                <div class="author-info">
-                    <div class="author-avatar">🎓</div>
-                    <div>
-                        <div class="author-name">Hamza Bilal</div>
-                        <div class="author-role">LUMS Student Volunteer Chapter</div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="testimonial-card">
-                <div class="stars">⭐⭐⭐⭐⭐</div>
-                <p class="testimonial-quote">"The onboarding verification was thorough, which gives our donors absolute confidence. GiveAID's NGO portal makes updating project milestones and receipts simple."</p>
-                <div class="author-info">
-                    <div class="author-avatar">🏥</div>
-                    <div>
-                        <div class="author-name">Dr. M. Farooq</div>
-                        <div class="author-role">Director, Rural Health Clinic Trust</div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</section>
-
-
-<!-- =========================================================
-     FINAL CALL TO ACTION BANNER
-     ========================================================= -->
-<section class="final-cta-section">
-    <div class="section-container">
-        <div class="final-cta-box">
-            <h2 class="final-cta-title">Every Rupee Changes a Life.</h2>
-            <p class="final-cta-desc">
-                Join Pakistan's fastest growing community of youth changemakers and transparent non-profit initiatives. Start your journey today.
-            </p>
-            <div class="final-cta-buttons">
-                @if (Session["UserID"] == null && !Request.IsAuthenticated)
-                {
-                    <a href="@Url.Action("Register", "Account")" class="btn-cta-white">
-                        Create Free Account
-                    </a>
-                    <a href="@Url.Action("Login", "Account")" class="btn-cta-outline">
-                        Sign In
-                    </a>
-                }
-                else
-                {
-                    <a href="@Url.Action("Index", "Dashboard")" class="btn-cta-white">
-                        Go to My Dashboard
-                    </a>
-                    <a href="#causes" class="btn-cta-outline">
-                        Browse More Causes
-                    </a>
-                }
-            </div>
-        </div>
-    </div>
-</section>
-
-
-<!-- =========================================================
-     QUICK DONATION MODAL (FUNCTIONAL AJAX FORM)
-     ========================================================= -->
-<div class="donation-modal-overlay" id="donationModal" style="display: none;">
-    <div class="donation-modal-card" style="max-width: 520px;">
-        <button type="button" class="modal-close-btn" onclick="closeDonationModal()">&times;</button>
-        <div class="modal-header">
-            <div class="modal-icon">💚</div>
-            <h3 id="modalCauseTitle">Support a Cause</h3>
-            <p id="modalCauseOrg" class="text-sub">Verified Campaign</p>
-        </div>
-
-        <div class="modal-body">
-            <!-- Validation Error Box -->
-            <div id="modalErrorBox" style="display: none; background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; border-radius: 8px; padding: 10px 14px; margin-bottom: 14px; font-size: 13px;"></div>
-
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
-                <div class="form-group">
-                    <label class="form-label">Your Name *</label>
-                    <input type="text" id="modalDonorName" class="form-control" placeholder="Full Name" value="@(Session["UserName"] ?? "")" />
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Your Email *</label>
-                    <input type="email" id="modalDonorEmail" class="form-control" placeholder="email@example.com" value="@(Session["UserEmail"] ?? "")" />
-                </div>
-            </div>
-
-            <div class="form-group" style="margin-top: 12px;">
-                <label class="form-label">Select NGO *</label>
-                <select id="modalNgoSelect" class="form-control">
-                    <option value="">— Choose an NGO —</option>
-                </select>
-            </div>
-
-            <div class="form-group" style="margin-top: 12px;">
-                <label class="form-label">Select Cause *</label>
-                <select id="modalCauseSelect" class="form-control">
-                    <option value="">— Choose a Cause —</option>
-                </select>
-            </div>
-
-            <label class="form-label" style="margin-top: 14px;">Select Donation Amount (PKR)</label>
-            <div class="amount-presets">
-                <button type="button" class="preset-btn" onclick="setDonationAmount(1000, this)">PKR 1,000</button>
-                <button type="button" class="preset-btn active" onclick="setDonationAmount(2500, this)">PKR 2,500</button>
-                <button type="button" class="preset-btn" onclick="setDonationAmount(5000, this)">PKR 5,000</button>
-                <button type="button" class="preset-btn" onclick="setDonationAmount(10000, this)">PKR 10,000</button>
-            </div>
-
-            <div class="form-group" style="margin-top: 12px;">
-                <label class="form-label">Or Enter Custom Amount (PKR)</label>
-                <input type="number" id="customAmountInput" class="form-control" value="2500" min="100" />
-            </div>
-
-            <div class="payment-method-selector">
-                <label class="form-label">Choose Payment Rail</label>
-                <div class="rails-grid">
-                    <div class="rail-option active" data-rail="Raast / 1Link" onclick="selectRail(this)">
-                        <span class="rail-icon">⚡</span>
-                        <span class="rail-name">Raast / 1Link</span>
-                    </div>
-                    <div class="rail-option" data-rail="JazzCash / SadaPay" onclick="selectRail(this)">
-                        <span class="rail-icon">📱</span>
-                        <span class="rail-name">JazzCash / SadaPay</span>
-                    </div>
-                    <div class="rail-option" data-rail="Debit/Credit Card" onclick="selectRail(this)">
-                        <span class="rail-icon">💳</span>
-                        <span class="rail-name">Debit/Credit Card</span>
-                    </div>
-                </div>
-            </div>
-
-            <div class="form-group" style="margin-top: 12px;">
-                <label class="form-label">Message (optional)</label>
-                <textarea id="modalDonorMessage" class="form-control" rows="2" placeholder="Leave a note for the NGO..." style="min-height: 50px;"></textarea>
-            </div>
-
-            <div class="modal-actions" style="margin-top: 20px;">
-                <button type="button" id="modalSubmitBtn" class="auth-btn" style="width: 100%; text-align: center;" onclick="submitQuickDonation()">
-                    💚 Submit Donation
-                </button>
-            </div>
-            <p class="modal-secure-note">🔒 256-bit Encrypted. 100% SECP Regulatory Compliant.</p>
-        </div>
-    </div>
+<div class="how"><section class="section-v3 reveal"><div class="headline"><div><div class="overline">How GiveAID works</div><h2>Three clear steps.<br />One useful platform.</h2></div></div><div class="steps"><article class="step"><div class="step-no">01</div><h3>Discover</h3><p>Browse associated NGOs, active causes and community programmes using structured information.</p></article><article class="step"><div class="step-no">02</div><h3>Participate</h3><p>Create a user account, record programme interest, submit queries and use the dummy donation workflow.</p></article><article class="step"><div class="step-no">03</div><h3>Manage</h3><p>Administrators maintain users, NGOs, programmes, donations and website content from one dashboard.</p></article></div></section></div>
+<section class="section-v3 reveal">
+    <div class="headline"><div><div class="overline">Areas of work</div><h2>Choose what matters<br />most to you.</h2></div><p>Every cause is maintained in the database and can connect to one or more active programmes.</p></div><svg class="svg-sprite" aria-hidden="true"><symbol id="icon-education" viewBox="0 0 64 64"><path d="M8 16c9-3 17-1 24 5v31c-7-6-15-8-24-5z" /><path d="M56 16c-9-3-17-1-24 5v31c7-6 15-8 24-5z" /><path d="M15 25h10M15 32h10M39 25h10M39 32h10" /></symbol><symbol id="icon-health" viewBox="0 0 64 64"><path d="M32 54S10 41 10 24c0-9 11-15 22-4 11-11 22-5 22 4 0 17-22 30-22 30z" /><path d="M32 25v16M24 33h16" /></symbol><symbol id="icon-children" viewBox="0 0 64 64"><circle cx="24" cy="21" r="7" /><circle cx="43" cy="25" r="5" /><path d="M10 51c1-12 7-18 14-18s13 6 14 18M36 49c1-9 4-14 8-14 5 0 9 5 10 14" /><path d="M7 13l4 4 8-8" /></symbol><symbol id="icon-water" viewBox="0 0 64 64"><path d="M32 7S14 29 14 41a18 18 0 0 0 36 0C50 29 32 7 32 7z" /><path d="M24 43c1 5 4 8 9 9" /></symbol><symbol id="icon-women" viewBox="0 0 64 64"><circle cx="32" cy="21" r="11" /><path d="M32 32v24M23 47h18M25 56h14" /><path d="M45 18l8-8M45 10h8v8" /></symbol><symbol id="icon-elderly" viewBox="0 0 64 64"><path d="M11 42c7-2 12 0 17 6l4 4 4-4c5-6 10-8 17-6" /><path d="M9 43v10M55 43v10" /><path d="M32 38S20 31 20 22c0-6 7-9 12-3 5-6 12-3 12 3 0 9-12 16-12 16z" /></symbol></svg><div class="cause-mosaic">
+        @if (Model.Causes.Any())
+        {
+            foreach (var c in Model.Causes)
+            {
+                string causeKey = (c.CauseName ?? "").ToLower(); string iconId = causeKey.Contains("education") ? "icon-education" : causeKey.Contains("health") ? "icon-health" : causeKey.Contains("child") ? "icon-children" : causeKey.Contains("water") ? "icon-water" : causeKey.Contains("women") ? "icon-women" : "icon-elderly";<a class="cause-card" href="@Url.Action("Details","Causes",new{id=c.CauseID})"><svg class="cause-art" aria-hidden="true"><use href="@("#"+iconId)"></use></svg><div class="cause-code">@((c.CauseName.Length>=2?c.CauseName.Substring(0,2):c.CauseName).ToUpper())</div><h3>@c.CauseName</h3><p>@c.ShortDescription</p><b>@c.ProgrammeCount open programme(s)</b></a>}
+        }
+        else
+        {<div class="empty">No causes are currently available.</div>}
 </div>
-
-
-@section Scripts {
-    <script>
-        var _modalNgos = [];
-        var _modalCauses = [];
-
-        // Load NGO and Cause dropdowns on page load
-        $(document).ready(function () {
-            $.getJSON('@Url.Action("GetFormData", "Donation")', function (data) {
-                _modalNgos = data.ngos || [];
-                _modalCauses = data.causes || [];
-
-                var ngoSel = $('#modalNgoSelect');
-                $.each(_modalNgos, function (i, n) {
-                    ngoSel.append('<option value="' + n.Id + '">' + n.Name + '</option>');
-                });
-
-                var causeSel = $('#modalCauseSelect');
-                $.each(_modalCauses, function (i, c) {
-                    causeSel.append('<option value="' + c.Id + '">' + c.Name + '</option>');
-                });
-            });
-        });
-
-        function filterCauses(cat, btn) {
-            $('.filter-pill').removeClass('active');
-            $(btn).addClass('active');
-
-            if (cat === 'all') {
-                $('.cause-card').fadeIn(200);
-            } else {
-                $('.cause-card').hide();
-                $('.cause-card[data-category="' + cat + '"]').fadeIn(200);
-            }
+</section>
+<div class="ngo-band">
+    <section class="section-v3 reveal">
+        <div class="headline"><div><div class="overline">Associated NGOs</div><h2>Meet the organisations<br />behind the programmes.</h2></div><p>NGOs are maintained by the platform administrator and connected to relevant causes and programmes.</p></div><div class="ngo-grid">
+            @if (Model.Ngos.Any())
+            {
+                foreach (var n in Model.Ngos)
+                {<article class="ngo-card"><div class="ngo-logo">@((n.NGOName.Length>=2?n.NGOName.Substring(0,2):n.NGOName).ToUpper())</div><h3>@n.NGOName</h3><div class="ngo-cat">@n.Category</div><p>@n.Description</p><div class="ngo-foot"><span>@n.City</span><span>@n.ProgrammeCount programme(s)</span></div></article>}
         }
-
-        function openDonationModal(title, target, org) {
-            $('#modalCauseTitle').text(title);
-            $('#modalCauseOrg').text('Organized by: ' + org + ' • Target: ' + target);
-            $('#modalErrorBox').hide().text('');
-            $('#donationModal').fadeIn(200);
-        }
-
-        function closeDonationModal() {
-            $('#donationModal').fadeOut(200);
-        }
-
-        function setDonationAmount(amt, btn) {
-            $('.preset-btn').removeClass('active');
-            $(btn).addClass('active');
-            $('#customAmountInput').val(amt);
-        }
-
-        function selectRail(el) {
-            $('.rail-option').removeClass('active');
-            $(el).addClass('active');
-        }
-
-        function submitQuickDonation() {
-            var errBox = $('#modalErrorBox');
-            errBox.hide().text('');
-
-            var name = $('#modalDonorName').val().trim();
-            var email = $('#modalDonorEmail').val().trim();
-            var ngoId = $('#modalNgoSelect').val();
-            var causeId = $('#modalCauseSelect').val();
-            var amount = parseFloat($('#customAmountInput').val());
-            var paymentMethod = $('.rail-option.active').data('rail') || 'Raast / 1Link';
-            var message = $('#modalDonorMessage').val().trim();
-
-            // Client-side validation
-            var errors = [];
-            if (!name) errors.push('Donor name is required.');
-            if (!email) errors.push('Email address is required.');
-            if (!ngoId) errors.push('Please select an NGO.');
-            if (!causeId) errors.push('Please select a Cause.');
-            if (!amount || amount < 100) errors.push('Minimum donation is PKR 100.');
-
-            if (errors.length > 0) {
-                errBox.html(errors.join('<br/>')).fadeIn(200);
-                return;
-            }
-
-            var btn = $('#modalSubmitBtn');
-            btn.prop('disabled', true).text('Processing...');
-
-            $.ajax({
-                url: '@Url.Action("Create", "Donation")',
-                type: 'POST',
-                contentType: 'application/json',
-                data: JSON.stringify({
-                    DonorName: name,
-                    DonorEmail: email,
-                    NGOID: parseInt(ngoId),
-                    CauseID: parseInt(causeId),
-                    ProgramID: null,
-                    Amount: amount,
-                    PaymentMethod: paymentMethod,
-                    Message: message
-                }),
-                success: function (resp) {
-                    if (resp.success && resp.donationId) {
-                        window.location.href = '@Url.Action("Success", "Donation")/' + resp.donationId;
-                    } else {
-                        errBox.text(resp.message || 'Something went wrong. Please try again.').fadeIn(200);
-                        btn.prop('disabled', false).text('💚 Submit Donation');
-                    }
-                },
-                error: function () {
-                    errBox.text('Server error. Please try again later.').fadeIn(200);
-                    btn.prop('disabled', false).text('💚 Submit Donation');
-                }
-            });
-        }
-
-        // Close modal when clicking outside
-        $(window).on('click', function (e) {
-            if ($(e.target).is('#donationModal')) {
-                closeDonationModal();
-            }
-        });
-    </script>
+        else
+        {<div class="empty">No NGOs are currently available.</div>}
+    </div>
+</section>
+</div>
+<section class="final-cta reveal">
+    <div class="cta-card">
+        <div><h2>Your next action can matter.</h2><p>Create an account and explore the programmes available on GiveAID.</p></div>@if (Request.IsAuthenticated || Session["UserID"] != null)
+        {<a class="action-alt" href="@Url.Action("Index","Dashboard")">Open dashboard</a>}
+        else
+        {<a class="action-alt" href="@Url.Action("Register","Account")">Join GiveAID</a>}
+    </div>
+</section>
+</div>
+@section Scripts{
+    <script>(function () { var x = document.querySelectorAll('.reveal'); if (!window.IntersectionObserver) { x.forEach(function (e) { e.classList.add('show') }); return } var o = new IntersectionObserver(function (es) { es.forEach(function (e) { if (e.isIntersecting) { e.target.classList.add('show'); o.unobserve(e.target) } }) }, { threshold: .12 }); x.forEach(function (e) { o.observe(e) }) })();</script>
 }

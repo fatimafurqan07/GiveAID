@@ -1,220 +1,979 @@
+@inherits System.Web.Mvc.WebViewPage<GiveAID_Project.Models.ContactViewModel>
+@using System.Web.Mvc
+@using System.Web.Mvc.Html
+
 @{
-    ViewBag.Title = "Contact Us - GiveAID Pakistan";
+    ViewBag.Title = "Contact | GiveAID";
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
 
-<!-- =========================================================
-     CONTACT HERO
-     ========================================================= -->
-<section class="contact-hero-section">
-    <div class="section-container">
-        <div class="contact-hero-content">
-            <span class="section-badge">Get in Touch</span>
-            <h1 class="contact-hero-title">
-                We’re Here to <span class="highlight-text">Help</span> & <span class="highlight-text-accent">Connect</span>
-            </h1>
-            <p class="contact-hero-lead">
-                Have questions about verified campaigns, corporate CSR partnerships, NGO onboarding, or volunteering? Reach out to our team in Karachi & Lahore.
-            </p>
-        </div>
-    </div>
-</section>
+@section Styles {
+    <style>
+        .contact-page {
+            background: #f5f9f7;
+            color: var(--navy);
+            overflow: hidden
+        }
 
+        .c-shell {
+            max-width: 1200px;
+            margin: auto;
+            padding: 0 24px
+        }
 
-<!-- =========================================================
-     CONTACT DETAILS & INQUIRY FORM GRID
-     ========================================================= -->
-<section class="contact-main-section">
-    <div class="section-container">
-        <div class="contact-grid">
-            <!-- Left Column: Direct Contact Info & Regional Hubs -->
-            <div class="contact-info-col">
-                <div class="contact-info-card">
-                    <h3 class="info-card-title">GiveAID Pakistan Headquarters</h3>
-                    <p class="info-card-desc">Visit our offices or connect with our support liaisons during operating hours (Monday–Saturday, 9:00 AM – 6:00 PM PKT).</p>
-                    
-                    <div class="info-items-list">
-                        <div class="info-item">
-                            <div class="info-icon">📍</div>
-                            <div class="info-body">
-                                <strong>Karachi Principal Office:</strong>
-                                <span>Level 4, FTC Building, Shahrah-e-Faisal, Karachi, Sindh 75400</span>
-                            </div>
-                        </div>
+        .c-hero {
+            padding: 76px 0 96px;
+            background: radial-gradient(circle at 8% 10%,#dbf7ea 0,transparent 36%),linear-gradient(135deg,#fffaf2,#f7fffb)
+        }
 
-                        <div class="info-item">
-                            <div class="info-icon">📍</div>
-                            <div class="info-body">
-                                <strong>Lahore Regional Hub:</strong>
-                                <span>Main Boulevard, Gulberg III, Lahore, Punjab 54000</span>
-                            </div>
-                        </div>
+        .c-hero-grid {
+            display: grid;
+            grid-template-columns: 1fr .92fr;
+            gap: 66px;
+            align-items: center
+        }
 
-                        <div class="info-item">
-                            <div class="info-icon">📧</div>
-                            <div class="info-body">
-                                <strong>Email Inquiries:</strong>
-                                <span>General Support: <a href="mailto:support@giveaid.pk">support@giveaid.pk</a></span>
-                                <span>NGO Partnerships: <a href="mailto:partnerships@giveaid.pk">partnerships@giveaid.pk</a></span>
-                            </div>
-                        </div>
+        .c-kicker {
+            display: inline-flex;
+            align-items: center;
+            gap: 9px;
+            padding: 8px 13px;
+            border: 1px solid #c6dfd5;
+            border-radius: 30px;
+            background: #fff;
+            color: #087457;
+            font-size: 10px;
+            font-weight: 900;
+            letter-spacing: .13em;
+            text-transform: uppercase
+        }
 
-                        <div class="info-item">
-                            <div class="info-icon">📞</div>
-                            <div class="info-body">
-                                <strong>Direct Helpline:</strong>
-                                <span>+92 (21) 3456-7890</span>
-                                <span>WhatsApp Support: +92 300 1234567</span>
-                            </div>
-                        </div>
-                    </div>
+        .c-kicker:before {
+            content: "";
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #ef8062;
+            box-shadow: 0 0 0 6px rgba(239,128,98,.14)
+        }
 
-                    <div class="social-channels-box">
-                        <h4>Connect On Socials</h4>
-                        <div class="social-pills">
-                            <span class="social-pill">📱 Instagram: @@GiveAID.pk</span>
-                            <span class="social-pill">💼 LinkedIn: /company/giveaid-pk</span>
-                            <span class="social-pill">🐦 X: @@GiveAID_PK</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
+        .c-hero h1 {
+            font-size: 60px;
+            line-height: 1.02;
+            letter-spacing: -.06em;
+            margin: 24px 0 20px
+        }
 
-            <!-- Right Column: Contact Inquiry Form -->
-            <div class="contact-form-col">
-                <div class="contact-form-card">
-                    <div class="form-header">
-                        <h3>Send Us a Message</h3>
-                        <p>Fill out the form below and a representative will reply within 24 hours.</p>
-                    </div>
+        .c-hero h1 span {
+            color: #078b66
+        }
 
-                    @using (Html.BeginForm("Contact", "Home", FormMethod.Post, new { @class = "inquiry-form", id = "contactForm" }))
-                    {
-                        @Html.AntiForgeryToken()
+        .c-lead {
+            font-size: 17px;
+            line-height: 1.75;
+            color: #587176;
+            max-width: 560px
+        }
 
-                        <div class="form-row">
-                            <div class="form-group col-half">
-                                <label class="form-label" for="name">Your Name *</label>
-                                <input type="text" id="name" name="name" class="form-control" placeholder="e.g. Ayesha Khan" required />
-                            </div>
+        .c-notes {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 9px;
+            margin-top: 27px
+        }
 
-                            <div class="form-group col-half">
-                                <label class="form-label" for="email">Email Address *</label>
-                                <input type="email" id="email" name="email" class="form-control" placeholder="e.g. ayesha@example.com" required />
-                            </div>
-                        </div>
+        .c-notes span {
+            padding: 9px 12px;
+            border: 1px solid #d5e4de;
+            border-radius: 10px;
+            background: #fff;
+            color: #35575b;
+            font-size: 10px;
+            font-weight: 800
+        }
 
-                        <div class="form-row">
-                            <div class="form-group col-half">
-                                <label class="form-label" for="inquirerType">I am reaching out as:</label>
-                                <select id="inquirerType" name="inquirerType" class="form-control form-select">
-                                    <option value="Individual Donor">Individual Donor / Supporter</option>
-                                    <option value="NGO Partner">NGO / Charity Representative</option>
-                                    <option value="Corporate CSR">Corporate CSR Partner</option>
-                                    <option value="Student Volunteer">Student Volunteer / University Chapter</option>
-                                    <option value="Media & Press">Media & Press</option>
-                                </select>
-                            </div>
+        .c-visual {
+            min-height: 410px;
+            border-radius: 30px;
+            padding: 38px;
+            background: linear-gradient(145deg,#062b39,#07635a);
+            position: relative;
+            overflow: hidden;
+            color: #fff;
+            box-shadow: 0 26px 55px rgba(7,31,44,.2);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between
+        }
 
-                            <div class="form-group col-half">
-                                <label class="form-label" for="subject">Subject *</label>
-                                <input type="text" id="subject" name="subject" class="form-control" placeholder="e.g. Campaign Inquiry / NGO Verification" required />
-                            </div>
-                        </div>
+        .c-visual:after {
+            content: "";
+            position: absolute;
+            width: 280px;
+            height: 280px;
+            border: 45px solid rgba(255,255,255,.06);
+            border-radius: 50%;
+            right: -100px;
+            bottom: -125px
+        }
 
-                        <div class="form-group">
-                            <label class="form-label" for="message">Your Message *</label>
-                            <textarea id="message" name="message" class="form-control" rows="5" placeholder="How can we help you or your organization?" required style="resize: vertical; min-height: 120px;"></textarea>
-                        </div>
+        .visual-label {
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: .13em;
+            color: #69ddb6;
+            font-weight: 900
+        }
 
-                        <button type="submit" class="auth-btn btn-send-message">
-                            Send Message →
-                        </button>
-                    }
-                </div>
-            </div>
-        </div>
-    </div>
-</section>
+        .c-visual h2 {
+            font-size: 33px;
+            line-height: 1.16;
+            letter-spacing: -.04em;
+            max-width: 390px;
+            margin: 18px 0
+        }
 
+        .message-flow {
+            display: grid;
+            grid-template-columns: repeat(3,1fr);
+            gap: 9px;
+            position: relative;
+            z-index: 2
+        }
 
-<!-- =========================================================
-     FREQUENTLY ASKED QUESTIONS (FAQ ACCORDION)
-     ========================================================= -->
-<section class="faq-section">
-    <div class="section-container">
-        <div class="section-header-center">
-            <span class="section-badge">Common Queries</span>
-            <h2 class="section-title">Frequently Asked Questions</h2>
-            <p class="section-subtitle">Quick answers to common questions about GiveAID's platform and giving process in Pakistan.</p>
-        </div>
+        .flow-step {
+            padding: 16px 12px;
+            border-radius: 14px;
+            background: rgba(255,255,255,.08);
+            border: 1px solid rgba(255,255,255,.1)
+        }
 
-        <div class="faq-accordion-wrap">
-            <div class="faq-item">
-                <button type="button" class="faq-question" onclick="toggleFaq(this)">
-                    <span>How does GiveAID verify non-profit organizations in Pakistan?</span>
-                    <span class="faq-toggle-icon">+</span>
-                </button>
-                <div class="faq-answer">
-                    <p>Every non-profit organization on GiveAID must provide valid SECP registration (Section 42 or Societies Act), certified CA-audited financial statements, and FBR tax exemption status. Our compliance team also conducts on-ground spot checks before any campaign is authorized for public fundraising.</p>
-                </div>
-            </div>
+        .flow-step strong {
+            display: block;
+            font-size: 17px;
+            color: #fff
+        }
 
-            <div class="faq-item">
-                <button type="button" class="faq-question" onclick="toggleFaq(this)">
-                    <span>Which payment rails can I use to donate?</span>
-                    <span class="faq-toggle-icon">+</span>
-                </button>
-                <div class="faq-answer">
-                    <p>We support all major Pakistani digital payment systems including Raast instant bank clearing, 1Link, SadaPay, NayaPay, JazzCash, and Easypaisa, as well as local & international Visa/Mastercard debit and credit cards.</p>
-                </div>
-            </div>
+        .flow-step span {
+            display: block;
+            color: #acd0cd;
+            font-size: 9px;
+            margin-top: 6px
+        }
 
-            <div class="faq-item">
-                <button type="button" class="faq-question" onclick="toggleFaq(this)">
-                    <span>Are donations made through GiveAID eligible for tax relief?</span>
-                    <span class="faq-toggle-icon">+</span>
-                </button>
-                <div class="faq-answer">
-                    <p>Yes. All partner charities on GiveAID hold non-profit tax recognition under Section 2(36) of the Income Tax Ordinance. You can download your official tax deduction certificate directly from your GiveAID Donor Dashboard.</p>
-                </div>
-            </div>
+        .c-main {
+            padding: 0 0 105px;
+            margin-top: -38px;
+            position: relative;
+            z-index: 4
+        }
 
-            <div class="faq-item">
-                <button type="button" class="faq-question" onclick="toggleFaq(this)">
-                    <span>How do I know my donation actually reached the intended cause?</span>
-                    <span class="faq-toggle-icon">+</span>
-                </button>
-                <div class="faq-answer">
-                    <p>GiveAID requires partner NGOs to upload milestone updates, timestamped field photographs, GPS-tagged distribution records, and procurement vendor receipts. You receive automated email notifications and updates directly in your donor portal.</p>
-                </div>
-            </div>
-        </div>
-    </div>
-</section>
+        .contact-grid {
+            display: grid;
+            grid-template-columns: .74fr 1.26fr;
+            gap: 22px;
+            align-items: start
+        }
 
+        .info-panel,
+        .form-card {
+            background: #fff;
+            border: 1px solid #d4e3dd;
+            border-radius: 24px;
+            box-shadow: 0 20px 50px rgba(7,31,44,.1)
+        }
 
-@section Scripts {
-    <script>
-        function toggleFaq(btn) {
-            var $item = $(btn).closest('.faq-item');
-            var isOpen = $item.hasClass('active');
+        .info-panel {
+            padding: 32px;
+            position: sticky;
+            top: 96px
+        }
 
-            // Close all items
-            $('.faq-item').removeClass('active');
-            $('.faq-toggle-icon').text('+');
+        .info-panel h2,
+        .form-card h2 {
+            font-size: 30px;
+            letter-spacing: -.04em;
+            margin: 8px 0 12px
+        }
 
-            if (!isOpen) {
-                $item.addClass('active');
-                $item.find('.faq-toggle-icon').text('−');
+        .info-panel > p,
+        .form-intro {
+            color: #62797d;
+            font-size: 12px;
+            line-height: 1.75
+        }
+
+        .info-list {
+            display: grid;
+            gap: 12px;
+            margin-top: 27px
+        }
+
+        .info-item {
+            padding: 17px;
+            border-radius: 15px;
+            background: #f1f7f4;
+            border: 1px solid #e0ebe7
+        }
+
+        .info-item b {
+            display: block;
+            font-size: 11px;
+            color: #073846
+        }
+
+        .info-item span {
+            display: block;
+            margin-top: 5px;
+            color: #6b8084;
+            font-size: 10px;
+            line-height: 1.6
+        }
+
+        .privacy-note {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 13px;
+            background: #082d3b;
+            color: #bad0d1;
+            font-size: 9px;
+            line-height: 1.7
+        }
+
+        .form-card {
+            padding: 36px
+        }
+
+        .notice {
+            margin-bottom: 23px;
+            padding: 16px 18px;
+            border-radius: 13px;
+            font-size: 11px;
+            font-weight: 750
+        }
+
+        .notice-success {
+            background: #e5f7ee;
+            border: 1px solid #bce8d3;
+            color: #087252
+        }
+
+        .validation-summary-errors {
+            margin: 0 0 20px;
+            padding: 15px 18px;
+            border-radius: 13px;
+            background: #fff0ec;
+            border: 1px solid #f3c4b7;
+            color: #9c3e2a;
+            font-size: 11px
+        }
+
+        .validation-summary-errors ul {
+            margin: 0;
+            padding-left: 18px
+        }
+
+        .field-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 18px
+        }
+
+        .field {
+            margin-top: 18px
+        }
+
+        .field-full {
+            grid-column: 1/3
+        }
+
+        .field label {
+            display: block;
+            font-size: 10px;
+            font-weight: 900;
+            color: #22464c;
+            text-transform: uppercase;
+            letter-spacing: .07em;
+            margin-bottom: 8px
+        }
+
+        .control {
+            width: 100%;
+            height: 55px;
+            border: 1px solid #c9dad4;
+            border-radius: 13px;
+            background: #f9fcfb;
+            padding: 0 16px;
+            font: inherit;
+            font-size: 13px;
+            color: #153c42;
+            outline: none;
+            transition: .2s;
+            box-sizing: border-box
+        }
+
+        .control:focus {
+            background: #fff;
+            border-color: #078b66;
+            box-shadow: 0 0 0 4px rgba(7,139,102,.09)
+        }
+
+        textarea.control {
+            height: 145px;
+            padding-top: 15px;
+            resize: vertical
+        }
+
+        .field-validation-error {
+            display: block;
+            color: #b34c38;
+            font-size: 9px;
+            margin-top: 6px
+        }
+
+        .send-btn {
+            margin-top: 23px;
+            min-height: 56px;
+            padding: 0 24px;
+            border: 0;
+            border-radius: 13px;
+            background: #087f5b;
+            color: #fff;
+            font: inherit;
+            font-size: 12px;
+            font-weight: 900;
+            cursor: pointer;
+            box-shadow: 0 13px 25px rgba(8,127,91,.21)
+        }
+
+        .send-btn:hover {
+            background: #066f50
+        }
+
+        .send-btn:disabled {
+            opacity: .65;
+            cursor: wait
+        }
+
+        .hp-field {
+            position: absolute !important;
+            left: -10000px !important;
+            width: 1px !important;
+            height: 1px !important;
+            overflow: hidden !important
+        }
+
+        .faq {
+            padding: 90px 0;
+            background: #fff
+        }
+
+        .faq-head {
+            text-align: center;
+            max-width: 640px;
+            margin: 0 auto 38px
+        }
+
+        .faq-head h2 {
+            font-size: 42px;
+            letter-spacing: -.05em;
+            margin: 15px 0 10px
+        }
+
+        .faq-head p {
+            color: #647b7f;
+            line-height: 1.7
+        }
+
+        .faq-list {
+            max-width: 900px;
+            margin: auto;
+            display: grid;
+            gap: 12px
+        }
+
+        .faq-item {
+            border: 1px solid #d5e3de;
+            border-radius: 17px;
+            background: #f9fcfb;
+            overflow: hidden
+        }
+
+        .faq-question {
+            width: 100%;
+            border: 0;
+            background: transparent;
+            padding: 21px 23px;
+            display: flex;
+            justify-content: space-between;
+            gap: 20px;
+            text-align: left;
+            font: inherit;
+            font-size: 14px;
+            font-weight: 850;
+            color: #0a3340;
+            cursor: pointer
+        }
+
+        .faq-toggle {
+            width: 29px;
+            height: 29px;
+            border-radius: 50%;
+            background: #e1f3eb;
+            color: #087457;
+            display: grid;
+            place-items: center;
+            flex: 0 0 auto
+        }
+
+        .faq-answer {
+            display: none;
+            padding: 0 23px 22px;
+            color: #60787c;
+            font-size: 12px;
+            line-height: 1.8
+        }
+
+        .faq-item.open .faq-answer {
+            display: block
+        }
+
+        .faq-item.open .faq-toggle {
+            background: #087f5b;
+            color: #fff
+        }
+
+        .reveal {
+            opacity: 0;
+            transform: translateY(22px);
+            transition: .7s
+        }
+
+        .reveal.show {
+            opacity: 1;
+            transform: none
+        }
+
+        @@media (max-width: 900px) {
+            .c-hero-grid,
+            .contact-grid {
+                grid-template-columns: 1fr
+            }
+
+            .info-panel {
+                position: static
+            }
+
+            .c-main {
+                margin-top: 0;
+                padding-top: 40px
             }
         }
 
-        $(document).ready(function () {
-            $('#contactForm').on('submit', function () {
-                var btn = $(this).find('button[type="submit"]');
-                btn.prop('disabled', true).text('Sending Message...');
-            });
-        });
+        @@media (max-width: 620px) {
+            .c-shell {
+                padding: 0 16px
+            }
+
+            .c-hero {
+                padding: 54px 0
+            }
+
+            .c-hero h1 {
+                font-size: 43px
+            }
+
+            .c-visual {
+                min-height: 350px
+            }
+
+            .message-flow,
+            .field-grid {
+                grid-template-columns: 1fr
+            }
+
+            .field-full {
+                grid-column: auto
+            }
+
+            .form-card,
+            .info-panel {
+                padding: 25px
+            }
+
+            .faq-head h2 {
+                font-size: 34px
+            }
+        }
+
+        @@media (prefers-reduced-motion: reduce) {
+            .reveal {
+                opacity: 1;
+                transform: none
+            }
+        }
+    </style>
+}
+
+<main class="contact-page">
+
+    <section class="c-hero">
+        <div class="c-shell c-hero-grid">
+
+            <div>
+                <span class="c-kicker">Contact GiveAID</span>
+
+                <h1>
+                    A clear way to<br />
+                    <span>reach our team.</span>
+                </h1>
+
+                <p class="c-lead">
+                    Send a question, report an issue or request information about the
+                    GiveAID academic demonstration platform. Your message will be stored
+                    in the platform database for administrator review.
+                </p>
+
+                <div class="c-notes">
+                    <span>Structured enquiry form</span>
+                    <span>Database saved</span>
+                    <span>Administrator review</span>
+                </div>
+            </div>
+
+            <div class="c-visual">
+                <div>
+                    <span class="visual-label">Message workflow</span>
+                    <h2>From your question to an organised admin record.</h2>
+                </div>
+
+                <div class="message-flow">
+                    <div class="flow-step">
+                        <strong>01</strong>
+                        <span>Complete form</span>
+                    </div>
+
+                    <div class="flow-step">
+                        <strong>02</strong>
+                        <span>Save record</span>
+                    </div>
+
+                    <div class="flow-step">
+                        <strong>03</strong>
+                        <span>Admin review</span>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </section>
+
+    <section class="c-main">
+        <div class="c-shell contact-grid">
+
+            <aside class="info-panel reveal">
+                <span class="c-kicker">Before you send</span>
+
+                <h2>How can we help?</h2>
+
+                <p>
+                    Use this form for questions related to the public website, an account,
+                    an NGO record, a cause, a programme or a demonstration donation record.
+                </p>
+
+                <div class="info-list">
+
+                    <div class="info-item">
+                        <b>Public information</b>
+                        <span>Ask about records visible on the website.</span>
+                    </div>
+
+                    <div class="info-item">
+                        <b>Account assistance</b>
+                        <span>
+                            Describe login or registration issues without sharing your password.
+                        </span>
+                    </div>
+
+                    <div class="info-item">
+                        <b>Record correction</b>
+                        <span>
+                            Tell the administrator which displayed record may need review.
+                        </span>
+                    </div>
+
+                </div>
+
+                <div class="privacy-note">
+                    Never include passwords, bank PINs, card numbers or other highly
+                    sensitive information in this form.
+                </div>
+            </aside>
+
+            <div class="form-card reveal">
+
+                <span class="c-kicker">Send a message</span>
+
+                <h2>Tell us what you need</h2>
+
+                <p class="form-intro">
+                    Required fields are marked with an asterisk. The message becomes a new
+                    record in the ContactMessages table.
+                </p>
+
+                @if (TempData["SuccessMessage"] != null)
+                {
+                    <div class="notice notice-success" role="status">
+                        @TempData["SuccessMessage"]
+                    </div>
+                }
+
+                @Html.ValidationSummary(false, "Please correct the following:")
+
+                @using (Html.BeginForm(
+                    "Contact",
+                    "Home",
+                    FormMethod.Post,
+                    new
+                    {
+                        id = "contactForm",
+                        novalidate = "novalidate"
+                    }))
+                {
+                    @Html.AntiForgeryToken()
+
+                    <div class="hp-field" aria-hidden="true">
+
+                        <label for="Website">
+                            Leave this field empty
+                        </label>
+
+                        @Html.TextBoxFor(
+                            m => m.Website,
+                            new
+                            {
+                                tabindex = "-1",
+                                autocomplete = "off"
+                            })
+
+                    </div>
+
+                    <div class="field-grid">
+
+                        <div class="field">
+
+                            <label for="FullName">
+                                Full name *
+                            </label>
+
+                            @Html.TextBoxFor(
+                                m => m.FullName,
+                                new
+                                {
+                                    @class = "control",
+                                    maxlength = "150",
+                                    autocomplete = "name",
+                                    placeholder = "Your full name"
+                                })
+
+                            @Html.ValidationMessageFor(m => m.FullName)
+
+                        </div>
+
+                        <div class="field">
+
+                            <label for="Email">
+                                Email address *
+                            </label>
+
+                            @Html.TextBoxFor(
+                                m => m.Email,
+                                new
+                                {
+                                    @class = "control",
+                                    type = "email",
+                                    maxlength = "256",
+                                    autocomplete = "email",
+                                    placeholder = "name@example.com"
+                                })
+
+                            @Html.ValidationMessageFor(m => m.Email)
+
+                        </div>
+
+                        <div class="field">
+
+                            <label for="Phone">
+                                Phone number
+                            </label>
+
+                            @Html.TextBoxFor(
+                                m => m.Phone,
+                                new
+                                {
+                                    @class = "control",
+                                    maxlength = "30",
+                                    autocomplete = "tel",
+                                    placeholder = "Optional"
+                                })
+
+                            @Html.ValidationMessageFor(m => m.Phone)
+
+                        </div>
+
+                        <div class="field">
+
+                            <label for="Subject">
+                                Subject *
+                            </label>
+
+                            @Html.TextBoxFor(
+                                m => m.Subject,
+                                new
+                                {
+                                    @class = "control",
+                                    maxlength = "200",
+                                    placeholder = "What is your message about?"
+                                })
+
+                            @Html.ValidationMessageFor(m => m.Subject)
+
+                        </div>
+
+                        <div class="field field-full">
+
+                            <label for="Message">
+                                Message *
+                            </label>
+
+                            @Html.TextAreaFor(
+                                m => m.Message,
+                                new
+                                {
+                                    @class = "control",
+                                    maxlength = "2000",
+                                    placeholder = "Write your message clearly (10–2000 characters)"
+                                })
+
+                            @Html.ValidationMessageFor(m => m.Message)
+
+                        </div>
+
+                    </div>
+
+                    <button id="sendButton"
+                            class="send-btn"
+                            type="submit">
+                        Save and send message&nbsp; &#8594;
+                    </button>
+                }
+
+            </div>
+
+        </div>
+    </section>
+
+    <section class="faq">
+
+        <div class="c-shell">
+
+            <div class="faq-head">
+                <span class="c-kicker">Quick guidance</span>
+
+                <h2>Frequently asked questions</h2>
+
+                <p>
+                    Clear answers based on the functionality currently implemented in GiveAID.
+                </p>
+            </div>
+
+            <div class="faq-list">
+
+                <article class="faq-item">
+
+                    <button class="faq-question"
+                            type="button"
+                            aria-expanded="false">
+
+                        <span>
+                            Do I need an account to send a contact message?
+                        </span>
+
+                        <span class="faq-toggle">+</span>
+                    </button>
+
+                    <div class="faq-answer">
+                        No. This is a public contact form and can be submitted without signing in.
+                    </div>
+
+                </article>
+
+                <article class="faq-item">
+
+                    <button class="faq-question"
+                            type="button"
+                            aria-expanded="false">
+
+                        <span>
+                            Where is my message stored?
+                        </span>
+
+                        <span class="faq-toggle">+</span>
+                    </button>
+
+                    <div class="faq-answer">
+                        A valid submission is saved as a New record in the SQL Server
+                        ContactMessages table for administrator review.
+                    </div>
+
+                </article>
+
+                <article class="faq-item">
+
+                    <button class="faq-question"
+                            type="button"
+                            aria-expanded="false">
+
+                        <span>
+                            Can I submit the same message repeatedly?
+                        </span>
+
+                        <span class="faq-toggle">+</span>
+                    </button>
+
+                    <div class="faq-answer">
+                        The system detects an identical message from the same email address
+                        submitted within two minutes and avoids creating a duplicate record.
+                    </div>
+
+                </article>
+
+                <article class="faq-item">
+
+                    <button class="faq-question"
+                            type="button"
+                            aria-expanded="false">
+
+                        <span>
+                            Should I send passwords or payment details?
+                        </span>
+
+                        <span class="faq-toggle">+</span>
+                    </button>
+
+                    <div class="faq-answer">
+                        No. Never share passwords, PINs, complete card numbers or other
+                        highly sensitive information through this form.
+                    </div>
+
+                </article>
+
+            </div>
+
+        </div>
+
+    </section>
+
+</main>
+
+@section Scripts {
+
+    <script>
+        (function () {
+
+            var form = document.getElementById('contactForm');
+            var button = document.getElementById('sendButton');
+
+            if (form) {
+
+                form.addEventListener('submit', function () {
+
+                    if (form.checkValidity() && button) {
+                        button.disabled = true;
+                        button.textContent = 'Saving message...';
+                    }
+
+                });
+
+            }
+
+            document
+                .querySelectorAll('.faq-question')
+                .forEach(function (btn) {
+
+                    btn.addEventListener('click', function () {
+
+                        var item = btn.parentElement;
+                        var open = item.classList.contains('open');
+
+                        document
+                            .querySelectorAll('.faq-item')
+                            .forEach(function (x) {
+
+                                x.classList.remove('open');
+
+                                var b = x.querySelector('.faq-question');
+                                var i = x.querySelector('.faq-toggle');
+
+                                if (b) {
+                                    b.setAttribute('aria-expanded', 'false');
+                                }
+
+                                if (i) {
+                                    i.textContent = '+';
+                                }
+
+                            });
+
+                        if (!open) {
+
+                            item.classList.add('open');
+                            btn.setAttribute('aria-expanded', 'true');
+
+                            var toggle = btn.querySelector('.faq-toggle');
+
+                            if (toggle) {
+                                toggle.textContent = '-';
+                            }
+                        }
+
+                    });
+
+                });
+
+            var items = document.querySelectorAll('.reveal');
+
+            if ('IntersectionObserver' in window) {
+
+                var observer = new IntersectionObserver(
+                    function (entries) {
+
+                        entries.forEach(function (entry) {
+
+                            if (entry.isIntersecting) {
+                                entry.target.classList.add('show');
+                                observer.unobserve(entry.target);
+                            }
+
+                        });
+
+                    },
+                    {
+                        threshold: .1
+                    });
+
+                items.forEach(function (item) {
+                    observer.observe(item);
+                });
+
+            } else {
+
+                items.forEach(function (item) {
+                    item.classList.add('show');
+                });
+
+            }
+
+        })();
     </script>
 }

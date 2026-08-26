@@ -1,226 +1,830 @@
 @{
-    ViewBag.Title = "About Us - GiveAID Pakistan";
+    ViewBag.Title = "About GiveAID | People, programmes and shared progress";
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
 
-<!-- =========================================================
-     ABOUT HERO / HEADER
-     ========================================================= -->
-<section class="about-hero-section">
-    <div class="section-container">
-        <div class="about-hero-content">
-            <span class="section-badge">Our Story & Purpose</span>
-            <h1 class="about-hero-title">
-                Rebuilding Trust in <span class="highlight-text">Giving</span> across <span class="highlight-text-accent">Pakistan</span>
-            </h1>
-            <p class="about-hero-lead">
-                GiveAID is Pakistan's first digital philanthropic platform built to eliminate charity opacity, connect Gen Z changemakers with verified non-profits, and guarantee 100% financial accountability from donor to field.
-            </p>
+@section Styles {
+    <style>
+        .about-page {
+            overflow: hidden;
+            background: #fff;
+            color: var(--navy)
+        }
+
+        .about-shell {
+            max-width: 1200px;
+            margin: auto;
+            padding-left: 24px;
+            padding-right: 24px
+        }
+
+        .about-hero {
+            padding: 74px 0 88px;
+            background: radial-gradient(circle at 4% 10%,#dff7ec 0,transparent 34%),linear-gradient(135deg,#fffaf1,#f7fffb)
+        }
+
+        .about-hero-grid {
+            display: grid;
+            grid-template-columns: .9fr 1.1fr;
+            gap: 62px;
+            align-items: center
+        }
+
+        .about-kicker {
+            display: inline-flex;
+            align-items: center;
+            gap: 9px;
+            padding: 8px 13px;
+            border: 1px solid #c8e2d7;
+            border-radius: 30px;
+            background: #fff;
+            color: var(--emerald);
+            font-size: 10px;
+            font-weight: 900;
+            letter-spacing: .13em;
+            text-transform: uppercase;
+            box-shadow: 0 10px 28px rgba(10,76,58,.07)
+        }
+
+            .about-kicker:before {
+                content: "";
+                width: 8px;
+                height: 8px;
+                border-radius: 50%;
+                background: var(--coral);
+                box-shadow: 0 0 0 6px rgba(239,127,97,.13)
+            }
+
+        .about-hero h1 {
+            font-size: 61px;
+            line-height: 1.02;
+            letter-spacing: -.06em;
+            margin: 24px 0 21px;
+            color: var(--navy)
+        }
+
+            .about-hero h1 span {
+                color: var(--emerald)
+            }
+
+        .about-lead {
+            font-size: 17px;
+            line-height: 1.75;
+            color: #587176;
+            max-width: 560px
+        }
+
+        .hero-points {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 28px
+        }
+
+            .hero-points span {
+                padding: 9px 12px;
+                border-radius: 10px;
+                background: #fff;
+                border: 1px solid #dce9e4;
+                color: #33575a;
+                font-size: 11px;
+                font-weight: 750
+            }
+
+        .about-visual {
+            height: 540px;
+            border-radius: 30px;
+            overflow: hidden;
+            border: 8px solid #fff;
+            box-shadow: 0 30px 70px rgba(7,31,44,.2);
+            position: relative
+        }
+
+            .about-visual img {
+                width: 100%;
+                height: 100%;
+                object-fit: cover;
+                display: block
+            }
+
+            .about-visual:after {
+                content: "";
+                position: absolute;
+                inset: 0;
+                background: linear-gradient(180deg,transparent 58%,rgba(7,31,44,.42))
+            }
+
+        .visual-note {
+            position: absolute;
+            z-index: 2;
+            left: 24px;
+            bottom: 22px;
+            right: 24px;
+            color: #fff;
+            display: flex;
+            align-items: end;
+            justify-content: space-between;
+            gap: 20px
+        }
+
+            .visual-note strong {
+                font-size: 18px
+            }
+
+            .visual-note span {
+                font-size: 10px;
+                letter-spacing: .1em;
+                text-transform: uppercase;
+                color: #c8e3df
+            }
+
+        .about-intro {
+            padding: 100px 0
+        }
+
+        .intro-grid {
+            display: grid;
+            grid-template-columns: .82fr 1.18fr;
+            gap: 80px;
+            align-items: start
+        }
+
+        .eyebrow {
+            font-size: 10px;
+            letter-spacing: .16em;
+            text-transform: uppercase;
+            color: var(--coral);
+            font-weight: 900
+        }
+
+        .section-title {
+            font-size: 43px;
+            line-height: 1.08;
+            letter-spacing: -.045em;
+            margin: 12px 0 18px;
+            color: var(--navy)
+        }
+
+        .section-copy {
+            font-size: 15px;
+            line-height: 1.8;
+            color: #647a7f
+        }
+
+        .belief-card {
+            padding: 34px;
+            border-radius: 25px;
+            background: linear-gradient(135deg,#082d3b,#07564d);
+            color: #fff;
+            box-shadow: 0 22px 50px rgba(7,31,44,.18);
+            position: relative;
+            overflow: hidden
+        }
+
+            .belief-card:after {
+                content: "";
+                position: absolute;
+                width: 220px;
+                height: 220px;
+                border: 42px solid rgba(255,255,255,.05);
+                border-radius: 50%;
+                right: -85px;
+                bottom: -105px
+            }
+
+            .belief-card blockquote {
+                font-size: 27px;
+                line-height: 1.4;
+                letter-spacing: -.025em;
+                margin: 0;
+                position: relative;
+                z-index: 1
+            }
+
+            .belief-card p {
+                color: #b8d5d2;
+                margin: 20px 0 0;
+                line-height: 1.7;
+                position: relative;
+                z-index: 1
+            }
+
+        .mv-section {
+            padding: 100px 0;
+            background: linear-gradient(135deg,#edf9f3,#fff7e9)
+        }
+
+        .mv-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 22px
+        }
+
+        .mv-card {
+            padding: 38px;
+            border-radius: 25px;
+            min-height: 330px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 18px 43px rgba(7,31,44,.15);
+            border: 1px solid rgba(255,255,255,.22)
+        }
+
+            .mv-card:first-child {
+                background: #087f5b;
+                color: #fff
+            }
+
+            .mv-card:last-child {
+                background: #f08b68;
+                color: #082d3b
+            }
+
+        .mv-index {
+            width: 48px;
+            height: 48px;
+            border-radius: 14px;
+            display: grid;
+            place-items: center;
+            font-weight: 900;
+            background: rgba(255,255,255,.16);
+            border: 1px solid rgba(255,255,255,.2)
+        }
+
+        .mv-card h2 {
+            font-size: 29px;
+            margin: 25px 0 12px
+        }
+
+        .mv-card p {
+            font-size: 14px;
+            line-height: 1.8;
+            max-width: 520px
+        }
+
+        .mv-card:first-child p {
+            color: #d2eee4
+        }
+
+        .mv-card:last-child p {
+            color: #4b4e4c
+        }
+
+        .mv-ring {
+            position: absolute;
+            width: 190px;
+            height: 190px;
+            border: 35px solid rgba(255,255,255,.08);
+            border-radius: 50%;
+            right: -60px;
+            top: -65px
+        }
+
+        .mv-symbol {
+            width: 72px;
+            height: 72px;
+            border-radius: 20px;
+            background: rgba(255,255,255,.14);
+            display: grid;
+            place-items: center;
+            margin-top: 23px;
+            position: relative;
+            z-index: 1
+        }
+
+            .mv-symbol svg {
+                width: 39px;
+                height: 39px;
+                fill: none;
+                stroke: currentColor;
+                stroke-width: 1.7;
+                stroke-linecap: round;
+                stroke-linejoin: round
+            }
+
+        .mv-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 22px;
+            position: relative;
+            z-index: 1
+        }
+
+            .mv-tags span {
+                padding: 7px 10px;
+                border-radius: 20px;
+                background: rgba(255,255,255,.14);
+                font-size: 9px;
+                font-weight: 850;
+                text-transform: uppercase;
+                letter-spacing: .07em
+            }
+
+        .workflow {
+            padding: 105px 0
+        }
+
+        .center-head {
+            text-align: center;
+            max-width: 720px;
+            margin: 0 auto 48px
+        }
+
+            .center-head .section-copy {
+                margin: 0 auto
+            }
+
+        .flow-grid {
+            display: grid;
+            grid-template-columns: repeat(3,1fr);
+            gap: 24px
+        }
+
+        .flow-card {
+            padding: 32px;
+            border-radius: 22px;
+            border: 1px solid #bedfd1;
+            border-top: 6px solid #087f5b;
+            background: linear-gradient(145deg,#e7f7ef,#f7fcfa);
+            box-shadow: 0 16px 38px rgba(7,31,44,.11);
+            transition: .3s;
+            position: relative;
+            overflow: visible
+        }
+
+            .flow-card:nth-child(2) {
+                background: linear-gradient(145deg,#fff0e8,#fff9f5);
+                border-color: #efc4b5;
+                border-top-color: #ed7959
+            }
+
+            .flow-card:nth-child(3) {
+                background: linear-gradient(145deg,#e8f3f7,#f7fbfc);
+                border-color: #bcd7e0;
+                border-top-color: #17667d
+            }
+
+            .flow-card:hover {
+                transform: translateY(-8px);
+                box-shadow: 0 25px 52px rgba(7,31,44,.17)
+            }
+
+            .flow-card:not(:last-child):after {
+                content: "\2192";
+                position: absolute;
+                right: -21px;
+                top: 50%;
+                width: 36px;
+                height: 36px;
+                margin-top: -18px;
+                border-radius: 50%;
+                background: #082d3b;
+                color: #fff;
+                display: grid;
+                place-items: center;
+                z-index: 3;
+                font-weight: 900;
+                box-shadow: 0 8px 18px rgba(7,31,44,.18)
+            }
+
+        .flow-icon {
+            width: 56px;
+            height: 56px;
+            border-radius: 16px;
+            display: grid;
+            place-items: center;
+            background: #087f5b;
+            color: #fff;
+            font-weight: 900;
+            box-shadow: 0 10px 24px rgba(8,127,91,.22)
+        }
+
+        .flow-card:nth-child(2) .flow-icon {
+            background: #ed7959;
+            color: #fff;
+            box-shadow: 0 10px 24px rgba(237,121,89,.22)
+        }
+
+        .flow-card:nth-child(3) .flow-icon {
+            background: #17667d;
+            color: #fff;
+            box-shadow: 0 10px 24px rgba(23,102,125,.22)
+        }
+
+        .flow-card h3 {
+            font-size: 20px;
+            margin: 23px 0 10px
+        }
+
+        .flow-card p {
+            font-size: 12px;
+            line-height: 1.75;
+            color: #687d81
+        }
+
+        .flow-label {
+            display: inline-block;
+            margin-top: 18px;
+            padding: 7px 10px;
+            border-radius: 20px;
+            background: #fff;
+            color: #315d55;
+            border: 1px solid rgba(8,127,91,.18);
+            font-size: 9px;
+            text-transform: uppercase;
+            letter-spacing: .08em;
+            font-weight: 900
+        }
+
+        .values {
+            padding: 105px 0;
+            background: #082d3b
+        }
+
+            .values .section-title {
+                color: #fff
+            }
+
+            .values .section-copy {
+                color: #9db9bd
+            }
+
+        .values-grid {
+            display: grid;
+            grid-template-columns: repeat(4,1fr);
+            gap: 16px;
+            margin-top: 45px
+        }
+
+        .value-card {
+            padding: 27px;
+            border-radius: 20px;
+            background: rgba(255,255,255,.065);
+            border: 1px solid rgba(255,255,255,.1);
+            color: #fff;
+            transition: .3s
+        }
+
+            .value-card:hover {
+                background: rgba(255,255,255,.11);
+                transform: translateY(-6px)
+            }
+
+        .value-no {
+            font-size: 10px;
+            color: #69d9ad;
+            font-weight: 900;
+            letter-spacing: .1em
+        }
+
+        .value-card h3 {
+            font-size: 17px;
+            margin: 22px 0 9px
+        }
+
+        .value-card p {
+            font-size: 11px;
+            line-height: 1.7;
+            color: #a9c2c5
+        }
+
+        .scope-section {
+            padding: 100px 0
+        }
+
+        .scope-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 55px;
+            align-items: center
+        }
+
+        .scope-list {
+            display: grid;
+            gap: 12px;
+            margin-top: 26px
+        }
+
+        .scope-item {
+            display: flex;
+            gap: 14px;
+            padding: 17px;
+            border-radius: 15px;
+            background: #f6faf8;
+            border: 1px solid #e0ebe6
+        }
+
+        .scope-check {
+            flex: 0 0 31px;
+            height: 31px;
+            border-radius: 10px;
+            background: #dff6eb;
+            color: var(--emerald);
+            display: grid;
+            place-items: center;
+            font-weight: 900
+        }
+
+        .scope-item strong {
+            display: block;
+            font-size: 13px
+        }
+
+        .scope-item span {
+            display: block;
+            margin-top: 4px;
+            font-size: 11px;
+            line-height: 1.55;
+            color: #687d81
+        }
+
+        .truth-card {
+            padding: 38px;
+            border-radius: 25px;
+            background: #fff4ea;
+            border: 1px solid #f0d8c4;
+            box-shadow: 0 18px 45px rgba(68,45,31,.09)
+        }
+
+            .truth-card h3 {
+                font-size: 25px;
+                margin: 0 0 13px
+            }
+
+            .truth-card p {
+                font-size: 13px;
+                line-height: 1.8;
+                color: #695f58
+            }
+
+        .truth-tag {
+            display: inline-block;
+            margin-bottom: 23px;
+            padding: 7px 10px;
+            border-radius: 20px;
+            background: #f08b68;
+            color: #082d3b;
+            font-size: 9px;
+            font-weight: 900;
+            letter-spacing: .1em;
+            text-transform: uppercase
+        }
+
+        .about-cta {
+            padding: 0 24px 100px
+        }
+
+        .about-cta-inner {
+            max-width: 1150px;
+            margin: auto;
+            padding: 52px;
+            border-radius: 28px;
+            background: linear-gradient(110deg,#087f5b,#0c5a55);
+            color: #fff;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 30px;
+            position: relative;
+            overflow: hidden
+        }
+
+            .about-cta-inner:after {
+                content: "";
+                position: absolute;
+                width: 290px;
+                height: 290px;
+                border: 55px solid rgba(255,255,255,.06);
+                border-radius: 50%;
+                right: -80px;
+                top: -130px
+            }
+
+        .about-cta h2 {
+            font-size: 34px;
+            margin: 0 0 9px
+        }
+
+        .about-cta p {
+            margin: 0;
+            color: #c4e0dc
+        }
+
+        .cta-actions {
+            display: flex;
+            gap: 10px;
+            position: relative;
+            z-index: 1
+        }
+
+        .cta-btn {
+            padding: 13px 18px;
+            border-radius: 10px;
+            text-decoration: none;
+            font-size: 12px;
+            font-weight: 850
+        }
+
+        .cta-primary {
+            background: #fff;
+            color: #075849
+        }
+
+        .cta-secondary {
+            border: 1px solid rgba(255,255,255,.4);
+            color: #fff
+        }
+
+        .cta-btn:hover {
+            transform: translateY(-2px)
+        }
+
+        .about-reveal {
+            opacity: 0;
+            transform: translateY(28px);
+            transition: .75s
+        }
+
+            .about-reveal.show {
+                opacity: 1;
+                transform: none
+            }
+
+        @@media(max-width:960px) {
+            .about-hero-grid, .intro-grid, .scope-grid {
+                grid-template-columns: 1fr
+            }
+
+            .about-hero h1 {
+                font-size: 53px
+            }
+
+            .about-visual {
+                height: 480px
+            }
+
+            .values-grid {
+                grid-template-columns: 1fr 1fr
+            }
+
+            .flow-grid {
+                grid-template-columns: 1fr
+            }
+
+            .flow-card:not(:last-child):after {
+                content: "\2193";
+                right: 50%;
+                top: auto;
+                bottom: -30px;
+                margin: 0 -18px 0 0
+            }
+
+            .mv-grid {
+                grid-template-columns: 1fr
+            }
+
+            .intro-grid {
+                gap: 35px
+            }
+        }
+
+        @@media(max-width:620px) {
+            .about-shell {
+                padding-left: 16px;
+                padding-right: 16px
+            }
+
+            .about-hero {
+                padding: 54px 0 65px
+            }
+
+                .about-hero h1 {
+                    font-size: 42px
+                }
+
+            .about-visual {
+                height: 400px
+            }
+
+            .section-title {
+                font-size: 34px
+            }
+
+            .about-intro, .mv-section, .workflow, .values, .scope-section {
+                padding: 72px 0
+            }
+
+            .values-grid {
+                grid-template-columns: 1fr
+            }
+
+            .about-cta {
+                padding: 0 16px 70px
+            }
+
+            .about-cta-inner {
+                padding: 34px;
+                display: block
+            }
+
+            .cta-actions {
+                display: grid;
+                margin-top: 25px
+            }
+
+            .hero-points {
+                display: grid
+            }
+
+            .visual-note {
+                display: block
+            }
+
+                .visual-note span {
+                    display: block;
+                    margin-top: 5px
+                }
+        }
+
+        @@media(prefers-reduced-motion:reduce) {
+            .about-reveal {
+                opacity: 1;
+                transform: none !important
+            }
+
+            .flow-card, .value-card {
+                transition: none
+            }
+        }
+    </style>
+}
+
+<main class="about-page">
+    <section class="about-hero">
+        <div class="about-shell about-hero-grid">
+            <div>
+                <span class="about-kicker">About GiveAID</span>
+                <h1>People, programmes<br />and <span>shared progress.</span></h1>
+                <p class="about-lead">GiveAID is a community-support platform that brings public visitors, registered users and administrator-managed social programmes into one clear digital experience.</p>
+                <div class="hero-points"><span>Public cause discovery</span><span>Structured NGO records</span><span>Role-based access</span></div>
+            </div>
+            <div class="about-visual">
+                <img src="@Url.Content("~/Content/giveaid-about.png")" alt="Pakistani volunteers planning community programmes together" />
+                <div class="visual-note"><div><span>One connected platform</span><strong>Designed around meaningful participation</strong></div></div>
+            </div>
         </div>
-    </div>
-</section>
+    </section>
 
+    <section class="about-intro about-reveal">
+        <div class="about-shell intro-grid">
+            <div><div class="eyebrow">Why we built it</div><h2 class="section-title">Support should feel clear - not complicated.</h2><p class="section-copy">Community programmes often exist across disconnected pages, messages and records. GiveAID organises this information so people can understand causes, discover the organisations behind them and take the next relevant action.</p></div>
+            <div class="belief-card"><blockquote>&ldquo;Technology should make community participation easier to understand, safer to manage and more respectful for everyone involved.&rdquo;</blockquote><p>That belief shapes the public website, user experience and administrative workspace.</p></div>
+        </div>
+    </section>
 
-<!-- =========================================================
-     MISSION & VISION SECTION
-     ========================================================= -->
-<section class="about-mv-section">
-    <div class="section-container">
-        <div class="mv-grid">
-            <div class="mv-card card-mission">
-                <div class="mv-icon">🎯</div>
-                <h3>Our Mission</h3>
-                <p>
-                    To democratize charitable giving in Pakistan by providing a frictionless, transparent, and technology-driven platform that empowers individuals, overseas Pakistanis, and student communities to directly fund vetted social causes.
-                </p>
-                <div class="mv-highlight">
-                    <span>✓ 100% Transparent routing</span>
-                    <span>✓ Verified NGO field audits</span>
-                </div>
-            </div>
+    <section class="mv-section about-reveal">
+        <div class="about-shell mv-grid">
+            <article class="mv-card"><div class="mv-ring"></div><div class="mv-index">01</div><div class="mv-symbol"><svg viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="22" /><circle cx="32" cy="32" r="12" /><circle cx="32" cy="32" r="3" /><path d="M46 18l9-9M46 9h9v9" /></svg></div><h2>Our mission</h2><p>To create a clear and accessible digital space where people can discover social causes, explore active programmes and participate through structured, accountable platform workflows.</p><div class="mv-tags"><span>Clear discovery</span><span>Useful participation</span></div></article>
+            <article class="mv-card"><div class="mv-ring"></div><div class="mv-index">02</div><div class="mv-symbol"><svg viewBox="0 0 64 64" aria-hidden="true"><path d="M5 32s10-17 27-17 27 17 27 17-10 17-27 17S5 32 5 32z" /><circle cx="32" cy="32" r="8" /><path d="M32 8V3M32 61v-5M8 32H3M61 32h-5" /></svg></div><h2>Our vision</h2><p>A connected community-support ecosystem where useful information is easy to find, programme records remain organised and every role has a focused experience.</p><div class="mv-tags"><span>Connected records</span><span>Focused experiences</span></div></article>
+        </div>
+    </section>
 
-            <div class="mv-card card-vision">
-                <div class="mv-icon">🔭</div>
-                <h3>Our Vision</h3>
-                <p>
-                    A Pakistan where no deserving student drops out of school, no emergency flood victim is left without shelter, and every citizen has immediate access to verified humanitarian relief through open digital solidarity.
-                </p>
-                <div class="mv-highlight">
-                    <span>✓ Digital-first philanthropy</span>
-                    <span>✓ Empowering Pakistani youth</span>
-                </div>
+    <section class="workflow about-reveal">
+        <div class="about-shell">
+            <div class="center-head"><div class="eyebrow">How the platform works</div><h2 class="section-title">Three roles. One coherent journey.</h2><p class="section-copy">GiveAID keeps public discovery, registered participation and administration separate while connecting them through the same database.</p></div>
+            <div class="flow-grid">
+                <article class="flow-card"><div class="flow-icon">01</div><h3>Discover publicly</h3><p>Anyone can browse causes, NGOs and active programmes through structured public pages without creating an account.</p><span class="flow-label">Public website</span></article>
+                <article class="flow-card"><div class="flow-icon">02</div><h3>Participate securely</h3><p>Registered users can access their account, express programme interest, submit queries and use available participation workflows.</p><span class="flow-label">User experience</span></article>
+                <article class="flow-card"><div class="flow-icon">03</div><h3>Manage responsibly</h3><p>Administrators maintain users, NGO records, causes, programmes, enquiries, donations and website information from a dedicated workspace.</p><span class="flow-label">Admin panel</span></article>
             </div>
         </div>
-    </div>
-</section>
+    </section>
 
-
-<!-- =========================================================
-     WHY WE STARTED (THE PROBLEM & THE GIVEAID SOLUTION)
-     ========================================================= -->
-<section class="about-story-section">
-    <div class="section-container">
-        <div class="story-grid">
-            <div class="story-text-col">
-                <span class="section-badge">The Origin</span>
-                <h2 class="section-title">Why GiveAID Exists</h2>
-                <p class="story-p">
-                    Pakistan is globally recognized as one of the most generous nations in the world, contributing over <strong>PKR 500 Billion annually</strong> in Zakat, Sadqah, and mutual aid. Yet, young Pakistanis and diaspora donors have faced persistent barriers:
-                </p>
-                
-                <div class="problem-solution-list">
-                    <div class="ps-item">
-                        <div class="ps-icon ps-problem">❌</div>
-                        <div class="ps-desc">
-                            <strong>The Trust Deficit:</strong> Uncertainty around whether donations actually reach legitimate beneficiaries or get consumed by administrative overhead.
-                        </div>
-                    </div>
-
-                    <div class="ps-item">
-                        <div class="ps-icon ps-solution">✅</div>
-                        <div class="ps-desc">
-                            <strong>The GiveAID Fix:</strong> Rigorous SECP audit checks, milestone-based fund releases, and mandatory photographic field receipts for every project.
-                        </div>
-                    </div>
-
-                    <div class="ps-item">
-                        <div class="ps-icon ps-problem">❌</div>
-                        <div class="ps-desc">
-                            <strong>Clunky Payment Barriers:</strong> Antiquated bank deposit slips, manual transfer confirmations, and high cross-border processing fees.
-                        </div>
-                    </div>
-
-                    <div class="ps-item">
-                        <div class="ps-icon ps-solution">✅</div>
-                        <div class="ps-desc">
-                            <strong>The GiveAID Fix:</strong> Direct 1-tap integration with Raast, SadaPay, JazzCash, NayaPay, and international Visa/Mastercard rails.
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="story-stats-col">
-                <div class="story-stat-card">
-                    <div class="story-stat-val">PKR 500B+</div>
-                    <div class="story-stat-lbl">Annual Charitable Giving in Pakistan</div>
-                    <p class="story-stat-sub">We are transforming this generosity into trackable, tech-empowered grassroots impact.</p>
-                </div>
-
-                <div class="story-stat-card card-accent-green">
-                    <div class="story-stat-val">100%</div>
-                    <div class="story-stat-lbl">Open Accounting & Public Proof</div>
-                    <p class="story-stat-sub">From procurement invoices to beneficiary handovers, transparency is non-negotiable.</p>
-                </div>
+    <section class="values about-reveal">
+        <div class="about-shell">
+            <div class="eyebrow">What guides us</div><h2 class="section-title">Principles built into the experience.</h2><p class="section-copy">A professional platform is not only visual - it must also be understandable, consistent and honest about what it does.</p>
+            <div class="values-grid">
+                <article class="value-card"><span class="value-no">01 / CLARITY</span><h3>Clear information</h3><p>Causes, programmes and organisations are presented through consistent, readable records.</p></article>
+                <article class="value-card"><span class="value-no">02 / ACCESS</span><h3>Focused access</h3><p>Public visitors, users and administrators see actions appropriate to their role.</p></article>
+                <article class="value-card"><span class="value-no">03 / DIGNITY</span><h3>Human-centred design</h3><p>Community work is presented respectfully without sensational or exploitative messaging.</p></article>
+                <article class="value-card"><span class="value-no">04 / INTEGRITY</span><h3>Honest functionality</h3><p>The interface describes real platform capabilities and avoids unsupported claims.</p></article>
             </div>
         </div>
-    </div>
-</section>
+    </section>
 
-
-<!-- =========================================================
-     CORE VALUES
-     ========================================================= -->
-<section class="about-values-section">
-    <div class="section-container">
-        <div class="section-header-center">
-            <span class="section-badge">Our North Star</span>
-            <h2 class="section-title">The Values Guiding Everything We Build</h2>
-            <p class="section-subtitle">Rooted in integrity, empathy, and technological excellence.</p>
+    <section class="scope-section about-reveal">
+        <div class="about-shell scope-grid">
+            <div><div class="eyebrow">Platform scope</div><h2 class="section-title">What GiveAID connects.</h2><div class="scope-list"><div class="scope-item"><div class="scope-check">&#10003;</div><div><strong>People and causes</strong><span>Users can find areas of work that match their interests.</span></div></div><div class="scope-item"><div class="scope-check">&#10003;</div><div><strong>NGOs and programmes</strong><span>Administrator-managed NGO records connect to relevant programmes and causes.</span></div></div><div class="scope-item"><div class="scope-check">&#10003;</div><div><strong>Information and administration</strong><span>Public-facing content is supported by organised SQL Server records and role-based management.</span></div></div></div></div>
+            <aside class="truth-card"><span class="truth-tag">Transparent by design</span><h3>A demonstration platform - not a live payment processor.</h3><p>GiveAID currently demonstrates donation and payment-related workflows for the project environment. It does not claim live banking, card processing, government verification or formal partnerships unless those services are implemented and documented later.</p></aside>
         </div>
+    </section>
 
-        <div class="values-grid">
-            <div class="value-card">
-                <div class="value-icon">💎</div>
-                <h4>Radical Transparency</h4>
-                <p>Every transaction has a verifiable audit trail. We believe donors deserve total clarity over how their hard-earned money transforms lives.</p>
-            </div>
+    <section class="about-cta about-reveal"><div class="about-cta-inner"><div><h2>Explore the work behind GiveAID.</h2><p>Browse active causes and discover the organisations connected to them.</p></div><div class="cta-actions"><a class="cta-btn cta-primary" href="@Url.Action("Index","Causes")">Explore causes</a><a class="cta-btn cta-secondary" href="@Url.Action("Contact","Home")">Contact us</a></div></div></section>
+</main>
 
-            <div class="value-card">
-                <div class="value-icon">⚡</div>
-                <h4>Speed in Crisis</h4>
-                <p>When floods, heatwaves, or medical emergencies strike Pakistan, relief funds can be mobilized in minutes, not weeks.</p>
-            </div>
-
-            <div class="value-card">
-                <div class="value-icon">🤝</div>
-                <h4>Equal Dignity</h4>
-                <p>We respect the privacy, dignity, and honor of every beneficiary we serve, rejecting exploitative charity marketing.</p>
-            </div>
-
-            <div class="value-card">
-                <div class="value-icon">🌱</div>
-                <h4>Youth Empowerment</h4>
-                <p>We actively partner with Pakistani student societies, youth developers, and universities to lead social mobilization on the ground.</p>
-            </div>
-        </div>
-    </div>
-</section>
-
-
-<!-- =========================================================
-     MILESTONES & JOURNEY
-     ========================================================= -->
-<section class="about-timeline-section">
-    <div class="section-container">
-        <div class="section-header-center">
-            <span class="section-badge">Our Journey</span>
-            <h2 class="section-title">How We’re Growing the Movement</h2>
-            <p class="section-subtitle">From a student hackathon idea to Pakistan's trusted giving platform.</p>
-        </div>
-
-        <div class="timeline-wrap">
-            <div class="timeline-item">
-                <div class="timeline-dot"></div>
-                <div class="timeline-content">
-                    <span class="timeline-year">Phase 1</span>
-                    <h3>The Inception & Platform Core</h3>
-                    <p>Designed the multi-role ASP.NET architecture, secure role authorization for Donors, NGOs, and Admins, and verified donation tracking.</p>
-                </div>
-            </div>
-
-            <div class="timeline-item">
-                <div class="timeline-dot"></div>
-                <div class="timeline-content">
-                    <span class="timeline-year">Phase 2</span>
-                    <h3>Pakistani NGO Onboarding & Vetting</h3>
-                    <p>Partnered with prominent Pakistani foundations (Edhi, Saylani, TCF, Akhuwat) to standardize compliance and field verification protocols.</p>
-                </div>
-            </div>
-
-            <div class="timeline-item">
-                <div class="timeline-dot"></div>
-                <div class="timeline-content">
-                    <span class="timeline-year">Phase 3</span>
-                    <h3>Raast & Instant Local Rails Integration</h3>
-                    <p>Introduced real-time instant payment options for Gen Z donors through SadaPay, JazzCash, and Raast instant clearing.</p>
-                </div>
-            </div>
-
-            <div class="timeline-item">
-                <div class="timeline-dot"></div>
-                <div class="timeline-content">
-                    <span class="timeline-year">Phase 4 (Current)</span>
-                    <h3>Public Launch & University Chapters</h3>
-                    <p>Expanding across Karachi, Lahore, Islamabad, Quetta, and Peshawar with campus ambassador programs and nationwide emergency relief campaigns.</p>
-                </div>
-            </div>
-        </div>
-    </div>
-</section>
-
-
-<!-- =========================================================
-     CALL TO ACTION
-     ========================================================= -->
-<section class="about-cta-section">
-    <div class="section-container">
-        <div class="about-cta-card">
-            <h2>Join Pakistan's Giving Revolution</h2>
-            <p>Whether you want to sponsor an orphan, fund emergency medical care, or register your NGO, GiveAID is your trusted partner.</p>
-            <div class="about-cta-btns">
-                <a href="@Url.Action("Index", "Home")#causes" class="btn-cta-white">Explore Campaigns</a>
-                <a href="@Url.Action("Contact", "Home")" class="btn-cta-outline">Get in Touch with Our Team</a>
-            </div>
-        </div>
-    </div>
-</section>
+@section Scripts {
+    <script>
+        (function () { var items = document.querySelectorAll('.about-reveal'); if (!('IntersectionObserver' in window)) { items.forEach(function (x) { x.classList.add('show') }); return; } var observer = new IntersectionObserver(function (entries) { entries.forEach(function (entry) { if (entry.isIntersecting) { entry.target.classList.add('show'); observer.unobserve(entry.target); } }); }, { threshold: .12 }); items.forEach(function (item) { observer.observe(item); }); })();
+    </script>
+}

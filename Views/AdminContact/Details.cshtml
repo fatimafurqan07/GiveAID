@@ -1,0 +1,808 @@
+@model GiveAID_Project.Models.AdminContactMessageDetailViewModel
+@using System
+
+@{
+    ViewBag.Title = "Message Details | GiveAID";
+    ViewBag.AdminPageTitle = "Contact message details";
+    ViewBag.AdminPageSubtitle = "Review a public enquiry and maintain its workflow status";
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+
+    var senderName = string.IsNullOrWhiteSpace(Model.FullName)
+        ? "Website visitor"
+        : Model.FullName;
+
+    var senderInitial = senderName.Substring(0, 1).ToUpperInvariant();
+    var currentStatus = string.IsNullOrWhiteSpace(Model.Status)
+        ? "New"
+        : Model.Status;
+
+    var statusClass = "detail-status status-" + currentStatus.ToLowerInvariant();
+}
+
+@section Styles {
+    <style>
+        .message-detail-page {
+            min-height: calc(100vh - 82px);
+            padding: 36px;
+            background: radial-gradient(circle at 8% 4%, rgba(28, 192, 137, .11), transparent 28%), radial-gradient(circle at 97% 2%, rgba(255, 133, 101, .10), transparent 27%), #f4f8f8;
+        }
+
+        .detail-page-head {
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-between;
+            gap: 24px;
+            margin-bottom: 21px;
+        }
+
+        .detail-kicker {
+            display: block;
+            color: #07805d;
+            font-size: 10px;
+            font-weight: 950;
+            letter-spacing: .13em;
+            text-transform: uppercase;
+        }
+
+        .detail-page-head h1 {
+            margin: 7px 0 6px;
+            color: #082f3c;
+            font-size: clamp(30px, 3vw, 42px);
+            letter-spacing: -.045em;
+        }
+
+        .detail-page-head p {
+            margin: 0;
+            color: #657d82;
+            font-size: 13px;
+        }
+
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 46px;
+            padding: 0 17px;
+            border: 1px solid #c3d8d2;
+            border-radius: 12px;
+            color: #244e55;
+            background: rgba(255, 255, 255, .85);
+            font-size: 10px;
+            font-weight: 900;
+            text-decoration: none;
+        }
+
+        .message-detail-grid {
+            display: grid;
+            grid-template-columns: minmax(0, 1.35fr) minmax(310px, .65fr);
+            gap: 19px;
+            align-items: start;
+        }
+
+        .message-card,
+        .workflow-card,
+        .sender-card {
+            overflow: hidden;
+            border: 1px solid #cee0db;
+            border-radius: 23px;
+            background: #fff;
+            box-shadow: 0 16px 40px rgba(7, 42, 52, .07);
+        }
+
+        .message-card-head {
+            position: relative;
+            overflow: hidden;
+            padding: 28px;
+            color: #fff;
+            background: linear-gradient(120deg, #073b46 0%, #08715f 60%, #0c9a71 100%);
+        }
+
+            .message-card-head::after {
+                position: absolute;
+                width: 160px;
+                height: 160px;
+                right: -60px;
+                top: -75px;
+                content: "";
+                border: 29px solid rgba(255, 255, 255, .075);
+                border-radius: 50%;
+            }
+
+            .message-card-head span,
+            .message-card-head h2 {
+                position: relative;
+                z-index: 1;
+            }
+
+            .message-card-head span {
+                display: block;
+                color: #6cf0c0;
+                font-size: 9px;
+                font-weight: 950;
+                letter-spacing: .12em;
+                text-transform: uppercase;
+            }
+
+            .message-card-head h2 {
+                max-width: 750px;
+                margin: 9px 0 0;
+                font-size: clamp(23px, 2.4vw, 32px);
+                line-height: 1.25;
+                letter-spacing: -.025em;
+            }
+
+        .message-body {
+            padding: 29px;
+        }
+
+        .message-body-label {
+            display: block;
+            margin-bottom: 12px;
+            color: #75898d;
+            font-size: 9px;
+            font-weight: 900;
+            letter-spacing: .1em;
+            text-transform: uppercase;
+        }
+
+        .message-text {
+            margin: 0;
+            color: #24484f;
+            font-size: 15px;
+            line-height: 1.85;
+            white-space: pre-wrap;
+            overflow-wrap: anywhere;
+        }
+
+        .message-time {
+            display: flex;
+            justify-content: space-between;
+            gap: 18px;
+            margin-top: 28px;
+            padding-top: 19px;
+            border-top: 1px solid #e2ece9;
+            color: #71868a;
+            font-size: 10px;
+        }
+
+            .message-time strong {
+                color: #153f47;
+            }
+
+        .right-column {
+            display: grid;
+            gap: 17px;
+        }
+
+        .sender-card {
+            padding: 23px;
+        }
+
+        .sender-profile {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding-bottom: 19px;
+            border-bottom: 1px solid #e3ece9;
+        }
+
+        .sender-large-avatar {
+            display: grid;
+            place-items: center;
+            flex: 0 0 54px;
+            width: 54px;
+            height: 54px;
+            border-radius: 16px;
+            color: #fff;
+            background: linear-gradient(145deg, #0aa879, #ff8a69);
+            box-shadow: 0 10px 22px rgba(7, 126, 94, .16);
+            font-size: 18px;
+            font-weight: 950;
+        }
+
+        .sender-profile h3 {
+            margin: 0;
+            color: #0b3540;
+            font-size: 17px;
+        }
+
+        .sender-profile p {
+            margin: 4px 0 0;
+            color: #74888c;
+            font-size: 10px;
+        }
+
+        .sender-details {
+            display: grid;
+            gap: 10px;
+            padding-top: 17px;
+        }
+
+        .sender-detail {
+            padding: 13px;
+            border-radius: 12px;
+            background: #f3f8f6;
+        }
+
+            .sender-detail span {
+                display: block;
+                margin-bottom: 4px;
+                color: #7a8d90;
+                font-size: 8px;
+                font-weight: 900;
+                letter-spacing: .08em;
+                text-transform: uppercase;
+            }
+
+            .sender-detail strong,
+            .sender-detail a {
+                color: #17434a;
+                font-size: 10px;
+                font-weight: 800;
+                overflow-wrap: anywhere;
+                text-decoration: none;
+            }
+
+        .sender-type {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 45px;
+            margin-top: 15px;
+            border: 1px solid #cce2db;
+            border-radius: 11px;
+            color: #087657;
+            background: #e8f7f1;
+            font-size: 10px;
+            font-weight: 900;
+        }
+
+            .sender-type.guest-type {
+                color: #9b6418;
+                border-color: #f0d9b4;
+                background: #fff4e1;
+            }
+
+        .reply-panel {
+            margin-top: 27px;
+            padding-top: 25px;
+            border-top: 1px solid #e2ece9;
+        }
+
+        .reply-panel-head {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 18px;
+            margin-bottom: 17px;
+        }
+
+            .reply-panel-head h3 {
+                margin: 0;
+                color: #0b3540;
+                font-size: 20px;
+                letter-spacing: -.025em;
+            }
+
+            .reply-panel-head p {
+                margin: 5px 0 0;
+                color: #71868a;
+                font-size: 10px;
+                line-height: 1.65;
+            }
+
+        .reply-visibility {
+            display: inline-flex;
+            flex: 0 0 auto;
+            padding: 7px 10px;
+            border-radius: 20px;
+            color: #087354;
+            background: #def5e9;
+            font-size: 8px;
+            font-weight: 950;
+            letter-spacing: .04em;
+            text-transform: uppercase;
+        }
+
+            .reply-visibility.guest {
+                color: #9b6418;
+                background: #fff0d8;
+            }
+
+        .saved-reply {
+            position: relative;
+            margin-bottom: 18px;
+            padding: 19px;
+            border: 1px solid #bfe0d4;
+            border-radius: 15px;
+            color: #24484f;
+            background: linear-gradient(145deg, #edf9f4, #fff);
+        }
+
+        .saved-reply-label {
+            display: block;
+            margin-bottom: 9px;
+            color: #087657;
+            font-size: 8px;
+            font-weight: 950;
+            letter-spacing: .1em;
+            text-transform: uppercase;
+        }
+
+        .saved-reply p {
+            margin: 0;
+            font-size: 13px;
+            line-height: 1.75;
+            white-space: pre-wrap;
+            overflow-wrap: anywhere;
+        }
+
+        .reply-meta {
+            display: block;
+            margin-top: 13px;
+            padding-top: 11px;
+            border-top: 1px solid #d8ebe4;
+            color: #698085;
+            font-size: 9px;
+        }
+
+        .reply-form {
+            margin: 0;
+        }
+
+            .reply-form label {
+                display: block;
+                margin-bottom: 8px;
+                color: #395c62;
+                font-size: 9px;
+                font-weight: 900;
+                letter-spacing: .07em;
+                text-transform: uppercase;
+            }
+
+        .reply-textarea {
+            display: block;
+            width: 100%;
+            min-height: 145px;
+            padding: 15px 16px;
+            resize: vertical;
+            border: 1px solid #bed6cf;
+            border-radius: 13px;
+            outline: none;
+            color: #173f47;
+            background: #fbfdfc;
+            font: inherit;
+            font-size: 13px;
+            line-height: 1.65;
+            box-sizing: border-box;
+            transition: border-color .2s ease, box-shadow .2s ease;
+        }
+
+            .reply-textarea:focus {
+                border-color: #0a9a70;
+                box-shadow: 0 0 0 4px rgba(10, 154, 112, .11);
+            }
+
+        .reply-form-footer {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 14px;
+            margin-top: 12px;
+        }
+
+        .reply-form-note {
+            max-width: 510px;
+            color: #71868a;
+            font-size: 9px;
+            line-height: 1.55;
+        }
+
+        .save-reply-button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            flex: 0 0 auto;
+            min-height: 44px;
+            padding: 0 19px;
+            border: 0;
+            border-radius: 11px;
+            color: #fff;
+            background: linear-gradient(135deg, #087657, #0aa879);
+            box-shadow: 0 10px 20px rgba(7, 126, 94, .16);
+            font-size: 10px;
+            font-weight: 950;
+            cursor: pointer;
+        }
+
+        .workflow-card {
+            padding: 23px;
+            background: linear-gradient(145deg, #fff8f2, #fff);
+        }
+
+        .detail-status {
+            display: inline-flex;
+            padding: 8px 11px;
+            border-radius: 20px;
+            color: #526d71;
+            background: #edf3f1;
+            font-size: 8px;
+            font-weight: 950;
+            letter-spacing: .04em;
+            text-transform: uppercase;
+        }
+
+        .status-new {
+            color: #a3620f;
+            background: #fff0d8;
+        }
+
+        .status-read {
+            color: #17667a;
+            background: #e3f2f6;
+        }
+
+        .status-replied {
+            color: #087354;
+            background: #def5e9;
+        }
+
+        .status-closed {
+            color: #725393;
+            background: #f0e9f7;
+        }
+
+        .workflow-card h3 {
+            margin: 16px 0 7px;
+            color: #0a3540;
+            font-size: 19px;
+        }
+
+        .workflow-card > p {
+            margin: 0;
+            color: #697f83;
+            font-size: 11px;
+            line-height: 1.7;
+        }
+
+        .workflow-actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 9px;
+            margin-top: 18px;
+        }
+
+            .workflow-actions form {
+                margin: 0;
+            }
+
+        .workflow-button {
+            width: 100%;
+            min-height: 43px;
+            padding: 0 12px;
+            border: 0;
+            border-radius: 11px;
+            color: #fff;
+            background: #07855f;
+            font-size: 9px;
+            font-weight: 900;
+            cursor: pointer;
+        }
+
+            .workflow-button.read-button {
+                color: #17667a;
+                background: #e3f2f6;
+            }
+
+            .workflow-button.reply-button {
+                color: #fff;
+                background: #07855f;
+            }
+
+            .workflow-button.close-button {
+                color: #a64b3a;
+                background: #ffebe6;
+            }
+
+            .workflow-button.reopen-button {
+                color: #704f93;
+                background: #efe8f7;
+            }
+
+        .resolved-note {
+            margin-top: 15px;
+            padding: 12px;
+            border: 1px solid #dce8e4;
+            border-radius: 11px;
+            color: #627b7f;
+            background: #f4f8f6;
+            font-size: 9px;
+            line-height: 1.6;
+        }
+
+        @@media (max-width: 980px) {
+            .message-detail-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .right-column {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        @@media (max-width: 720px) {
+            .message-detail-page {
+                padding: 22px 15px;
+            }
+
+            .detail-page-head {
+                display: block;
+            }
+
+            .back-link {
+                margin-top: 15px;
+            }
+
+            .right-column {
+                grid-template-columns: 1fr;
+            }
+
+            .message-time {
+                display: block;
+            }
+
+                .message-time span {
+                    display: block;
+                    margin-top: 7px;
+                }
+
+            .reply-panel-head,
+            .reply-form-footer {
+                display: block;
+            }
+
+            .reply-visibility,
+            .save-reply-button {
+                margin-top: 12px;
+            }
+
+            .save-reply-button {
+                width: 100%;
+            }
+        }
+
+        @@media (max-width: 450px) {
+            .workflow-actions {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+}
+
+<main class="message-detail-page">
+    <header class="detail-page-head">
+        <div>
+            <span class="detail-kicker">Message #@Model.ContactMessageID</span>
+            <h1>Review contact enquiry</h1>
+            <p>Read the complete submission and maintain its administrative workflow.</p>
+        </div>
+
+        <a class="back-link" href="@Url.Action("Index", "AdminContact")">
+            Back to messages
+        </a>
+    </header>
+
+    <div class="message-detail-grid">
+        <article class="message-card">
+            <header class="message-card-head">
+                <span>Enquiry subject</span>
+                <h2>@Model.Subject</h2>
+            </header>
+
+            <div class="message-body">
+                <span class="message-body-label">Complete message</span>
+                <p class="message-text">@Model.Message</p>
+
+                <section class="reply-panel" aria-labelledby="adminReplyHeading">
+                    <header class="reply-panel-head">
+                        <div>
+                            <h3 id="adminReplyHeading">
+                                @(Model.HasAdminReply
+                                    ? "Administrator reply"
+                                    : "Write an administrator reply")
+                            </h3>
+                            <p>
+                                Save the response inside GiveAID instead of opening an external email application.
+                            </p>
+                        </div>
+
+                        <span class="reply-visibility @(Model.IsRegisteredUser ? "" : "guest")">
+                            @(Model.IsRegisteredUser
+                                ? "Visible in user dashboard"
+                                : "Guest record only")
+                        </span>
+                    </header>
+
+                    @if (Model.HasAdminReply)
+                    {
+                        <div class="saved-reply">
+                            <span class="saved-reply-label">Latest saved response</span>
+                            <p>@Model.AdminReply</p>
+
+                            <span class="reply-meta">
+                                Saved
+                                <strong>
+                                    @(Model.RepliedAt.HasValue
+                                        ? Model.RepliedAt.Value.ToString("dd MMM yyyy, hh:mm tt")
+                                        : "recently")
+                                </strong>
+
+                                @if (!string.IsNullOrWhiteSpace(Model.RepliedByName))
+                                {
+                                    <text> by <strong>@Model.RepliedByName</strong></text>
+                                }
+                            </span>
+                        </div>
+                    }
+
+                    @using (Html.BeginForm("SaveReply", "AdminContact", FormMethod.Post,
+                        new { @class = "reply-form" }))
+                    {
+                        @Html.AntiForgeryToken()
+                        @Html.Hidden("ContactMessageID", Model.ContactMessageID)
+
+                        <label for="Reply">
+                            @(Model.HasAdminReply ? "Update saved reply" : "Reply message")
+                        </label>
+
+                        @Html.TextArea(
+                                 "Reply",
+                                 Model.AdminReply,
+                                 new
+                                 {
+                                     @class = "reply-textarea",
+                                     id = "Reply",
+                                     maxlength = "2000",
+                                     required = "required",
+                                     placeholder = "Write a clear and helpful response for the user..."
+                                 })
+
+                        <div class="reply-form-footer">
+                            <span class="reply-form-note">
+                                @if (Model.IsRegisteredUser)
+                                {
+                                    <text>
+                                        The reply will be stored in the database and will appear in this user's
+                                        <strong>My Messages</strong> page.
+                                    </text>
+                                }
+                                else
+                                {
+                                    <text>
+                                        This enquiry is not linked to a registered account. The reply will remain
+                                        stored in the administrative record, but the sender cannot view it in a dashboard.
+                                    </text>
+                                }
+                            </span>
+
+                            <button class="save-reply-button" type="submit">
+                                @(Model.HasAdminReply ? "Update reply" : "Save reply")
+                            </button>
+                        </div>
+                    }
+                </section>
+
+                <div class="message-time">
+                    <span>
+                        Received
+                        <strong>@Model.CreatedAt.ToString("dd MMM yyyy, hh:mm tt")</strong>
+                    </span>
+
+                    @if (Model.ResolvedAt.HasValue)
+                    {
+                        <span>
+                            Last resolved
+                            <strong>@Model.ResolvedAt.Value.ToString("dd MMM yyyy, hh:mm tt")</strong>
+                        </span>
+                    }
+                </div>
+            </div>
+        </article>
+
+        <aside class="right-column">
+            <section class="sender-card">
+                <div class="sender-profile">
+                    <div class="sender-large-avatar">@senderInitial</div>
+                    <div>
+                        <h3>@senderName</h3>
+                        <p>
+                            @(Model.IsRegisteredUser
+                                ? "Registered GiveAID user"
+                                : "Public website visitor")
+                        </p>
+                    </div>
+                </div>
+
+                <div class="sender-details">
+                    <div class="sender-detail">
+                        <span>Email address</span>
+                        <a href="mailto:@Model.Email">@Model.Email</a>
+                    </div>
+
+                    <div class="sender-detail">
+                        <span>Phone number</span>
+                        <strong>
+                            @(string.IsNullOrWhiteSpace(Model.Phone)
+                                ? "Not provided"
+                                : Model.Phone)
+                        </strong>
+                    </div>
+                </div>
+
+                <div class="sender-type @(Model.IsRegisteredUser ? "" : "guest-type")">
+                    @(Model.IsRegisteredUser
+                        ? "Reply will appear in My Messages"
+                        : "Not linked to a user dashboard")
+                </div>
+            </section>
+
+            <section class="workflow-card">
+                <span class="@statusClass">@currentStatus</span>
+                <h3>Message workflow</h3>
+                <p>
+                    Update this record after reviewing or replying to the sender.
+                    Every change is stored directly in the ContactMessages table.
+                </p>
+
+                <div class="workflow-actions">
+                    @if (Model.CanMarkRead)
+                    {
+                        using (Html.BeginForm("UpdateStatus", "AdminContact", FormMethod.Post))
+                        {
+                            @Html.AntiForgeryToken()
+                            @Html.Hidden("id", Model.ContactMessageID)
+                            @Html.Hidden("status", "Read")
+                            <button class="workflow-button read-button" type="submit">
+                                Mark as read
+                            </button>
+                        }
+                    }
+
+                    @if (Model.CanClose)
+                    {
+                        using (Html.BeginForm("UpdateStatus", "AdminContact", FormMethod.Post))
+                        {
+                            @Html.AntiForgeryToken()
+                            @Html.Hidden("id", Model.ContactMessageID)
+                            @Html.Hidden("status", "Closed")
+                            <button class="workflow-button close-button" type="submit">
+                                Close message
+                            </button>
+                        }
+                    }
+
+                    @if (Model.CanReopen)
+                    {
+                        using (Html.BeginForm("UpdateStatus", "AdminContact", FormMethod.Post))
+                        {
+                            @Html.AntiForgeryToken()
+                            @Html.Hidden("id", Model.ContactMessageID)
+                            @Html.Hidden("status", "Read")
+                            <button class="workflow-button reopen-button" type="submit">
+                                Reopen message
+                            </button>
+                        }
+                    }
+                </div>
+
+                @if (Model.ResolvedAt.HasValue)
+                {
+                    <div class="resolved-note">
+                        This record was last resolved on
+                        <strong>@Model.ResolvedAt.Value.ToString("dd MMM yyyy, hh:mm tt")</strong>.
+                    </div>
+                }
+            </section>
+        </aside>
+    </div>
+</main>

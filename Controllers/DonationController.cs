@@ -16,7 +16,9 @@ namespace GiveAID_Project.Controllers
             _accountRepo = new AccountRepository();
         }
 
-        public DonationController(DashboardRepository dashboardRepo, AccountRepository accountRepo)
+        public DonationController(
+            DashboardRepository dashboardRepo,
+            AccountRepository accountRepo)
         {
             _dashboardRepo = dashboardRepo;
             _accountRepo = accountRepo;
@@ -26,7 +28,11 @@ namespace GiveAID_Project.Controllers
         // 1. DONATION PAGE (GET)
         // ==========================================
         [HttpGet]
-        public ActionResult Create(int? ngoId, int? causeId, int? programId, decimal? amount)
+        public ActionResult Create(
+            int? ngoId,
+            int? causeId,
+            int? programId,
+            decimal? amount)
         {
             var ngos = _dashboardRepo.GetActiveNGOs();
             var causes = _dashboardRepo.GetActiveCauses();
@@ -37,33 +43,38 @@ namespace GiveAID_Project.Controllers
                 NGOID = ngoId ?? (ngos.FirstOrDefault()?.ID ?? 0),
                 CauseID = causeId ?? (causes.FirstOrDefault()?.ID ?? 0),
                 ProgramID = programId,
-                Amount = amount.HasValue && amount.Value > 0 ? amount.Value : 2500,
+
+                Amount = amount.HasValue && amount.Value > 0
+                    ? amount.Value
+                    : 2500,
+
                 PaymentRail = "Raast / 1Link"
             };
 
-            // Pre-fill user details if logged in
-            if (User.Identity.IsAuthenticated)
+            // Pre-fill signed-in user's information.
+            var currentUser = GetCurrentUser();
+
+            if (currentUser != null)
             {
-                var user = _accountRepo.GetUserByEmail(User.Identity.Name);
-                if (user != null)
+                formModel.DonorName = currentUser.FullName;
+                formModel.DonorEmail = currentUser.Email;
+            }
+            else
+            {
+                if (Session["UserName"] != null)
                 {
-                    formModel.DonorName = user.FullName;
-                    formModel.DonorEmail = user.Email;
+                    formModel.DonorName =
+                        Session["UserName"].ToString();
+                }
+
+                if (Session["UserEmail"] != null)
+                {
+                    formModel.DonorEmail =
+                        Session["UserEmail"].ToString();
                 }
             }
-            else if (Session["UserEmail"] != null)
-            {
-                formModel.DonorEmail = Session["UserEmail"]?.ToString();
-                formModel.DonorName = Session["UserName"]?.ToString();
-            }
 
-            var viewModel = new DonationFormDataViewModel
-            {
-                FormModel = formModel,
-                NGOs = ngos,
-                Causes = causes,
-                Programs = programs
-            };
+            var viewModel = BuildDonationFormViewModel(formModel);
 
             return View(viewModel);
         }
@@ -73,45 +84,64 @@ namespace GiveAID_Project.Controllers
         // ==========================================
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public ActionResult Create(CreateDonationModel model)
+        public ActionResult Create(
+            [Bind(Prefix = "FormModel")]
+            CreateDonationModel model)
         {
-            int? currentUserId = null;
-            if (Session["UserID"] != null && int.TryParse(Session["UserID"].ToString(), out int uid))
+            int? currentUserId = GetCurrentUserId();
+
+            // Server-side safety check.
+            if (model.Amount < 10)
             {
-                currentUserId = uid;
-            }
-            else if (User.Identity.IsAuthenticated)
-            {
-                var user = _accountRepo.GetUserByEmail(User.Identity.Name);
-                if (user != null)
-                {
-                    currentUserId = user.UserID;
-                }
+                ModelState.AddModelError(
+                    "FormModel.Amount",
+                    "Please enter an amount of at least PKR 10.");
             }
 
             if (!ModelState.IsValid)
             {
                 if (Request.IsAjaxRequest())
                 {
-                    var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
-                    return Json(new { success = false, message = string.Join(" ", errors) });
+                    var errors = ModelState.Values
+                        .SelectMany(value => value.Errors)
+                        .Select(error =>
+                            !string.IsNullOrWhiteSpace(error.ErrorMessage)
+                                ? error.ErrorMessage
+                                : "Please check the entered information.")
+                        .ToList();
+
+                    return Json(new
+                    {
+                        success = false,
+                        message = string.Join(" ", errors)
+                    });
                 }
 
-                var viewModel = new DonationFormDataViewModel
-                {
-                    FormModel = model,
-                    NGOs = _dashboardRepo.GetActiveNGOs(),
-                    Causes = _dashboardRepo.GetActiveCauses(),
-                    Programs = _dashboardRepo.GetActivePrograms()
-                };
-                return View(viewModel);
+                var invalidFormViewModel =
+                    BuildDonationFormViewModel(model);
+
+                return View(invalidFormViewModel);
             }
 
             try
             {
-                int donationId = _dashboardRepo.CreateDonation(model, currentUserId, out string paymentRef);
+                string paymentReference;
 
-                TempData["SuccessMessage"] = $"Your donation of PKR {model.Amount:N0} has been created (Ref: {paymentRef})! It is now Pending Admin Approval.";
+                int donationId = _dashboardRepo.CreateDonation(
+                    model,
+                    currentUserId,
+                    out paymentReference);
+
+                if (donationId <= 0)
+                {
+                    throw new InvalidOperationException(
+                        "The donation record could not be created.");
+                }
+
+                TempData["SuccessMessage"] =
+                    $"Your donation of PKR {model.Amount:N0} " +
+                    $"has been created (Ref: {paymentReference}). " +
+                    "It is now pending administrator review.";
 
                 if (Request.IsAjaxRequest())
                 {
@@ -119,30 +149,46 @@ namespace GiveAID_Project.Controllers
                     {
                         success = true,
                         donationId = donationId,
-                        reference = paymentRef,
+                        reference = paymentReference,
                         amount = model.Amount,
-                        redirectUrl = Url.Action("Success", "Donation", new { id = donationId })
+
+                        redirectUrl = Url.Action(
+                            "Success",
+                            "Donation",
+                            new { id = donationId })
                     });
                 }
 
-                return RedirectToAction("Success", new { id = donationId });
+                // Donation ID must be included in this redirect.
+                return RedirectToAction(
+                    "Success",
+                    new { id = donationId });
             }
             catch (Exception ex)
             {
+                string errorMessage =
+                    "The donation could not be created. " +
+                    "Please review your information and try again.";
+
                 if (Request.IsAjaxRequest())
                 {
-                    return Json(new { success = false, message = "An error occurred while creating your donation: " + ex.Message });
+                    return Json(new
+                    {
+                        success = false,
+                        message = errorMessage
+                    });
                 }
 
-                TempData["ErrorMessage"] = "Could not complete your donation: " + ex.Message;
-                var viewModel = new DonationFormDataViewModel
-                {
-                    FormModel = model,
-                    NGOs = _dashboardRepo.GetActiveNGOs(),
-                    Causes = _dashboardRepo.GetActiveCauses(),
-                    Programs = _dashboardRepo.GetActivePrograms()
-                };
-                return View(viewModel);
+                TempData["ErrorMessage"] = errorMessage;
+
+                // Optional for debugging in Visual Studio Output window.
+                System.Diagnostics.Debug.WriteLine(
+                    "Donation creation error: " + ex);
+
+                var errorFormViewModel =
+                    BuildDonationFormViewModel(model);
+
+                return View(errorFormViewModel);
             }
         }
 
@@ -150,16 +196,43 @@ namespace GiveAID_Project.Controllers
         // 3. DONATION SUCCESS / RECEIPT (GET)
         // ==========================================
         [HttpGet]
-        public ActionResult Success(int id)
+        public ActionResult Success(int? id)
         {
-            var donation = _dashboardRepo.GetDonationById(id);
-            if (donation == null)
+            // Handles /Donation/Success without an ID.
+            if (!id.HasValue || id.Value <= 0)
             {
-                TempData["ErrorMessage"] = "Donation record not found.";
-                return RedirectToAction("Index", "Home");
+                TempData["ErrorMessage"] =
+                    "No donation record was selected. " +
+                    "Please create a donation first.";
+
+                return RedirectToAction("Create");
             }
 
-            return View(donation);
+            try
+            {
+                var donation =
+                    _dashboardRepo.GetDonationById(id.Value);
+
+                if (donation == null)
+                {
+                    TempData["ErrorMessage"] =
+                        "The requested donation record could not be found.";
+
+                    return RedirectToAction("Create");
+                }
+
+                return View(donation);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine(
+                    "Donation receipt error: " + ex);
+
+                TempData["ErrorMessage"] =
+                    "The donation receipt could not be loaded.";
+
+                return RedirectToAction("Create");
+            }
         }
 
         // ==========================================
@@ -172,7 +245,97 @@ namespace GiveAID_Project.Controllers
             var causes = _dashboardRepo.GetActiveCauses();
             var programs = _dashboardRepo.GetActivePrograms();
 
-            return Json(new { ngos, causes, programs }, JsonRequestBehavior.AllowGet);
+            return Json(
+                new
+                {
+                    ngos,
+                    causes,
+                    programs
+                },
+                JsonRequestBehavior.AllowGet);
+        }
+
+        // ==========================================
+        // PRIVATE HELPERS
+        // ==========================================
+        private DonationFormDataViewModel BuildDonationFormViewModel(
+            CreateDonationModel formModel)
+        {
+            return new DonationFormDataViewModel
+            {
+                FormModel = formModel ?? new CreateDonationModel(),
+
+                NGOs = _dashboardRepo.GetActiveNGOs(),
+                Causes = _dashboardRepo.GetActiveCauses(),
+                Programs = _dashboardRepo.GetActivePrograms()
+            };
+        }
+
+        private UserAccount GetCurrentUser()
+        {
+            if (User.Identity.IsAuthenticated)
+            {
+                var user =
+                    _accountRepo.GetUserByEmail(User.Identity.Name);
+
+                if (user != null)
+                {
+                    SaveUserInSession(user);
+                    return user;
+                }
+            }
+
+            if (Session["UserEmail"] != null)
+            {
+                string email =
+                    Session["UserEmail"].ToString();
+
+                if (!string.IsNullOrWhiteSpace(email))
+                {
+                    var user =
+                        _accountRepo.GetUserByEmail(email);
+
+                    if (user != null)
+                    {
+                        SaveUserInSession(user);
+                        return user;
+                    }
+                }
+            }
+
+            return null;
+        }
+
+        private int? GetCurrentUserId()
+        {
+            int userId;
+
+            if (Session["UserID"] != null &&
+                int.TryParse(
+                    Session["UserID"].ToString(),
+                    out userId))
+            {
+                return userId;
+            }
+
+            var user = GetCurrentUser();
+
+            return user != null
+                ? (int?)user.UserID
+                : null;
+        }
+
+        private void SaveUserInSession(UserAccount user)
+        {
+            Session["UserID"] = user.UserID;
+            Session["UserName"] = user.FullName;
+            Session["UserEmail"] = user.Email;
+
+            if (user.Roles != null)
+            {
+                Session["UserRole"] =
+                    user.Roles.FirstOrDefault() ?? "User";
+            }
         }
     }
 }

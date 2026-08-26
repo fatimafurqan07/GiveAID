@@ -1,0 +1,174 @@
+@model GiveAID_Project.Models.UserDonationsViewModel
+@using System
+@using System.Linq
+
+@{
+    ViewBag.Title = "My Donations | GiveAID";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var selectedStatus = (Model.Status ?? "all").ToLowerInvariant();
+}
+
+@section Styles {
+    <link href="@Url.Content("~/Content/UserDashboard.css")" rel="stylesheet" />
+    <link href="@Url.Content("~/Content/UserDonations.css?v=20260824")" rel="stylesheet" />
+}
+
+<main class="user-workspace">
+    <div class="user-shell">
+        @Html.Partial("_UserDashboardSidebar")
+
+        <section class="user-main">
+            <header class="donations-heading">
+                <div>
+                    <span class="eyebrow">Contribution history</span>
+                    <h1>My donations</h1>
+                    <p>Review the donation records connected to your signed-in GiveAID account.</p>
+                </div>
+
+                <a class="new-donation-button" href="@Url.Action("Index", "Causes")">
+                    Explore causes
+                    <span aria-hidden="true">&rarr;</span>
+                </a>
+            </header>
+
+            <section class="donation-summary-grid" aria-label="Donation summary">
+                <article class="donation-summary-card accent">
+                    <div class="summary-icon">PKR</div>
+                    <strong>PKR @Model.CompletedAmount.ToString("N0")</strong>
+                    <span>Completed contributions</span>
+                </article>
+
+                <article class="donation-summary-card">
+                    <div class="summary-icon">DN</div>
+                    <strong>@Model.TotalRecords</strong>
+                    <span>Total donation records</span>
+                </article>
+
+                <article class="donation-summary-card">
+                    <div class="summary-icon">OK</div>
+                    <strong>@Model.CompletedRecords</strong>
+                    <span>Completed donations</span>
+                </article>
+
+                <article class="donation-summary-card">
+                    <div class="summary-icon">PN</div>
+                    <strong>@Model.PendingRecords</strong>
+                    <span>Pending review</span>
+                </article>
+            </section>
+
+            @using (Html.BeginForm("Donations", "Dashboard", FormMethod.Get,
+                new { @class = "donation-filter", aria_label = "Donation filters" }))
+            {
+                <div class="filter-field search-field">
+                    <label for="donationSearch">Search records</label>
+                    <input id="donationSearch"
+                           class="filter-control"
+                           type="search"
+                           name="search"
+                           value="@Model.Search"
+                           placeholder="Reference, NGO, programme or cause" />
+                </div>
+
+                <div class="filter-field">
+                    <label for="donationStatus">Status</label>
+                    <select id="donationStatus" class="filter-control" name="status">
+                        <option value="all" @(selectedStatus == "all" ? "selected" : "")>All statuses</option>
+                        <option value="completed" @(selectedStatus == "completed" ? "selected" : "")>Completed</option>
+                        <option value="pending" @(selectedStatus == "pending" ? "selected" : "")>Pending</option>
+                        <option value="cancelled" @(selectedStatus == "cancelled" ? "selected" : "")>Cancelled</option>
+                    </select>
+                </div>
+
+                <button class="filter-button" type="submit">Apply filters</button>
+                <a class="filter-reset" href="@Url.Action("Donations", "Dashboard")">Reset</a>
+            }
+
+            <section class="donations-panel">
+                <header class="donations-panel-head">
+                    <div>
+                        <h2>Donation records</h2>
+                        <p>
+                            Showing @Model.Donations.Count
+                            @(Model.Donations.Count == 1 ? "record" : "records")
+                            for the selected filters.
+                        </p>
+                    </div>
+                    <span class="record-count">@Model.Donations.Count records</span>
+                </header>
+
+                @if (Model.Donations != null && Model.Donations.Any())
+                {
+                    <div class="donations-table-wrap">
+                        <table class="user-donations-table">
+                            <thead>
+                                <tr>
+                                    <th>Reference</th>
+                                    <th>Organisation / programme</th>
+                                    <th>Date</th>
+                                    <th>Payment</th>
+                                    <th>Amount</th>
+                                    <th>Status</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var donation in Model.Donations)
+                                {
+                                    var statusText = string.IsNullOrWhiteSpace(donation.Status)
+                                        ? "Pending"
+                                        : donation.Status;
+                                    var statusClass = statusText.ToLowerInvariant();
+
+                                    <tr>
+                                        <td class="reference-cell">
+                                            <strong>@donation.PaymentReference</strong>
+                                            <small>Donation #@donation.DonationID</small>
+                                        </td>
+                                        <td class="organisation-cell">
+                                            <strong>@donation.NGOName</strong>
+                                            <small>
+                                                @(string.IsNullOrWhiteSpace(donation.ProgramName)
+                                                    ? donation.CauseName
+                                                    : donation.ProgramName)
+                                            </small>
+                                        </td>
+                                        <td>
+                                            <strong>@donation.DonationDate.ToString("dd MMM yyyy")</strong>
+                                            <span class="row-sub">@donation.DonationDate.ToString("hh:mm tt")</span>
+                                        </td>
+                                        <td>
+                                            <strong>@donation.CardType</strong>
+                                            <span class="row-sub">Ending @donation.CardLastFour</span>
+                                        </td>
+                                        <td>
+                                            <strong class="donation-amount">PKR @donation.Amount.ToString("N0")</strong>
+                                        </td>
+                                        <td>
+                                            <span class="donation-status @statusClass">@statusText</span>
+                                        </td>
+                                        <td>
+                                            <a class="filter-reset" href="@Url.Action("DonationDetails", "Dashboard", new { id = donation.DonationID })">View details</a>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+                else
+                {
+                    <div class="donations-empty">
+                        <div class="donations-empty-mark">DN</div>
+                        <h3>No donation records found</h3>
+                        <p>
+                            No records match the current search and status filters. Reset the filters
+                            or explore an active cause when you are ready.
+                        </p>
+                        <a href="@Url.Action("Index", "Causes")">Explore active causes</a>
+                    </div>
+                }
+            </section>
+        </section>
+    </div>
+</main>

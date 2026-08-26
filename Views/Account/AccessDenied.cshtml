@@ -1,32 +1,83 @@
-@{
-    ViewBag.Title = "Access Denied";
-    Layout = "~/Views/Shared/_Layout.cshtml";
+@{ViewBag.Title = "Access denied | GiveAID"; Layout = "~/Views/Shared/_Layout.cshtml";}
+@section Styles{
+    <style>
+        .denied {
+            min-height: calc(100vh - 75px);
+            padding: 60px 20px;
+            background: linear-gradient(135deg,#fff6ef,#edf8f4);
+            display: grid;
+            place-items: center
+        }
+
+        .denied-card {
+            width: min(620px,100%);
+            padding: 55px;
+            text-align: center;
+            background: #fff;
+            border: 1px solid #c9dcd5;
+            border-radius: 28px;
+            box-shadow: 0 25px 60px rgba(7,31,44,.14)
+        }
+
+        .denied-icon {
+            width: 78px;
+            height: 78px;
+            border-radius: 22px;
+            background: #fff0eb;
+            color: #d35e43;
+            display: grid;
+            place-items: center;
+            margin: auto;
+            font-size: 30px;
+            font-weight: 900
+        }
+
+        .denied h1 {
+            font-size: 37px;
+            letter-spacing: -.05em;
+            margin: 24px 0 12px
+        }
+
+        .denied p {
+            color: #60787c;
+            font-size: 13px;
+            line-height: 1.75
+        }
+
+        .denied-actions {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            margin-top: 27px
+        }
+
+            .denied-actions a {
+                padding: 14px 18px;
+                border-radius: 12px;
+                text-decoration: none;
+                font-size: 11px;
+                font-weight: 900
+            }
+
+        .primary {
+            background: #087f5b;
+            color: #fff
+        }
+
+        .secondary {
+            border: 1px solid #c9dcd5;
+            color: #254b50
+        }
+
+        @@media(max-width:520px) {
+            .denied-card {
+                padding: 38px 24px
+            }
+
+            .denied-actions {
+                flex-direction: column
+            }
+        }
+    </style>
 }
-
-<div class="auth-container">
-    <div class="auth-card access-denied-card text-center">
-        <div class="auth-header">
-            <div class="auth-icon">🚫</div>
-            <h2>Access Restricted</h2>
-            <p>You do not have permission to view or manage this section of Give-AID.</p>
-        </div>
-
-        <div class="access-denied-content">
-            <p class="text-muted">
-                Your account (@(Session["UserEmail"] ?? User.Identity.Name)) with role 
-                <strong class="badge-role">@(Session["UserRole"] ?? "User")</strong> 
-                is not authorized to perform administrative or restricted actions on this page.
-            </p>
-        </div>
-
-        <div class="logout-actions">
-            <a href="@Url.Action("Index", "Dashboard")" class="auth-btn">
-                Go to My Dashboard
-            </a>
-
-            <a href="@Url.Action("Index", "Home")" class="btn-secondary-link">
-                Return to Homepage
-            </a>
-        </div>
-    </div>
-</div>
+<main class="denied"><section class="denied-card"><div class="denied-icon">!</div><h1>Access restricted</h1><p>Your signed-in account does not have the role required for this page. No restricted content has been displayed.</p><div class="denied-actions"><a class="primary" href="@Url.Action("Index","Dashboard")">Open my dashboard</a><a class="secondary" href="@Url.Action("Index","Home")">Return to website</a></div></section></main>

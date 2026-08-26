@@ -1,232 +1,523 @@
 @model GiveAID_Project.Models.CauseListViewModel
+@using System
+@using System.Linq
+@{ViewBag.Title = "Explore Causes | GiveAID"; Layout = "~/Views/Shared/_Layout.cshtml";}
+@section Styles{
+    <style>
+        .cause-page {
+            background: #f7faf9;
+            color: var(--navy);
+            overflow: hidden
+        }
 
-@{
-    ViewBag.Title = "Explore Causes - Humanitarian Sectors in Pakistan | GiveAID";
-    Layout = "~/Views/Shared/_Layout.cshtml";
-}
+        .shell {
+            max-width: 1200px;
+            margin: auto;
+            padding: 0 24px
+        }
 
-<!-- =========================================================
-     CAUSES DISCOVERY HERO SECTION
-     ========================================================= -->
-<section class="causes-hero-section">
-    <div class="section-container">
-        <div class="causes-hero-content">
-            <div class="hero-pill">
-                <span class="pulse-dot"></span>
-                <span>Transparent Humanitarian Focus Areas</span>
-            </div>
-            <h1 class="causes-hero-title">Explore Causes</h1>
-            <p class="causes-hero-subtitle">
-                Support the issues that matter to you. From emergency flood response and clean drinking water to youth education and healthcare.
-            </p>
-        </div>
-    </div>
-</section>
+        .cause-hero {
+            padding: 70px 0 82px;
+            background: radial-gradient(circle at 7% 8%,#dff7ec 0,transparent 34%),linear-gradient(135deg,#fffaf1,#f7fffb)
+        }
 
-<!-- =========================================================
-     SEARCH & CATEGORY TABS
-     ========================================================= -->
-<section class="causes-search-section">
-    <div class="section-container">
-        <div class="causes-filter-card">
-            @using (Html.BeginForm("Index", "Causes", FormMethod.Get, new { id = "causesFilterForm", @class = "causes-filter-form" }))
-            {
-                <!-- Search Bar -->
-                <div class="causes-search-bar-row">
-                    <div class="input-icon-wrap search-input-flex">
-                        <span class="input-icon">🔍</span>
-                        <input type="text" 
-                               id="causeSearchInput" 
-                               name="search" 
-                               class="filter-input filter-input-lg" 
-                               placeholder="Search causes (e.g. Education, Healthcare, Water, Food, Climate, Disability, Poverty...)" 
-                               value="@Model.SearchQuery" 
-                               autocomplete="off" />
-                    </div>
-                    <button type="submit" class="btn-filter-submit">
-                        <span>Search</span>
-                    </button>
-                    @if (!string.IsNullOrEmpty(Model.SearchQuery) || !string.IsNullOrEmpty(Model.SelectedCategory))
-                    {
-                        <a href="@Url.Action("Index", "Causes")" class="btn-filter-reset" title="Clear all filters">
-                            <span>✕ Clear</span>
-                        </a>
-                    }
-                </div>
+        .hero-grid {
+            display: grid;
+            grid-template-columns: .92fr 1.08fr;
+            gap: 58px;
+            align-items: center
+        }
 
-                <!-- Category Chips -->
-                <div class="quick-chips-row" style="margin-top: 16px;">
-                    <span class="chips-label">Quick Sectors:</span>
-                    <button type="button" class="quick-chip @(string.IsNullOrEmpty(Model.SelectedCategory) ? "active" : "")" onclick="setCauseCategory('')">All</button>
-                    <button type="button" class="quick-chip @(Model.SelectedCategory == "Education" ? "active" : "")" onclick="setCauseCategory('Education')">📚 Education</button>
-                    <button type="button" class="quick-chip @(Model.SelectedCategory == "Healthcare" ? "active" : "")" onclick="setCauseCategory('Healthcare')">🩺 Healthcare</button>
-                    <button type="button" class="quick-chip @(Model.SelectedCategory == "Water" ? "active" : "")" onclick="setCauseCategory('Water')">💧 Clean Water</button>
-                    <button type="button" class="quick-chip @(Model.SelectedCategory == "Food" ? "active" : "")" onclick="setCauseCategory('Food')">🍲 Food Security</button>
-                    <button type="button" class="quick-chip @(Model.SelectedCategory == "Climate" ? "active" : "")" onclick="setCauseCategory('Climate')">🌲 Environment</button>
-                    <button type="button" class="quick-chip @(Model.SelectedCategory == "Disability" ? "active" : "")" onclick="setCauseCategory('Disability')">♿ Disability</button>
-                    <button type="button" class="quick-chip @(Model.SelectedCategory == "Poverty" ? "active" : "")" onclick="setCauseCategory('Poverty')">💼 Livelihood</button>
-                    <button type="button" class="quick-chip @(Model.SelectedCategory == "Relief" ? "active" : "")" onclick="setCauseCategory('Relief')">🚨 Relief</button>
-                </div>
-                <input type="hidden" id="selectedCauseCategoryInput" name="category" value="@Model.SelectedCategory" />
+        .kicker {
+            display: inline-flex;
+            align-items: center;
+            gap: 9px;
+            padding: 8px 13px;
+            border: 1px solid #c8e2d7;
+            border-radius: 30px;
+            background: #fff;
+            color: var(--emerald);
+            font-size: 10px;
+            font-weight: 900;
+            letter-spacing: .13em;
+            text-transform: uppercase
+        }
+
+            .kicker:before {
+                content: "";
+                width: 8px;
+                height: 8px;
+                border-radius: 50%;
+                background: var(--coral);
+                box-shadow: 0 0 0 6px rgba(239,127,97,.13)
             }
-        </div>
-    </div>
-</section>
 
-<!-- =========================================================
-     CAUSES GRID SECTION
-     ========================================================= -->
-<section class="causes-grid-section">
-    <div class="section-container">
-        <!-- Results Header -->
-        <div class="results-header-bar">
-            <div class="results-count">
-                Showing <strong id="causesResultsCount">@Model.TotalCausesCount</strong> Humanitarian @(Model.TotalCausesCount == 1 ? "Sector" : "Sectors")
-            </div>
-            <div class="directory-view-badges">
-                <span class="compliance-badge">🛡️ SECP Audited Projects</span>
-                <span class="compliance-badge">📊 100% Fund Traceability</span>
-            </div>
-        </div>
+        .cause-hero h1 {
+            font-size: 60px;
+            line-height: 1.02;
+            letter-spacing: -.06em;
+            margin: 24px 0 20px
+        }
 
-        <!-- Live Loading Indicator -->
-        <div id="causeLoadingIndicator" class="live-loading-state" style="display: none;">
-            <div class="spinner-dot"></div>
-            <span>Filtering causes...</span>
-        </div>
+            .cause-hero h1 span {
+                color: var(--emerald)
+            }
 
-        @if (Model.Causes != null && Model.Causes.Count > 0)
-        {
-            <div class="causes-directory-grid" id="causesCardsContainer">
-                @foreach (var cause in Model.Causes)
-                {
-                    <div class="cause-directory-card" 
-                         data-cause-name="@cause.CauseName.ToLower()" 
-                         data-cause-desc="@cause.Description.ToLower()">
-                        
-                        <!-- Top Banner / Icon -->
-                        <div class="cause-card-top-banner">
-                            <div class="cause-card-icon-bubble">@cause.Icon</div>
-                            <div class="cause-top-stats">
-                                <span class="badge-ngo-count">🛡️ @cause.ActiveNGOsCount @(cause.ActiveNGOsCount == 1 ? "NGO" : "NGOs")</span>
-                                <span class="badge-prog-count">📋 @cause.ActiveProgramsCount @(cause.ActiveProgramsCount == 1 ? "Program" : "Programs")</span>
-                            </div>
-                        </div>
+        .lead {
+            font-size: 17px;
+            line-height: 1.75;
+            color: #587176;
+            max-width: 550px
+        }
 
-                        <!-- Card Body: Title, Description, Metrics -->
-                        <div class="cause-card-main-body">
-                            <h3 class="cause-dir-title">
-                                <a href="@Url.Action("Details", "Causes", new { id = cause.CauseID })">@cause.CauseName</a>
-                            </h3>
+        .hero-notes {
+            display: flex;
+            gap: 9px;
+            flex-wrap: wrap;
+            margin-top: 27px
+        }
 
-                            <p class="cause-dir-desc">
-                                @(!string.IsNullOrEmpty(cause.Description) ? (cause.Description.Length > 120 ? cause.Description.Substring(0, 120) + "..." : cause.Description) : "Supporting high-impact humanitarian interventions and community development across Pakistan.")
-                            </p>
+            .hero-notes span {
+                padding: 9px 12px;
+                border-radius: 10px;
+                background: #fff;
+                border: 1px solid #dce9e4;
+                color: #33575a;
+                font-size: 10px;
+                font-weight: 800
+            }
 
-                            <!-- Stats Row (NGOs & Programs) -->
-                            <div class="cause-summary-metric-bar">
-                                <div class="cause-metric-pill">
-                                    <span class="metric-icon">🏢</span>
-                                    <span><strong>@cause.ActiveNGOsCount</strong> Verified @(cause.ActiveNGOsCount == 1 ? "NGO" : "NGOs")</span>
-                                </div>
-                                <div class="cause-metric-pill">
-                                    <span class="metric-icon">📋</span>
-                                    <span><strong>@cause.ActiveProgramsCount</strong> @(cause.ActiveProgramsCount == 1 ? "Program" : "Programs")</span>
-                                </div>
-                            </div>
+        .collage {
+            height: 455px;
+            display: grid;
+            grid-template-columns: 1.15fr .85fr;
+            grid-template-rows: 1fr 1fr;
+            gap: 12px
+        }
 
-                            @if (cause.TotalRaised > 0)
-                            {
-                                <div class="cause-raised-badge">
-                                    <span>Mobilized: <strong>PKR @cause.TotalRaised.ToString("N0")</strong></span>
-                                </div>
-                            }
-                        </div>
+        .shot {
+            position: relative;
+            overflow: hidden;
+            border: 7px solid #fff;
+            box-shadow: 0 18px 42px rgba(7,31,44,.16)
+        }
 
-                        <!-- Card Footer Actions -->
-                        <div class="cause-card-footer-actions">
-                            <a href="@Url.Action("Details", "Causes", new { id = cause.CauseID })" class="btn-cause-details">
-                                <span>Explore Cause</span>
-                                <span class="btn-arrow">→</span>
-                            </a>
-                            <a href="@Url.Action("Create", "Donation", new { causeId = cause.CauseID })" class="btn-cause-donate" title="Support @cause.CauseName">
-                                <span>Support Cause 💚</span>
-                            </a>
-                        </div>
-                    </div>
+            .shot:first-child {
+                grid-row: 1/3;
+                border-radius: 28px 12px 12px 28px
+            }
+
+            .shot:nth-child(2) {
+                border-radius: 12px 28px 12px 12px
+            }
+
+            .shot:nth-child(3) {
+                border-radius: 12px 12px 28px 12px
+            }
+
+            .shot img {
+                width: 100%;
+                height: 100%;
+                object-fit: cover;
+                display: block;
+                transition: .5s
+            }
+
+            .shot:hover img {
+                transform: scale(1.06)
+            }
+
+        .stats-wrap {
+            margin-top: -34px;
+            position: relative;
+            z-index: 3
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(4,1fr);
+            gap: 13px;
+            padding: 17px;
+            border-radius: 22px;
+            background: #082d3b;
+            box-shadow: 0 22px 50px rgba(7,31,44,.2)
+        }
+
+        .stat {
+            padding: 18px;
+            border-radius: 15px;
+            background: rgba(255,255,255,.07);
+            border: 1px solid rgba(255,255,255,.09)
+        }
+
+            .stat strong {
+                display: block;
+                color: #fff;
+                font-size: 24px
+            }
+
+            .stat span {
+                display: block;
+                margin-top: 5px;
+                color: #a8c6c8;
+                font-size: 8px;
+                text-transform: uppercase;
+                letter-spacing: .08em
+            }
+
+        .filter-area {
+            padding: 74px 0 35px
+        }
+
+        .filter-card {
+            padding: 29px;
+            border-radius: 22px;
+            background: #fff;
+            border: 1px solid #d8e5e0;
+            box-shadow: 0 16px 40px rgba(7,31,44,.09)
+        }
+
+        .search-row {
+            display: grid;
+            grid-template-columns: 1fr auto auto;
+            gap: 12px
+        }
+
+        .search-input {
+            height: 56px;
+            border: 1px solid #c8d9d2;
+            border-radius: 13px;
+            padding: 0 17px;
+            font: inherit;
+            font-size: 14px;
+            background: #f9fcfb;
+            outline: none
+        }
+
+            .search-input:focus {
+                border-color: var(--emerald);
+                box-shadow: 0 0 0 4px rgba(8,127,91,.09);
+                background: #fff
+            }
+
+        .btn {
+            height: 56px;
+            padding: 0 22px;
+            border: 0;
+            border-radius: 13px;
+            font-size: 12px;
+            font-weight: 850;
+            cursor: pointer
+        }
+
+        .search-btn {
+            background: var(--emerald);
+            color: #fff
+        }
+
+        .clear-btn {
+            background: #edf3f1;
+            color: #31565a
+        }
+
+        .chips {
+            display: flex;
+            gap: 9px;
+            flex-wrap: wrap;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #e6eeeb
+        }
+
+        .chip {
+            min-height: 40px;
+            padding: 9px 15px;
+            border-radius: 24px;
+            border: 1px solid #ccddd6;
+            background: #f7faf9;
+            color: #31575b;
+            font: inherit;
+            font-size: 11px;
+            font-weight: 800;
+            cursor: pointer
+        }
+
+            .chip.active, .chip:hover {
+                background: #082d3b;
+                border-color: #082d3b;
+                color: #fff;
+                box-shadow: 0 8px 18px rgba(7,31,44,.14)
+            }
+
+        .listing {
+            padding: 35px 0 105px
+        }
+
+        .list-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: end;
+            gap: 20px;
+            margin-bottom: 28px
+        }
+
+            .list-head h2 {
+                font-size: 36px;
+                letter-spacing: -.04em;
+                margin: 0 0 6px
+            }
+
+            .list-head p {
+                margin: 0;
+                color: #6a7f83;
+                font-size: 12px
+            }
+
+        .active-note {
+            padding: 9px 12px;
+            border-radius: 20px;
+            background: #e5f6ee;
+            color: #087252;
+            font-size: 9px;
+            font-weight: 900;
+            text-transform: uppercase
+        }
+
+        .cause-grid {
+            display: grid;
+            grid-template-columns: repeat(3,1fr);
+            gap: 20px
+        }
+
+        .cause-card {
+            min-height: 370px;
+            border-radius: 23px;
+            padding: 28px;
+            color: #fff;
+            text-decoration: none;
+            background: linear-gradient(135deg,#087f5b,#0aa878);
+            box-shadow: 0 17px 42px rgba(7,31,44,.14);
+            position: relative;
+            overflow: hidden;
+            transition: .3s;
+            display: flex;
+            flex-direction: column
+        }
+
+            .cause-card:nth-child(6n+2) {
+                background: linear-gradient(135deg,#e97354,#f19a62)
+            }
+
+            .cause-card:nth-child(6n+3) {
+                background: linear-gradient(135deg,#17667d,#2c929a)
+            }
+
+            .cause-card:nth-child(6n+4) {
+                background: linear-gradient(135deg,#a36f1d,#d69b38)
+            }
+
+            .cause-card:nth-child(6n+5) {
+                background: linear-gradient(135deg,#684b8d,#9877bc)
+            }
+
+            .cause-card:nth-child(6n) {
+                background: linear-gradient(135deg,#126c68,#27a49a)
+            }
+
+            .cause-card:after {
+                content: "";
+                position: absolute;
+                width: 190px;
+                height: 190px;
+                border: 38px solid rgba(255,255,255,.07);
+                border-radius: 50%;
+                right: -70px;
+                bottom: -90px
+            }
+
+            .cause-card:hover {
+                transform: translateY(-9px);
+                color: #fff;
+                box-shadow: 0 27px 55px rgba(7,31,44,.22)
+            }
+
+        .icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 17px;
+            background: rgba(255,255,255,.16);
+            display: grid;
+            place-items: center;
+            font-size: 12px;
+            font-weight: 900;
+            border: 1px solid rgba(255,255,255,.18)
+        }
+
+        .cause-card h3 {
+            font-size: 23px;
+            margin: 27px 0 11px;
+            position: relative;
+            z-index: 1
+        }
+
+        .cause-card p {
+            font-size: 12px;
+            line-height: 1.7;
+            color: rgba(255,255,255,.84);
+            position: relative;
+            z-index: 1;
+            min-height: 62px
+        }
+
+        .metrics {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-top: auto;
+            position: relative;
+            z-index: 1
+        }
+
+        .metric {
+            padding: 12px;
+            border-radius: 13px;
+            background: rgba(255,255,255,.12)
+        }
+
+            .metric strong {
+                display: block;
+                font-size: 17px
+            }
+
+            .metric span {
+                font-size: 8px;
+                text-transform: uppercase;
+                color: rgba(255,255,255,.75)
+            }
+
+        .progress {
+            height: 7px;
+            border-radius: 20px;
+            background: rgba(255,255,255,.18);
+            overflow: hidden;
+            margin-top: 17px;
+            position: relative;
+            z-index: 1
+        }
+
+            .progress i {
+                display: block;
+                height: 100%;
+                background: #fff
+            }
+
+        .funds {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 8px;
+            font-size: 8px;
+            color: rgba(255,255,255,.8);
+            position: relative;
+            z-index: 1
+        }
+
+        .explore {
+            margin-top: 18px;
+            font-size: 10px;
+            font-weight: 900;
+            position: relative;
+            z-index: 1
+        }
+
+        .empty {
+            padding: 65px;
+            text-align: center;
+            border: 1px dashed #b9cec5;
+            border-radius: 22px;
+            background: #fff
+        }
+
+        .reveal {
+            opacity: 0;
+            transform: translateY(24px);
+            transition: .7s
+        }
+
+            .reveal.show {
+                opacity: 1;
+                transform: none
+            }
+
+        @@media(max-width:960px) {
+            .hero-grid {
+                grid-template-columns: 1fr
+            }
+
+            .cause-grid {
+                grid-template-columns: 1fr 1fr
+            }
+
+            .stats {
+                grid-template-columns: 1fr 1fr
+            }
+        }
+
+        @@media(max-width:620px) {
+            .shell {
+                padding: 0 16px
+            }
+
+            .cause-hero {
+                padding: 52px 0 65px
+            }
+
+                .cause-hero h1 {
+                    font-size: 42px
                 }
-            </div>
+
+            .collage {
+                height: 380px
+            }
+
+            .stats, .cause-grid, .search-row {
+                grid-template-columns: 1fr
+            }
+
+            .list-head {
+                display: block
+            }
+
+            .active-note {
+                display: inline-block;
+                margin-top: 14px
+            }
         }
-        else
+
+        @@media(prefers-reduced-motion:reduce) {
+            .reveal {
+                opacity: 1;
+                transform: none
+            }
+
+            .cause-card {
+                transition: none
+            }
+        }
+    </style>
+}
+<main class="cause-page">
+    <section class="cause-hero"><div class="shell hero-grid"><div><span class="kicker">Areas of work</span><h1>Find a cause that<br /><span>matters to you.</span></h1><p class="lead">Explore active social causes and discover the organisations and programmes connected to each area of work.</p><div class="hero-notes"><span>Database-driven causes</span><span>Connected NGOs</span><span>Active programmes</span></div></div><div class="collage"><div class="shot"><img src="@Url.Content("~/Content/programme-water.png")" alt="Clean water programme" /></div><div class="shot"><img src="@Url.Content("~/Content/programme-learning.png")" alt="Education programme" /></div><div class="shot"><img src="@Url.Content("~/Content/programme-health.png")" alt="Healthcare programme" /></div></div></div></section>
+    <div class="stats-wrap"><div class="shell"><div class="stats"><div class="stat"><strong>@Model.TotalCausesCount</strong><span>Active causes</span></div><div class="stat"><strong>@Model.TotalNGOsCount</strong><span>Associated NGOs</span></div><div class="stat"><strong>@Model.TotalProgramsCount</strong><span>Active programmes</span></div><div class="stat"><strong>PKR @Model.TotalFundsRaised.ToString("N0")</strong><span>Completed contributions</span></div></div></div></div>
+    <section class="filter-area" id="causeFilters"><div class="shell"><div class="filter-card"><div class="search-row"><input class="search-input" id="causeSearch" value="@Model.SearchQuery" placeholder="Search by cause name or description" /><button class="btn search-btn" id="searchCause" type="button">Search</button><button class="btn clear-btn" id="clearCause" type="button">Clear</button></div><div class="chips"><button class="chip active" type="button" data-category="">All causes</button>@foreach (var category in Model.AvailableCategories)
+    {<button class="chip" type="button" data-category="@category">@category</button>}</div></div></div></section>
+    <section class="listing"><div class="shell"><div class="list-head"><div><h2>Explore causes</h2><p><strong id="causeCount">@Model.TotalCausesCount</strong> cause records available</p></div><span class="active-note">Active platform records</span></div>@if (Model.Causes != null && Model.Causes.Any())
+    {<div class="cause-grid">@foreach (var c in Model.Causes)
         {
-            <div class="ngo-empty-state">
-                <div class="empty-state-icon">🎯</div>
-                <h3>No causes found</h3>
-                <p>Try changing your search or filters to find humanitarian sectors.</p>
-                <a href="@Url.Action("Index", "Causes")" class="btn-filter-submit" style="margin-top: 16px; text-decoration: none;">
-                    <span>Clear Filters</span>
-                </a>
-            </div>
-        }
-
-        <!-- Client-Side Instant Filter Empty State (Hidden by default) -->
-        <div id="causeClientEmptyState" class="ngo-empty-state" style="display: none;">
-            <div class="empty-state-icon">🎯</div>
-            <h3>No causes found</h3>
-            <p>Try changing your search or filters.</p>
-            <button type="button" class="btn-filter-submit" onclick="resetCauseFilters()" style="margin-top: 16px;">
-                <span>Clear Filters</span>
-            </button>
-        </div>
-    </div>
-</section>
-
-@section Scripts {
-    <script>
-        function setCauseCategory(cat) {
-            document.getElementById('selectedCauseCategoryInput').value = cat;
-            document.getElementById('causesFilterForm').submit();
-        }
-
-        function resetCauseFilters() {
-            $('#causeSearchInput').val('');
-            $('#selectedCauseCategoryInput').val('');
-            document.getElementById('causesFilterForm').submit();
-        }
-
-        // Live client-side instant filter with loading state
-        $(document).ready(function () {
-            var searchTimeout = null;
-            $('#causeSearchInput').on('input', function () {
-                clearTimeout(searchTimeout);
-                var q = $(this).val().toLowerCase().trim();
-
-                $('#causeLoadingIndicator').show();
-
-                searchTimeout = setTimeout(function () {
-                    var visibleCount = 0;
-                    $('.cause-directory-card').each(function () {
-                        var name = $(this).data('cause-name') || '';
-                        var desc = $(this).data('cause-desc') || '';
-
-                        if (!q || name.indexOf(q) !== -1 || desc.indexOf(q) !== -1) {
-                            $(this).show();
-                            visibleCount++;
-                        } else {
-                            $(this).hide();
-                        }
-                    });
-
-                    $('#causeLoadingIndicator').hide();
-                    $('#causesResultsCount').text(visibleCount);
-
-                    if (visibleCount === 0) {
-                        $('#causeClientEmptyState').show();
-                    } else {
-                        $('#causeClientEmptyState').hide();
-                    }
-                }, 120);
-            });
-        });
-    </script>
+            string copy = !string.IsNullOrWhiteSpace(c.ShortDescription) ? c.ShortDescription : c.Description; if (string.IsNullOrWhiteSpace(copy)) { copy = "Community-focused programmes and organised support initiatives."; }
+            string code = (c.CauseName ?? "C").Length > 1 ? c.CauseName.Substring(0, 2).ToUpperInvariant() : "C";<a class="cause-card reveal" data-name="@((c.CauseName+" "+copy).ToLowerInvariant())" data-category="@c.CauseName.ToLowerInvariant()" href="@Url.Action("Details","Causes",new{id=c.CauseID})"><div class="icon">@code</div><h3>@c.CauseName</h3><p>@copy</p><div class="metrics"><div class="metric"><strong>@c.ActiveNGOsCount</strong><span>NGOs</span></div><div class="metric"><strong>@c.ActiveProgramsCount</strong><span>Programmes</span></div></div><div class="progress"><i style="width:@c.ProgressPercent%"></i></div><div class="funds"><span>PKR @c.TotalRaised.ToString("N0")</span><span>@c.ProgressPercent% of @c.TargetGoal.ToString("N0")</span></div><div class="explore">Explore cause&nbsp; &#8594;</div></a>}</div><div class="empty" id="causeEmpty" style="display:none"><h3>No matching causes</h3><p>Try another search or clear the selected filter.</p></div>}
+else
+{<div class="empty"><h3>No causes available</h3><p>The administrator has not published any active cause records yet.</p></div>}</div></section>
+</main>
+@section Scripts{
+    <script>(function () { var search = document.getElementById('causeSearch'), apply = document.getElementById('searchCause'), clear = document.getElementById('clearCause'), chips = document.querySelectorAll('.chip'), cards = document.querySelectorAll('.cause-card'), count = document.getElementById('causeCount'), empty = document.getElementById('causeEmpty'), category = ''; function filter() { var q = (search.value || '').toLowerCase().trim(), visible = 0; cards.forEach(function (card) { var show = (!q || (card.getAttribute('data-name') || '').indexOf(q) >= 0) && (!category || (card.getAttribute('data-category') || '') === category); card.style.display = show ? 'flex' : 'none'; if (show) visible++; }); if (count) count.textContent = visible; if (empty) empty.style.display = visible ? 'none' : 'block'; } search.addEventListener('input', filter); apply.addEventListener('click', filter); clear.addEventListener('click', function () { search.value = ''; category = ''; chips.forEach(function (x, i) { x.classList.toggle('active', i === 0); }); filter(); }); chips.forEach(function (chip) { chip.addEventListener('click', function () { category = (chip.getAttribute('data-category') || '').toLowerCase(); chips.forEach(function (x) { x.classList.remove('active'); }); chip.classList.add('active'); filter(); }); }); var items = document.querySelectorAll('.reveal'); if ('IntersectionObserver' in window) { var o = new IntersectionObserver(function (es) { es.forEach(function (e) { if (e.isIntersecting) { e.target.classList.add('show'); o.unobserve(e.target); } }); }, { threshold: .1 }); items.forEach(function (x) { o.observe(x); }); } else { items.forEach(function (x) { x.classList.add('show'); }); } })();</script>
 }

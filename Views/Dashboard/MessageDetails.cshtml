@@ -1,0 +1,599 @@
+@model GiveAID_Project.Models.UserContactMessageDetailViewModel
+@using System
+
+@{
+    ViewBag.Title = "Message Details | GiveAID";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+
+    var currentStatus = string.IsNullOrWhiteSpace(Model.Status)
+        ? "New"
+        : Model.Status;
+
+    var statusClass = "message-status status-" + currentStatus.ToLowerInvariant();
+}
+
+@section Styles {
+    <link href="@Url.Content("~/Content/UserDashboard.css")" rel="stylesheet" />
+
+    <style>
+        .message-detail-main {
+            min-width: 0;
+            padding: 38px 36px 80px;
+            background:
+                radial-gradient(circle at 4% 3%, rgba(25, 181, 133, .12), transparent 27%),
+                radial-gradient(circle at 98% 5%, rgba(255, 130, 98, .11), transparent 27%),
+                #f2f7f5;
+        }
+
+        .message-detail-hero {
+            position: relative;
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-between;
+            gap: 24px;
+            overflow: hidden;
+            margin-bottom: 22px;
+            padding: 30px 32px;
+            border-radius: 24px;
+            color: #fff;
+            background: linear-gradient(120deg, #063c48 0%, #076b5d 57%, #0b9c73 100%);
+            box-shadow: 0 20px 45px rgba(4, 63, 67, .18);
+        }
+
+        .message-detail-hero::before,
+        .message-detail-hero::after {
+            position: absolute;
+            content: "";
+            border: 32px solid rgba(255, 255, 255, .065);
+            border-radius: 50%;
+        }
+
+        .message-detail-hero::before {
+            width: 180px;
+            height: 180px;
+            right: -65px;
+            top: -85px;
+        }
+
+        .message-detail-hero::after {
+            width: 110px;
+            height: 110px;
+            right: 105px;
+            bottom: -90px;
+        }
+
+        .message-hero-copy,
+        .message-hero-actions {
+            position: relative;
+            z-index: 1;
+        }
+
+        .message-kicker {
+            display: block;
+            color: #65f0c0;
+            font-size: 9px;
+            font-weight: 950;
+            letter-spacing: .14em;
+            text-transform: uppercase;
+        }
+
+        .message-detail-hero h1 {
+            margin: 8px 0 7px;
+            font-size: clamp(30px, 3.5vw, 44px);
+            line-height: 1.05;
+            letter-spacing: -.045em;
+        }
+
+        .message-detail-hero p {
+            max-width: 650px;
+            margin: 0;
+            color: #c5e6df;
+            font-size: 12px;
+            line-height: 1.7;
+        }
+
+        .back-to-messages {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 45px;
+            padding: 0 17px;
+            border: 1px solid rgba(255, 255, 255, .25);
+            border-radius: 12px;
+            color: #fff;
+            background: rgba(255, 255, 255, .11);
+            backdrop-filter: blur(8px);
+            font-size: 10px;
+            font-weight: 900;
+            text-decoration: none;
+        }
+
+        .message-detail-grid {
+            display: grid;
+            grid-template-columns: minmax(0, 1.25fr) minmax(310px, .75fr);
+            gap: 19px;
+            align-items: start;
+        }
+
+        .conversation-card,
+        .response-card,
+        .message-info-card {
+            overflow: hidden;
+            border: 1px solid #cbded8;
+            border-radius: 22px;
+            background: #fff;
+            box-shadow: 0 15px 38px rgba(7, 45, 53, .07);
+        }
+
+        .conversation-head {
+            padding: 24px 26px;
+            border-bottom: 1px solid #dfeae6;
+            background: linear-gradient(135deg, #ffffff, #f2faf6);
+        }
+
+        .conversation-label {
+            display: block;
+            color: #07815d;
+            font-size: 9px;
+            font-weight: 950;
+            letter-spacing: .11em;
+            text-transform: uppercase;
+        }
+
+        .conversation-head h2 {
+            margin: 8px 0 7px;
+            color: #0a3440;
+            font-size: clamp(20px, 2.2vw, 28px);
+            line-height: 1.25;
+            letter-spacing: -.025em;
+        }
+
+        .conversation-head p {
+            margin: 0;
+            color: #74878b;
+            font-size: 10px;
+        }
+
+        .conversation-body {
+            padding: 27px;
+        }
+
+        .body-label {
+            display: block;
+            margin-bottom: 12px;
+            color: #788c90;
+            font-size: 8px;
+            font-weight: 950;
+            letter-spacing: .11em;
+            text-transform: uppercase;
+        }
+
+        .original-message {
+            min-height: 110px;
+            margin: 0;
+            color: #24494f;
+            font-size: 14px;
+            line-height: 1.85;
+            white-space: pre-wrap;
+            overflow-wrap: anywhere;
+        }
+
+        .message-sender-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 11px;
+            margin-top: 25px;
+            padding-top: 20px;
+            border-top: 1px solid #e2ece9;
+        }
+
+        .sender-data {
+            padding: 13px 14px;
+            border-radius: 12px;
+            background: #f3f8f6;
+        }
+
+        .sender-data span {
+            display: block;
+            margin-bottom: 4px;
+            color: #7c8f92;
+            font-size: 8px;
+            font-weight: 900;
+            letter-spacing: .08em;
+            text-transform: uppercase;
+        }
+
+        .sender-data strong {
+            display: block;
+            color: #173f47;
+            font-size: 10px;
+            overflow-wrap: anywhere;
+        }
+
+        .response-card {
+            margin-top: 18px;
+        }
+
+        .response-card.has-response {
+            border-color: #9edbc6;
+            background: linear-gradient(145deg, #effcf6, #fff);
+        }
+
+        .response-head {
+            display: flex;
+            align-items: center;
+            gap: 13px;
+            padding: 22px 25px 0;
+        }
+
+        .response-icon {
+            display: grid;
+            place-items: center;
+            flex: 0 0 44px;
+            width: 44px;
+            height: 44px;
+            border-radius: 13px;
+            color: #fff;
+            background: linear-gradient(145deg, #08a879, #08695e);
+            font-size: 9px;
+            font-weight: 950;
+        }
+
+        .response-head h2 {
+            margin: 0;
+            color: #0b3640;
+            font-size: 18px;
+        }
+
+        .response-head p {
+            margin: 4px 0 0;
+            color: #71868a;
+            font-size: 9px;
+        }
+
+        .response-body {
+            padding: 20px 25px 25px;
+        }
+
+        .admin-response-text {
+            margin: 0;
+            padding: 18px;
+            border: 1px solid #c5e5d9;
+            border-radius: 14px;
+            color: #1c4c49;
+            background: rgba(255, 255, 255, .82);
+            font-size: 13px;
+            line-height: 1.8;
+            white-space: pre-wrap;
+            overflow-wrap: anywhere;
+        }
+
+        .response-meta {
+            display: flex;
+            justify-content: space-between;
+            gap: 15px;
+            margin-top: 13px;
+            color: #6b8285;
+            font-size: 9px;
+        }
+
+        .response-meta strong {
+            color: #17474a;
+        }
+
+        .awaiting-response {
+            padding: 30px 25px;
+            text-align: center;
+        }
+
+        .waiting-icon {
+            display: grid;
+            place-items: center;
+            width: 58px;
+            height: 58px;
+            margin: 0 auto 15px;
+            border-radius: 17px;
+            color: #a06617;
+            background: #fff0d9;
+            font-size: 10px;
+            font-weight: 950;
+        }
+
+        .awaiting-response h2 {
+            margin: 0 0 8px;
+            color: #123a43;
+            font-size: 18px;
+        }
+
+        .awaiting-response p {
+            max-width: 520px;
+            margin: 0 auto;
+            color: #708489;
+            font-size: 10px;
+            line-height: 1.7;
+        }
+
+        .message-info-card {
+            padding: 23px;
+            background: linear-gradient(145deg, #fff8f2, #fff);
+        }
+
+        .message-status {
+            display: inline-flex;
+            padding: 8px 11px;
+            border-radius: 20px;
+            color: #526d71;
+            background: #edf3f1;
+            font-size: 8px;
+            font-weight: 950;
+            letter-spacing: .05em;
+            text-transform: uppercase;
+        }
+
+        .status-new {
+            color: #a3640e;
+            background: #fff0d8;
+        }
+
+        .status-read {
+            color: #17667a;
+            background: #e3f2f6;
+        }
+
+        .status-replied {
+            color: #087354;
+            background: #def5e9;
+        }
+
+        .status-closed {
+            color: #725393;
+            background: #f0e9f7;
+        }
+
+        .message-info-card h2 {
+            margin: 17px 0 7px;
+            color: #0a3540;
+            font-size: 21px;
+        }
+
+        .message-info-card > p {
+            margin: 0;
+            color: #6a8084;
+            font-size: 10px;
+            line-height: 1.7;
+        }
+
+        .message-info-list {
+            display: grid;
+            gap: 10px;
+            margin-top: 19px;
+        }
+
+        .message-info-row {
+            display: flex;
+            justify-content: space-between;
+            gap: 15px;
+            padding: 13px;
+            border-radius: 12px;
+            background: #f4f8f6;
+        }
+
+        .message-info-row span {
+            color: #7a8d90;
+            font-size: 9px;
+        }
+
+        .message-info-row strong {
+            color: #173f47;
+            font-size: 9px;
+            text-align: right;
+        }
+
+        .message-actions {
+            display: grid;
+            gap: 9px;
+            margin-top: 18px;
+        }
+
+        .message-actions a {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 44px;
+            padding: 0 14px;
+            border-radius: 11px;
+            color: #fff;
+            background: #07865f;
+            font-size: 9px;
+            font-weight: 900;
+            text-decoration: none;
+        }
+
+        .message-actions a.secondary {
+            border: 1px solid #cadcd7;
+            color: #285057;
+            background: #fff;
+        }
+
+        @@media (max-width: 1050px) {
+            .message-detail-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @@media (max-width: 760px) {
+            .message-detail-main {
+                padding: 26px 17px 65px;
+            }
+
+            .message-detail-hero {
+                display: block;
+                padding: 25px;
+            }
+
+            .message-hero-actions {
+                margin-top: 17px;
+            }
+
+            .message-sender-row {
+                grid-template-columns: 1fr;
+            }
+
+            .response-meta {
+                display: block;
+            }
+
+            .response-meta span {
+                display: block;
+                margin-top: 5px;
+            }
+        }
+    </style>
+}
+
+<main class="user-workspace">
+    <div class="user-shell">
+        @Html.Partial("_UserDashboardSidebar")
+
+        <section class="message-detail-main">
+            <header class="message-detail-hero">
+                <div class="message-hero-copy">
+                    <span class="message-kicker">Support conversation #@Model.ContactMessageID</span>
+                    <h1>Message details</h1>
+                    <p>
+                        Review your submitted enquiry and read the response saved by the
+                        GiveAID administration team.
+                    </p>
+                </div>
+
+                <div class="message-hero-actions">
+                    <a class="back-to-messages"
+                       href="@Url.Action("Messages", "Dashboard")">
+                        Back to my messages
+                    </a>
+                </div>
+            </header>
+
+            <div class="message-detail-grid">
+                <div>
+                    <article class="conversation-card">
+                        <header class="conversation-head">
+                            <span class="conversation-label">Your original enquiry</span>
+                            <h2>@Model.Subject</h2>
+                            <p>Submitted @Model.CreatedAt.ToString("dd MMM yyyy, hh:mm tt")</p>
+                        </header>
+
+                        <div class="conversation-body">
+                            <span class="body-label">Message</span>
+                            <p class="original-message">@Model.Message</p>
+
+                            <div class="message-sender-row">
+                                <div class="sender-data">
+                                    <span>Submitted by</span>
+                                    <strong>@Model.FullName</strong>
+                                </div>
+
+                                <div class="sender-data">
+                                    <span>Reply email</span>
+                                    <strong>@Model.Email</strong>
+                                </div>
+
+                                @if (!string.IsNullOrWhiteSpace(Model.Phone))
+                                {
+                                    <div class="sender-data">
+                                        <span>Phone number</span>
+                                        <strong>@Model.Phone</strong>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    </article>
+
+                    @if (Model.HasAdminReply)
+                    {
+                        <section class="response-card has-response">
+                            <header class="response-head">
+                                <span class="response-icon">GA</span>
+                                <div>
+                                    <h2>GiveAID administrator replied</h2>
+                                    <p>This response is saved securely with your message record.</p>
+                                </div>
+                            </header>
+
+                            <div class="response-body">
+                                <p class="admin-response-text">@Model.AdminReply</p>
+
+                                <div class="response-meta">
+                                    <span>
+                                        Replied by
+                                        <strong>@(string.IsNullOrWhiteSpace(Model.RepliedByName) ? "GiveAID Administrator" : Model.RepliedByName)</strong>
+                                    </span>
+
+                                    @if (Model.RepliedAt.HasValue)
+                                    {
+                                        <span>
+                                            <strong>@Model.RepliedAt.Value.ToString("dd MMM yyyy, hh:mm tt")</strong>
+                                        </span>
+                                    }
+                                </div>
+                            </div>
+                        </section>
+                    }
+                    else
+                    {
+                        <section class="response-card">
+                            <div class="awaiting-response">
+                                <span class="waiting-icon">WT</span>
+                                <h2>Awaiting administrator response</h2>
+                                <p>
+                                    Your enquiry is safely stored and visible to the administrator.
+                                    A saved response will appear on this page automatically.
+                                </p>
+                            </div>
+                        </section>
+                    }
+                </div>
+
+                <aside class="message-info-card">
+                    <span class="@statusClass">@currentStatus</span>
+                    <h2>Conversation status</h2>
+                    <p>
+                        This status reflects the latest action recorded by the GiveAID administrator.
+                    </p>
+
+                    <div class="message-info-list">
+                        <div class="message-info-row">
+                            <span>Message ID</span>
+                            <strong>#@Model.ContactMessageID</strong>
+                        </div>
+
+                        <div class="message-info-row">
+                            <span>Submitted</span>
+                            <strong>@Model.CreatedAt.ToString("dd MMM yyyy")</strong>
+                        </div>
+
+                        <div class="message-info-row">
+                            <span>Administrator reply</span>
+                            <strong>@(Model.HasAdminReply ? "Available" : "Pending")</strong>
+                        </div>
+
+                        @if (Model.RepliedAt.HasValue)
+                        {
+                            <div class="message-info-row">
+                                <span>Reply date</span>
+                                <strong>@Model.RepliedAt.Value.ToString("dd MMM yyyy")</strong>
+                            </div>
+                        }
+                    </div>
+
+                    <div class="message-actions">
+                        <a href="@Url.Action("Contact", "Home")">Send another message</a>
+                        <a class="secondary" href="@Url.Action("Messages", "Dashboard")">
+                            View all messages
+                        </a>
+                    </div>
+                </aside>
+            </div>
+        </section>
+    </div>
+</main>

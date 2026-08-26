@@ -1,8 +1,8 @@
+
 using System;
 using System.Collections.Generic;
 using System.Configuration;
 using System.Data.SqlClient;
-using System.Linq;
 
 namespace GiveAID_Project.Models
 {
@@ -12,226 +12,134 @@ namespace GiveAID_Project.Models
 
         public NgoRepository()
         {
-            var connSetting = ConfigurationManager.ConnectionStrings["GiveAIDConnection"];
-            if (connSetting != null && !string.IsNullOrEmpty(connSetting.ConnectionString))
-            {
-                _connectionString = connSetting.ConnectionString;
-            }
-            else
-            {
-                _connectionString = @"Data Source=(localdb)\MSSQLLocalDB;Initial Catalog=GiveAID;Integrated Security=True;MultipleActiveResultSets=True;";
-            }
+            var setting = ConfigurationManager.ConnectionStrings["GiveAIDConnection"];
+            _connectionString = setting != null && !string.IsNullOrWhiteSpace(setting.ConnectionString)
+                ? setting.ConnectionString
+                : @"Data Source=localhost\SQLEXPRESS;Initial Catalog=GiveAID;Integrated Security=True;TrustServerCertificate=True;";
         }
 
-        private SqlConnection GetConnection()
-        {
-            return new SqlConnection(_connectionString);
-        }
+        private SqlConnection GetConnection() { return new SqlConnection(_connectionString); }
 
-        // =========================================================
-        // 1. GET PUBLIC NGOS (LIST / SEARCH / FILTER)
-        // =========================================================
         public NgoListViewModel GetPublicNgos(string search = null, string location = null, int? causeId = null, string category = null)
         {
-            var result = new NgoListViewModel
+            var model = new NgoListViewModel
             {
-                SearchQuery = search?.Trim(),
-                SelectedLocation = location?.Trim(),
+                SearchQuery = Clean(search),
+                SelectedLocation = Clean(location),
                 SelectedCauseId = causeId,
-                SelectedCategory = category?.Trim()
+                SelectedCategory = Clean(category)
             };
 
-            using (var conn = GetConnection())
+            using (var connection = GetConnection())
             {
-                conn.Open();
+                connection.Open();
+                LoadFilters(connection, model);
 
-                // 1. Get filter dropdown options (Locations & Causes)
-                using (var cmd = new SqlCommand("SELECT DISTINCT City FROM NGOs WHERE Status = 'Active' AND City IS NOT NULL AND RTRIM(LTRIM(City)) <> '' ORDER BY City ASC", conn))
-                using (var reader = cmd.ExecuteReader())
-                {
-                    while (reader.Read())
-                    {
-                        result.AvailableLocations.Add(reader.GetString(0));
-                    }
-                }
-
-                using (var cmd = new SqlCommand("SELECT CauseID, CauseName FROM Causes WHERE IsActive = 1 ORDER BY CauseName ASC", conn))
-                using (var reader = cmd.ExecuteReader())
-                {
-                    while (reader.Read())
-                    {
-                        result.AvailableCauses.Add(new LookupItem
-                        {
-                            ID = reader.GetInt32(0),
-                            Name = reader.GetString(1)
-                        });
-                    }
-                }
-
-                // 2. Query Active & Approved NGOs
-                // Strictly respect visibility: Status = 'Active' AND NOT Rejected/Denied
-                string sql = @"
-                    SELECT n.NGOID, n.NGOName, n.Description, n.Address, n.City, n.Phone, n.Email, n.LogoURL, n.WebsiteURL, n.Status, n.CreatedAt,
-                           (SELECT COUNT(DISTINCT p.ProgramID) FROM Programs p WHERE p.NGOID = n.NGOID AND p.Status IN ('Active', 'Upcoming', 'Completed')) AS ActiveProgramsCount,
-                           (SELECT COUNT(DISTINCT p.CauseID) FROM Programs p WHERE p.NGOID = n.NGOID) AS CausesCount,
-                           (SELECT ISNULL(SUM(d.Amount), 0) FROM Donations d WHERE d.NGOID = n.NGOID AND d.DonationStatus IN ('Approved', 'Completed')) AS TotalRaised
-                    FROM NGOs n
-                    WHERE n.Status = 'Active'
-                      AND (NOT EXISTS (SELECT 1 FROM NGOApplications a WHERE a.NGOName = n.NGOName) 
-                           OR EXISTS (SELECT 1 FROM NGOApplications a WHERE a.NGOName = n.NGOName AND a.ApplicationStatus = 'Approved'))";
+                var sql = @"
+SELECT n.NGOID, n.NGOName, n.RegistrationNumber, n.Category, n.Description,
+       n.Address, n.City, n.Country, n.Phone, n.Email, n.LogoURL, n.WebsiteURL, n.CreatedAt,
+       (SELECT COUNT(1) FROM dbo.Programmes p
+        WHERE p.NGOID = n.NGOID AND p.Status = N'Active') AS ActiveProgrammes,
+       (SELECT COUNT(DISTINCT p.CauseID) FROM dbo.Programmes p
+        INNER JOIN dbo.Causes c ON c.CauseID = p.CauseID
+        WHERE p.NGOID = n.NGOID AND c.IsActive = 1 AND p.Status <> N'Cancelled') AS CauseCount,
+       (SELECT ISNULL(SUM(d.Amount), 0) FROM dbo.Donations d
+        WHERE d.NGOID = n.NGOID AND d.DonationStatus = N'Completed') AS TotalRaised
+FROM dbo.NGOs n
+WHERE n.IsActive = 1";
 
                 var parameters = new List<SqlParameter>();
 
-                if (!string.IsNullOrWhiteSpace(search))
+                if (!string.IsNullOrWhiteSpace(model.SearchQuery))
                 {
-                    sql += @" AND (n.NGOName LIKE @Search OR n.Description LIKE @Search OR n.City LIKE @Search 
-                                   OR EXISTS (SELECT 1 FROM Programs pr WHERE pr.NGOID = n.NGOID AND pr.ProgramName LIKE @Search)
-                                   OR EXISTS (SELECT 1 FROM Programs pr INNER JOIN Causes c ON pr.CauseID = c.CauseID WHERE pr.NGOID = n.NGOID AND c.CauseName LIKE @Search))";
-                    parameters.Add(new SqlParameter("@Search", $"%{search.Trim()}%"));
+                    sql += @" AND (n.NGOName LIKE @Search OR n.Description LIKE @Search OR n.City LIKE @Search
+                             OR n.Category LIKE @Search
+                             OR EXISTS (SELECT 1 FROM dbo.Programmes p WHERE p.NGOID = n.NGOID AND p.ProgrammeName LIKE @Search)
+                             OR EXISTS (SELECT 1 FROM dbo.Programmes p INNER JOIN dbo.Causes c ON c.CauseID = p.CauseID
+                                        WHERE p.NGOID = n.NGOID AND c.CauseName LIKE @Search))";
+                    parameters.Add(new SqlParameter("@Search", "%" + model.SearchQuery + "%"));
                 }
 
-                if (!string.IsNullOrWhiteSpace(location) && location != "all")
+                if (!string.IsNullOrWhiteSpace(model.SelectedLocation) && !model.SelectedLocation.Equals("all", StringComparison.OrdinalIgnoreCase))
                 {
                     sql += " AND n.City = @Location";
-                    parameters.Add(new SqlParameter("@Location", location.Trim()));
+                    parameters.Add(new SqlParameter("@Location", model.SelectedLocation));
                 }
 
                 if (causeId.HasValue && causeId.Value > 0)
                 {
-                    sql += " AND EXISTS (SELECT 1 FROM Programs pr WHERE pr.NGOID = n.NGOID AND pr.CauseID = @CauseID)";
+                    sql += " AND EXISTS (SELECT 1 FROM dbo.Programmes p WHERE p.NGOID = n.NGOID AND p.CauseID = @CauseID AND p.Status <> N'Cancelled')";
                     parameters.Add(new SqlParameter("@CauseID", causeId.Value));
                 }
 
-                if (!string.IsNullOrWhiteSpace(category) && category != "all")
+                if (!string.IsNullOrWhiteSpace(model.SelectedCategory) && !model.SelectedCategory.Equals("all", StringComparison.OrdinalIgnoreCase))
                 {
-                    sql += @" AND (n.Description LIKE @Category 
-                                   OR EXISTS (SELECT 1 FROM Programs pr INNER JOIN Causes c ON pr.CauseID = c.CauseID WHERE pr.NGOID = n.NGOID AND (c.CauseName LIKE @Category OR pr.ProgramName LIKE @Category)))";
-                    parameters.Add(new SqlParameter("@Category", $"%{category.Trim()}%"));
+                    sql += @" AND (n.Category = @Category OR EXISTS
+                             (SELECT 1 FROM dbo.Programmes p INNER JOIN dbo.Causes c ON c.CauseID = p.CauseID
+                              WHERE p.NGOID = n.NGOID AND c.CauseName = @Category))";
+                    parameters.Add(new SqlParameter("@Category", model.SelectedCategory));
                 }
 
-                sql += " ORDER BY n.NGOName ASC";
+                sql += " ORDER BY n.NGOName;";
 
-                var ngoList = new List<NgoListItemViewModel>();
-
-                using (var cmd = new SqlCommand(sql, conn))
+                using (var command = new SqlCommand(sql, connection))
                 {
-                    foreach (var p in parameters)
-                    {
-                        cmd.Parameters.Add(p);
-                    }
-
-                    using (var reader = cmd.ExecuteReader())
+                    command.Parameters.AddRange(parameters.ToArray());
+                    using (var reader = command.ExecuteReader())
                     {
                         while (reader.Read())
                         {
-                            var ngo = new NgoListItemViewModel
+                            model.NGOs.Add(new NgoListItemViewModel
                             {
                                 NGOID = reader.GetInt32(0),
                                 NGOName = reader.GetString(1),
-                                Description = reader.IsDBNull(2) ? "" : reader.GetString(2),
-                                Address = reader.IsDBNull(3) ? "" : reader.GetString(3),
-                                City = reader.IsDBNull(4) ? "Pakistan" : reader.GetString(4),
-                                Phone = reader.IsDBNull(5) ? "" : reader.GetString(5),
-                                Email = reader.IsDBNull(6) ? "" : reader.GetString(6),
-                                LogoURL = reader.IsDBNull(7) ? "" : reader.GetString(7),
-                                WebsiteURL = reader.IsDBNull(8) ? "" : reader.GetString(8),
-                                Status = reader.GetString(9),
-                                IsVerified = true,
-                                CreatedAt = reader.GetDateTime(10),
-                                ActiveProgramsCount = reader.GetInt32(11),
-                                CausesSupportedCount = reader.GetInt32(12),
-                                TotalFundsRaised = reader.GetDecimal(13)
-                            };
-
-                            // Extract primary category from description if present
-                            if (ngo.Description.StartsWith("[Category:"))
-                            {
-                                int endIdx = ngo.Description.IndexOf(']');
-                                if (endIdx > 10)
-                                {
-                                    ngo.PrimaryCategory = ngo.Description.Substring(10, endIdx - 10).Trim();
-                                }
-                            }
-
-                            ngoList.Add(ngo);
+                                RegistrationNumber = Text(reader, 2),
+                                Category = Text(reader, 3),
+                                Description = Text(reader, 4),
+                                Address = Text(reader, 5),
+                                City = Text(reader, 6, "Pakistan"),
+                                Country = Text(reader, 7, "Pakistan"),
+                                Phone = Text(reader, 8),
+                                Email = Text(reader, 9),
+                                LogoURL = Text(reader, 10),
+                                WebsiteURL = Text(reader, 11),
+                                CreatedAt = reader.GetDateTime(12),
+                                ActiveProgramsCount = reader.GetInt32(13),
+                                CausesSupportedCount = reader.GetInt32(14),
+                                TotalFundsRaised = Convert.ToDecimal(reader.GetValue(15)),
+                                Status = "Active"
+                            });
                         }
                     }
                 }
 
-                // 3. For each NGO, fetch the distinct causes supported
-                foreach (var ngo in ngoList)
-                {
-                    const string causeSql = @"
-                        SELECT DISTINCT c.CauseID, c.CauseName 
-                        FROM Causes c
-                        INNER JOIN Programs p ON c.CauseID = p.CauseID
-                        WHERE p.NGOID = @NGOID AND c.IsActive = 1
-                        ORDER BY c.CauseName ASC";
+                foreach (var ngo in model.NGOs) LoadNgoCauses(connection, ngo);
 
-                    using (var cmd = new SqlCommand(causeSql, conn))
-                    {
-                        cmd.Parameters.AddWithValue("@NGOID", ngo.NGOID);
-                        using (var reader = cmd.ExecuteReader())
-                        {
-                            while (reader.Read())
-                            {
-                                ngo.CauseIdsList.Add(reader.GetInt32(0));
-                                ngo.CausesList.Add(reader.GetString(1));
-                            }
-                        }
-                    }
-
-                    // Fallback to primary category if no programs linked yet
-                    if (ngo.CausesList.Count == 0 && !string.IsNullOrWhiteSpace(ngo.PrimaryCategory))
-                    {
-                        ngo.CausesList.Add(ngo.PrimaryCategory);
-                    }
-                }
-
-                result.NGOs = ngoList;
-
-                // Overall platform stats for hero banner
-                using (var cmd = new SqlCommand("SELECT COUNT(1) FROM NGOs WHERE Status = 'Active'", conn))
-                {
-                    result.TotalVerifiedNgos = Convert.ToInt32(cmd.ExecuteScalar());
-                }
-                using (var cmd = new SqlCommand("SELECT COUNT(1) FROM Programs WHERE Status = 'Active'", conn))
-                {
-                    result.TotalActivePrograms = Convert.ToInt32(cmd.ExecuteScalar());
-                }
-                using (var cmd = new SqlCommand("SELECT ISNULL(SUM(Amount), 0) FROM Donations WHERE DonationStatus IN ('Approved', 'Completed')", conn))
-                {
-                    result.TotalImpactRaised = Convert.ToDecimal(cmd.ExecuteScalar());
-                }
+                model.TotalActiveNgos = ScalarInt(connection, "SELECT COUNT(1) FROM dbo.NGOs WHERE IsActive = 1;");
+                model.TotalActivePrograms = ScalarInt(connection, "SELECT COUNT(1) FROM dbo.Programmes WHERE Status = N'Active';");
+                model.TotalImpactRaised = ScalarDecimal(connection, "SELECT ISNULL(SUM(Amount), 0) FROM dbo.Donations WHERE DonationStatus = N'Completed';");
             }
 
-            return result;
+            return model;
         }
 
-        // =========================================================
-        // 2. GET NGO DETAILS BY ID
-        // =========================================================
         public NgoDetailViewModel GetNgoById(int ngoId)
         {
-            using (var conn = GetConnection())
+            using (var connection = GetConnection())
             {
-                conn.Open();
-
-                // Check active & approved status
-                const string ngoSql = @"
-                    SELECT n.NGOID, n.NGOName, n.Description, n.Address, n.City, n.Phone, n.Email, n.LogoURL, n.WebsiteURL, n.Status, n.CreatedAt
-                    FROM NGOs n
-                    WHERE n.NGOID = @NGOID 
-                      AND n.Status = 'Active'
-                      AND (NOT EXISTS (SELECT 1 FROM NGOApplications a WHERE a.NGOName = n.NGOName) 
-                           OR EXISTS (SELECT 1 FROM NGOApplications a WHERE a.NGOName = n.NGOName AND a.ApplicationStatus = 'Approved'))";
-
+                connection.Open();
                 NgoDetailViewModel ngo = null;
 
-                using (var cmd = new SqlCommand(ngoSql, conn))
+                const string ngoSql = @"
+SELECT NGOID, NGOName, RegistrationNumber, Category, Description, Address, City, Country,
+       Phone, Email, LogoURL, WebsiteURL, CreatedAt
+FROM dbo.NGOs
+WHERE NGOID = @NGOID AND IsActive = 1;";
+
+                using (var command = new SqlCommand(ngoSql, connection))
                 {
-                    cmd.Parameters.AddWithValue("@NGOID", ngoId);
-                    using (var reader = cmd.ExecuteReader())
+                    command.Parameters.AddWithValue("@NGOID", ngoId);
+                    using (var reader = command.ExecuteReader())
                     {
                         if (reader.Read())
                         {
@@ -239,137 +147,526 @@ namespace GiveAID_Project.Models
                             {
                                 NGOID = reader.GetInt32(0),
                                 NGOName = reader.GetString(1),
-                                Description = reader.IsDBNull(2) ? "" : reader.GetString(2),
-                                Address = reader.IsDBNull(3) ? "" : reader.GetString(3),
-                                City = reader.IsDBNull(4) ? "Pakistan" : reader.GetString(4),
-                                Phone = reader.IsDBNull(5) ? "" : reader.GetString(5),
-                                Email = reader.IsDBNull(6) ? "" : reader.GetString(6),
-                                LogoURL = reader.IsDBNull(7) ? "" : reader.GetString(7),
-                                WebsiteURL = reader.IsDBNull(8) ? "" : reader.GetString(8),
-                                Status = reader.GetString(9),
-                                IsVerified = true,
-                                CreatedAt = reader.GetDateTime(10)
+                                RegistrationNumber = Text(reader, 2),
+                                Category = Text(reader, 3),
+                                Description = Text(reader, 4),
+                                Address = Text(reader, 5),
+                                City = Text(reader, 6, "Pakistan"),
+                                Country = Text(reader, 7, "Pakistan"),
+                                Phone = Text(reader, 8),
+                                Email = Text(reader, 9),
+                                LogoURL = Text(reader, 10),
+                                WebsiteURL = Text(reader, 11),
+                                CreatedAt = reader.GetDateTime(12),
+                                Status = "Active"
                             };
                         }
                     }
                 }
 
-                if (ngo == null)
-                {
-                    return null;
-                }
+                if (ngo == null) return null;
 
-                // 2. Total funds and donors
                 const string statsSql = @"
-                    SELECT ISNULL(SUM(Amount), 0), COUNT(DISTINCT DonationID), COUNT(DISTINCT UserID)
-                    FROM Donations
-                    WHERE NGOID = @NGOID AND DonationStatus IN ('Approved', 'Completed')";
-
-                using (var cmd = new SqlCommand(statsSql, conn))
+SELECT ISNULL(SUM(Amount),0), COUNT(DISTINCT DonationID), COUNT(DISTINCT UserID)
+FROM dbo.Donations WHERE NGOID = @NGOID AND DonationStatus = N'Completed';";
+                using (var command = new SqlCommand(statsSql, connection))
                 {
-                    cmd.Parameters.AddWithValue("@NGOID", ngoId);
-                    using (var reader = cmd.ExecuteReader())
+                    command.Parameters.AddWithValue("@NGOID", ngoId);
+                    using (var reader = command.ExecuteReader())
                     {
                         if (reader.Read())
                         {
-                            ngo.TotalFundsRaised = reader.GetDecimal(0);
+                            ngo.TotalFundsRaised = Convert.ToDecimal(reader.GetValue(0));
                             ngo.TotalDonationsCount = reader.GetInt32(1);
                             ngo.TotalDonorsCount = reader.GetInt32(2);
                         }
                     }
                 }
 
-                // 3. Causes supported by this NGO
-                const string causesSql = @"
-                    SELECT c.CauseID, c.CauseName, c.Description, c.ImageURL,
-                           COUNT(DISTINCT p.ProgramID) AS ProgramsCount,
-                           ISNULL(SUM(d.Amount), 0) AS TotalRaised
-                    FROM Causes c
-                    INNER JOIN Programs p ON c.CauseID = p.CauseID
-                    LEFT JOIN Donations d ON d.ProgramID = p.ProgramID AND d.DonationStatus IN ('Approved', 'Completed')
-                    WHERE p.NGOID = @NGOID AND c.IsActive = 1
-                    GROUP BY c.CauseID, c.CauseName, c.Description, c.ImageURL
-                    ORDER BY c.CauseName ASC";
+                LoadDetailCauses(connection, ngo);
+                LoadDetailProgrammes(connection, ngo);
+                return ngo;
+            }
+        }
 
-                using (var cmd = new SqlCommand(causesSql, conn))
+        // =========================================================
+        // ADMIN NGO MANAGEMENT
+        // =========================================================
+        public AdminNgoListViewModel GetAdminNgos(string search = null, string status = "all", string category = null)
+        {
+            var model = new AdminNgoListViewModel
+            {
+                SearchQuery = Clean(search),
+                SelectedStatus = string.IsNullOrWhiteSpace(status) ? "all" : status.Trim().ToLowerInvariant(),
+                SelectedCategory = Clean(category)
+            };
+
+            using (var connection = GetConnection())
+            {
+                connection.Open();
+
+                using (var command = new SqlCommand(@"
+SELECT DISTINCT Category
+FROM dbo.NGOs
+WHERE NULLIF(LTRIM(RTRIM(Category)), N'') IS NOT NULL
+ORDER BY Category;", connection))
+                using (var reader = command.ExecuteReader())
                 {
-                    cmd.Parameters.AddWithValue("@NGOID", ngoId);
-                    using (var reader = cmd.ExecuteReader())
+                    while (reader.Read())
                     {
-                        while (reader.Read())
-                        {
-                            var cause = new NgoCauseItemViewModel
-                            {
-                                CauseID = reader.GetInt32(0),
-                                CauseName = reader.GetString(1),
-                                Description = reader.IsDBNull(2) ? "" : reader.GetString(2),
-                                ImageURL = reader.IsDBNull(3) ? "" : reader.GetString(3),
-                                ProgramsCount = reader.GetInt32(4),
-                                TotalRaised = reader.GetDecimal(5),
-                                Icon = GetCauseIcon(reader.GetString(1))
-                            };
-                            ngo.Causes.Add(cause);
-                        }
+                        model.AvailableCategories.Add(reader.GetString(0));
                     }
                 }
 
-                // 4. Programs run by this NGO
-                const string programsSql = @"
-                    SELECT p.ProgramID, p.NGOID, n.NGOName, p.CauseID, c.CauseName, p.ProgramName, p.Description, 
-                           p.Location, p.StartDate, p.EndDate, p.TargetAmount, p.CurrentAmount, p.Status, p.ImageURL,
-                           (SELECT COUNT(1) FROM ProgramInterests pi WHERE pi.ProgramID = p.ProgramID) AS InterestedCount
-                    FROM Programs p
-                    INNER JOIN NGOs n ON p.NGOID = n.NGOID
-                    INNER JOIN Causes c ON p.CauseID = c.CauseID
-                    WHERE p.NGOID = @NGOID
-                    ORDER BY CASE WHEN p.Status = 'Active' THEN 1 WHEN p.Status = 'Upcoming' THEN 2 ELSE 3 END, p.StartDate DESC";
+                var sql = @"
+SELECT n.NGOID, n.NGOName, n.RegistrationNumber, n.Category, n.City, n.Country,
+       n.Email, n.Phone, n.ContactPerson, n.IsActive, n.CreatedAt, n.UpdatedAt,
+       (SELECT COUNT(1) FROM dbo.Programmes p WHERE p.NGOID = n.NGOID) AS ProgrammesCount,
+       (SELECT COUNT(1) FROM dbo.Programmes p
+        WHERE p.NGOID = n.NGOID AND p.Status = N'Active') AS ActiveProgrammesCount,
+       (SELECT ISNULL(SUM(d.Amount), 0) FROM dbo.Donations d
+        WHERE d.NGOID = n.NGOID AND d.DonationStatus = N'Completed') AS CompletedFunds
+FROM dbo.NGOs n
+WHERE 1 = 1";
 
-                using (var cmd = new SqlCommand(programsSql, conn))
+                var parameters = new List<SqlParameter>();
+
+                if (!string.IsNullOrWhiteSpace(model.SearchQuery))
                 {
-                    cmd.Parameters.AddWithValue("@NGOID", ngoId);
-                    using (var reader = cmd.ExecuteReader())
+                    sql += @" AND
+                    (
+                        n.NGOName LIKE @Search OR
+                        n.RegistrationNumber LIKE @Search OR
+                        n.Category LIKE @Search OR
+                        n.City LIKE @Search OR
+                        n.Email LIKE @Search OR
+                        n.ContactPerson LIKE @Search
+                    )";
+                    parameters.Add(new SqlParameter("@Search", "%" + model.SearchQuery + "%"));
+                }
+
+                if (model.SelectedStatus == "active")
+                {
+                    sql += " AND n.IsActive = 1";
+                }
+                else if (model.SelectedStatus == "inactive")
+                {
+                    sql += " AND n.IsActive = 0";
+                }
+
+                if (!string.IsNullOrWhiteSpace(model.SelectedCategory) &&
+                    !model.SelectedCategory.Equals("all", StringComparison.OrdinalIgnoreCase))
+                {
+                    sql += " AND n.Category = @Category";
+                    parameters.Add(new SqlParameter("@Category", model.SelectedCategory));
+                }
+
+                sql += " ORDER BY n.IsActive DESC, n.NGOName;";
+
+                using (var command = new SqlCommand(sql, connection))
+                {
+                    command.Parameters.AddRange(parameters.ToArray());
+
+                    using (var reader = command.ExecuteReader())
                     {
                         while (reader.Read())
                         {
-                            ngo.Programs.Add(new NgoProgramDetailItemViewModel
+                            model.NGOs.Add(new AdminNgoListItemViewModel
                             {
-                                ProgramID = reader.GetInt32(0),
-                                NGOID = reader.GetInt32(1),
-                                NGOName = reader.GetString(2),
-                                CauseID = reader.GetInt32(3),
-                                CauseName = reader.GetString(4),
-                                ProgramName = reader.GetString(5),
-                                Description = reader.IsDBNull(6) ? "" : reader.GetString(6),
-                                Location = reader.IsDBNull(7) ? "" : reader.GetString(7),
-                                StartDate = reader.GetDateTime(8),
-                                EndDate = reader.IsDBNull(9) ? (DateTime?)null : reader.GetDateTime(9),
-                                TargetAmount = reader.GetDecimal(10),
-                                CurrentAmount = reader.GetDecimal(11),
-                                Status = reader.GetString(12),
-                                ImageURL = reader.IsDBNull(13) ? "" : reader.GetString(13),
-                                InterestedCount = reader.GetInt32(14)
+                                NGOID = reader.GetInt32(0),
+                                NGOName = reader.GetString(1),
+                                RegistrationNumber = Text(reader, 2),
+                                Category = Text(reader, 3),
+                                City = Text(reader, 4),
+                                Country = Text(reader, 5, "Pakistan"),
+                                Email = Text(reader, 6),
+                                Phone = Text(reader, 7),
+                                ContactPerson = Text(reader, 8),
+                                IsActive = reader.GetBoolean(9),
+                                CreatedAt = reader.GetDateTime(10),
+                                UpdatedAt = reader.IsDBNull(11) ? (DateTime?)null : reader.GetDateTime(11),
+                                ProgrammesCount = reader.GetInt32(12),
+                                ActiveProgrammesCount = reader.GetInt32(13),
+                                CompletedFunds = Convert.ToDecimal(reader.GetValue(14))
                             });
                         }
                     }
                 }
 
-                return ngo;
+                using (var command = new SqlCommand(@"
+SELECT COUNT(1),
+       ISNULL(SUM(CASE WHEN IsActive = 1 THEN 1 ELSE 0 END), 0),
+       ISNULL(SUM(CASE WHEN IsActive = 0 THEN 1 ELSE 0 END), 0)
+FROM dbo.NGOs;", connection))
+                using (var reader = command.ExecuteReader())
+                {
+                    if (reader.Read())
+                    {
+                        model.TotalNGOs = reader.GetInt32(0);
+                        model.ActiveNGOs = Convert.ToInt32(reader.GetValue(1));
+                        model.InactiveNGOs = Convert.ToInt32(reader.GetValue(2));
+                    }
+                }
+
+                model.TotalProgrammes = ScalarInt(connection, "SELECT COUNT(1) FROM dbo.Programmes;");
+            }
+
+            return model;
+        }
+
+        public NgoAdminFormViewModel GetNgoForAdmin(int ngoId)
+        {
+            using (var connection = GetConnection())
+            {
+                connection.Open();
+
+                const string sql = @"
+SELECT NGOID, NGOName, RegistrationNumber, Category, Description, Address,
+       City, Country, Phone, Email, LogoURL, WebsiteURL, ContactPerson, IsActive
+FROM dbo.NGOs
+WHERE NGOID = @NGOID;";
+
+                using (var command = new SqlCommand(sql, connection))
+                {
+                    command.Parameters.AddWithValue("@NGOID", ngoId);
+
+                    using (var reader = command.ExecuteReader())
+                    {
+                        if (!reader.Read()) return null;
+
+                        return new NgoAdminFormViewModel
+                        {
+                            NGOID = reader.GetInt32(0),
+                            NGOName = reader.GetString(1),
+                            RegistrationNumber = Text(reader, 2),
+                            Category = Text(reader, 3),
+                            Description = Text(reader, 4),
+                            Address = Text(reader, 5),
+                            City = Text(reader, 6),
+                            Country = Text(reader, 7, "Pakistan"),
+                            Phone = Text(reader, 8),
+                            Email = Text(reader, 9),
+                            LogoURL = Text(reader, 10),
+                            WebsiteURL = Text(reader, 11),
+                            ContactPerson = Text(reader, 12),
+                            IsActive = reader.GetBoolean(13)
+                        };
+                    }
+                }
             }
         }
 
-        private static string GetCauseIcon(string causeName)
+        public bool CreateNgo(NgoAdminFormViewModel model, out string message)
         {
-            if (string.IsNullOrEmpty(causeName)) return "💚";
-            var lower = causeName.ToLowerInvariant();
-            if (lower.Contains("water")) return "💧";
-            if (lower.Contains("education") || lower.Contains("literacy") || lower.Contains("school")) return "📚";
-            if (lower.Contains("health") || lower.Contains("medical") || lower.Contains("clinic")) return "🩺";
-            if (lower.Contains("reforest") || lower.Contains("climate") || lower.Contains("planet") || lower.Contains("tree")) return "🌲";
-            if (lower.Contains("hunger") || lower.Contains("food") || lower.Contains("meal")) return "🍲";
-            if (lower.Contains("disabilit") || lower.Contains("inclusion") || lower.Contains("wheelchair")) return "♿";
-            if (lower.Contains("poverty") || lower.Contains("livelihood") || lower.Contains("artisan")) return "💼";
-            if (lower.Contains("emergency") || lower.Contains("relief") || lower.Contains("disaster")) return "🚨";
-            return "💚";
+            if (model == null)
+            {
+                message = "NGO information is required.";
+                return false;
+            }
+
+            using (var connection = GetConnection())
+            {
+                connection.Open();
+
+                if (NgoIdentityExists(connection, model.NGOName, model.RegistrationNumber, model.Email, null, out message))
+                {
+                    return false;
+                }
+
+                const string sql = @"
+INSERT INTO dbo.NGOs
+(
+    NGOName, RegistrationNumber, Category, Description, Email, Phone,
+    Address, City, Country, WebsiteURL, LogoURL, ContactPerson,
+    IsActive, CreatedAt, UpdatedAt
+)
+VALUES
+(
+    @NGOName, @RegistrationNumber, @Category, @Description, @Email, @Phone,
+    @Address, @City, @Country, @WebsiteURL, @LogoURL, @ContactPerson,
+    @IsActive, SYSUTCDATETIME(), NULL
+);
+SELECT CAST(SCOPE_IDENTITY() AS INT);";
+
+                try
+                {
+                    using (var command = new SqlCommand(sql, connection))
+                    {
+                        AddNgoParameters(command, model);
+                        model.NGOID = Convert.ToInt32(command.ExecuteScalar());
+                    }
+
+                    message = "NGO has been added successfully.";
+                    return true;
+                }
+                catch (SqlException exception)
+                {
+                    message = exception.Number == 2601 || exception.Number == 2627
+                        ? "An NGO with the same name already exists."
+                        : "The NGO could not be added to the database.";
+                    return false;
+                }
+            }
         }
+
+        public bool UpdateNgo(NgoAdminFormViewModel model, out string message)
+        {
+            if (model == null || model.NGOID <= 0)
+            {
+                message = "A valid NGO record is required.";
+                return false;
+            }
+
+            using (var connection = GetConnection())
+            {
+                connection.Open();
+
+                if (!NgoExists(connection, model.NGOID))
+                {
+                    message = "The selected NGO record was not found.";
+                    return false;
+                }
+
+                if (NgoIdentityExists(connection, model.NGOName, model.RegistrationNumber, model.Email, model.NGOID, out message))
+                {
+                    return false;
+                }
+
+                const string sql = @"
+UPDATE dbo.NGOs
+SET NGOName = @NGOName,
+    RegistrationNumber = @RegistrationNumber,
+    Category = @Category,
+    Description = @Description,
+    Email = @Email,
+    Phone = @Phone,
+    Address = @Address,
+    City = @City,
+    Country = @Country,
+    WebsiteURL = @WebsiteURL,
+    LogoURL = @LogoURL,
+    ContactPerson = @ContactPerson,
+    IsActive = @IsActive,
+    UpdatedAt = SYSUTCDATETIME()
+WHERE NGOID = @NGOID;";
+
+                try
+                {
+                    using (var command = new SqlCommand(sql, connection))
+                    {
+                        AddNgoParameters(command, model);
+                        command.Parameters.AddWithValue("@NGOID", model.NGOID);
+
+                        if (command.ExecuteNonQuery() != 1)
+                        {
+                            message = "The NGO record was not updated.";
+                            return false;
+                        }
+                    }
+
+                    message = "NGO information has been updated successfully.";
+                    return true;
+                }
+                catch (SqlException exception)
+                {
+                    message = exception.Number == 2601 || exception.Number == 2627
+                        ? "An NGO with the same name already exists."
+                        : "The NGO could not be updated in the database.";
+                    return false;
+                }
+            }
+        }
+
+        public bool SetNgoActiveStatus(int ngoId, bool makeActive, out string message)
+        {
+            if (ngoId <= 0)
+            {
+                message = "A valid NGO record is required.";
+                return false;
+            }
+
+            using (var connection = GetConnection())
+            {
+                connection.Open();
+
+                const string sql = @"
+UPDATE dbo.NGOs
+SET IsActive = @IsActive,
+    UpdatedAt = SYSUTCDATETIME()
+WHERE NGOID = @NGOID;";
+
+                using (var command = new SqlCommand(sql, connection))
+                {
+                    command.Parameters.AddWithValue("@IsActive", makeActive);
+                    command.Parameters.AddWithValue("@NGOID", ngoId);
+
+                    if (command.ExecuteNonQuery() != 1)
+                    {
+                        message = "The selected NGO record was not found.";
+                        return false;
+                    }
+                }
+
+                message = makeActive
+                    ? "NGO has been activated and is visible on the public website."
+                    : "NGO has been deactivated and removed from the public directory.";
+                return true;
+            }
+        }
+
+        private static bool NgoExists(SqlConnection connection, int ngoId)
+        {
+            using (var command = new SqlCommand("SELECT COUNT(1) FROM dbo.NGOs WHERE NGOID = @NGOID;", connection))
+            {
+                command.Parameters.AddWithValue("@NGOID", ngoId);
+                return Convert.ToInt32(command.ExecuteScalar()) == 1;
+            }
+        }
+
+        private static bool NgoIdentityExists(
+            SqlConnection connection,
+            string ngoName,
+            string registrationNumber,
+            string email,
+            int? excludedNgoId,
+            out string message)
+        {
+            const string sql = @"
+SELECT TOP (1)
+       CASE
+           WHEN LOWER(LTRIM(RTRIM(NGOName))) = LOWER(LTRIM(RTRIM(@NGOName))) THEN N'Name'
+           WHEN NULLIF(LTRIM(RTRIM(@RegistrationNumber)), N'') IS NOT NULL
+                AND LOWER(LTRIM(RTRIM(RegistrationNumber))) = LOWER(LTRIM(RTRIM(@RegistrationNumber))) THEN N'Registration'
+           WHEN NULLIF(LTRIM(RTRIM(@Email)), N'') IS NOT NULL
+                AND LOWER(LTRIM(RTRIM(Email))) = LOWER(LTRIM(RTRIM(@Email))) THEN N'Email'
+       END
+FROM dbo.NGOs
+WHERE (@ExcludedNGOID IS NULL OR NGOID <> @ExcludedNGOID)
+  AND
+  (
+      LOWER(LTRIM(RTRIM(NGOName))) = LOWER(LTRIM(RTRIM(@NGOName)))
+      OR
+      (
+          NULLIF(LTRIM(RTRIM(@RegistrationNumber)), N'') IS NOT NULL
+          AND LOWER(LTRIM(RTRIM(RegistrationNumber))) = LOWER(LTRIM(RTRIM(@RegistrationNumber)))
+      )
+      OR
+      (
+          NULLIF(LTRIM(RTRIM(@Email)), N'') IS NOT NULL
+          AND LOWER(LTRIM(RTRIM(Email))) = LOWER(LTRIM(RTRIM(@Email)))
+      )
+  );";
+
+            using (var command = new SqlCommand(sql, connection))
+            {
+                command.Parameters.AddWithValue("@NGOName", Clean(ngoName) ?? string.Empty);
+                command.Parameters.AddWithValue("@RegistrationNumber", Clean(registrationNumber) ?? string.Empty);
+                command.Parameters.AddWithValue("@Email", Clean(email) ?? string.Empty);
+                command.Parameters.AddWithValue("@ExcludedNGOID", (object)excludedNgoId ?? DBNull.Value);
+
+                var duplicateType = Convert.ToString(command.ExecuteScalar());
+
+                if (string.IsNullOrWhiteSpace(duplicateType))
+                {
+                    message = null;
+                    return false;
+                }
+
+                message = duplicateType == "Registration"
+                    ? "This registration number is already assigned to another NGO."
+                    : duplicateType == "Email"
+                        ? "This email address is already assigned to another NGO."
+                        : "An NGO with this name already exists.";
+                return true;
+            }
+        }
+
+        private static void AddNgoParameters(SqlCommand command, NgoAdminFormViewModel model)
+        {
+            command.Parameters.AddWithValue("@NGOName", Clean(model.NGOName) ?? string.Empty);
+            command.Parameters.AddWithValue("@RegistrationNumber", DbText(model.RegistrationNumber));
+            command.Parameters.AddWithValue("@Category", DbText(model.Category));
+            command.Parameters.AddWithValue("@Description", DbText(model.Description));
+            command.Parameters.AddWithValue("@Email", DbText(model.Email));
+            command.Parameters.AddWithValue("@Phone", DbText(model.Phone));
+            command.Parameters.AddWithValue("@Address", DbText(model.Address));
+            command.Parameters.AddWithValue("@City", DbText(model.City));
+            command.Parameters.AddWithValue("@Country", DbText(string.IsNullOrWhiteSpace(model.Country) ? "Pakistan" : model.Country));
+            command.Parameters.AddWithValue("@WebsiteURL", DbText(model.WebsiteURL));
+            command.Parameters.AddWithValue("@LogoURL", DbText(model.LogoURL));
+            command.Parameters.AddWithValue("@ContactPerson", DbText(model.ContactPerson));
+            command.Parameters.AddWithValue("@IsActive", model.IsActive);
+        }
+
+        private static object DbText(string value)
+        {
+            var cleaned = Clean(value);
+            return string.IsNullOrWhiteSpace(cleaned) ? (object)DBNull.Value : cleaned;
+        }
+
+        private static void LoadFilters(SqlConnection connection, NgoListViewModel model)
+        {
+            using (var command = new SqlCommand("SELECT DISTINCT City FROM dbo.NGOs WHERE IsActive=1 AND NULLIF(LTRIM(RTRIM(City)),N'') IS NOT NULL ORDER BY City;", connection))
+            using (var reader = command.ExecuteReader()) while (reader.Read()) model.AvailableLocations.Add(reader.GetString(0));
+
+            using (var command = new SqlCommand("SELECT DISTINCT Category FROM dbo.NGOs WHERE IsActive=1 AND NULLIF(LTRIM(RTRIM(Category)),N'') IS NOT NULL ORDER BY Category;", connection))
+            using (var reader = command.ExecuteReader()) while (reader.Read()) model.AvailableCategories.Add(reader.GetString(0));
+
+            using (var command = new SqlCommand("SELECT CauseID, CauseName FROM dbo.Causes WHERE IsActive=1 ORDER BY DisplayOrder, CauseName;", connection))
+            using (var reader = command.ExecuteReader())
+                while (reader.Read()) model.AvailableCauses.Add(new LookupItem { ID = reader.GetInt32(0), Name = reader.GetString(1) });
+        }
+
+        private static void LoadNgoCauses(SqlConnection connection, NgoListItemViewModel ngo)
+        {
+            const string sql = @"SELECT DISTINCT c.CauseID,c.CauseName FROM dbo.Causes c
+INNER JOIN dbo.Programmes p ON p.CauseID=c.CauseID
+WHERE p.NGOID=@NGOID AND c.IsActive=1 AND p.Status<>N'Cancelled' ORDER BY c.CauseName;";
+            using (var command = new SqlCommand(sql, connection))
+            {
+                command.Parameters.AddWithValue("@NGOID", ngo.NGOID);
+                using (var reader = command.ExecuteReader()) while (reader.Read()) { ngo.CauseIdsList.Add(reader.GetInt32(0)); ngo.CausesList.Add(reader.GetString(1)); }
+            }
+            if (ngo.CausesList.Count == 0 && !string.IsNullOrWhiteSpace(ngo.Category)) ngo.CausesList.Add(ngo.Category);
+        }
+
+        private static void LoadDetailCauses(SqlConnection connection, NgoDetailViewModel ngo)
+        {
+            const string sql = @"
+SELECT c.CauseID,c.CauseName,c.Description,c.ImageURL,COUNT(DISTINCT p.ProgrammeID),ISNULL(SUM(CASE WHEN d.DonationStatus=N'Completed' THEN d.Amount ELSE 0 END),0)
+FROM dbo.Causes c INNER JOIN dbo.Programmes p ON p.CauseID=c.CauseID
+LEFT JOIN dbo.Donations d ON d.ProgrammeID=p.ProgrammeID
+WHERE p.NGOID=@NGOID AND c.IsActive=1 AND p.Status<>N'Cancelled'
+GROUP BY c.CauseID,c.CauseName,c.Description,c.ImageURL ORDER BY c.CauseName;";
+            using (var command = new SqlCommand(sql, connection))
+            {
+                command.Parameters.AddWithValue("@NGOID", ngo.NGOID);
+                using (var reader = command.ExecuteReader())
+                    while (reader.Read()) ngo.Causes.Add(new NgoCauseItemViewModel { CauseID = reader.GetInt32(0), CauseName = reader.GetString(1), Description = Text(reader, 2), ImageURL = Text(reader, 3), ProgramsCount = reader.GetInt32(4), TotalRaised = Convert.ToDecimal(reader.GetValue(5)), Icon = CauseKey(reader.GetString(1)) });
+            }
+        }
+
+        private static void LoadDetailProgrammes(SqlConnection connection, NgoDetailViewModel ngo)
+        {
+            const string sql = @"
+SELECT p.ProgrammeID,p.NGOID,n.NGOName,p.CauseID,c.CauseName,p.ProgrammeName,p.Description,p.Location,p.StartDate,p.EndDate,p.TargetAmount,
+       (SELECT ISNULL(SUM(d.Amount),0) FROM dbo.Donations d WHERE d.ProgrammeID=p.ProgrammeID AND d.DonationStatus=N'Completed'),
+       p.Status,p.ImageURL,(SELECT COUNT(1) FROM dbo.ProgrammeInterests i WHERE i.ProgrammeID=p.ProgrammeID)
+FROM dbo.Programmes p INNER JOIN dbo.NGOs n ON n.NGOID=p.NGOID INNER JOIN dbo.Causes c ON c.CauseID=p.CauseID
+WHERE p.NGOID=@NGOID AND p.Status<>N'Cancelled'
+ORDER BY CASE p.Status WHEN N'Active' THEN 1 WHEN N'Upcoming' THEN 2 ELSE 3 END,p.StartDate DESC;";
+            using (var command = new SqlCommand(sql, connection))
+            {
+                command.Parameters.AddWithValue("@NGOID", ngo.NGOID);
+                using (var reader = command.ExecuteReader())
+                    while (reader.Read()) ngo.Programs.Add(new NgoProgramDetailItemViewModel { ProgramID = reader.GetInt32(0), NGOID = reader.GetInt32(1), NGOName = reader.GetString(2), CauseID = reader.GetInt32(3), CauseName = reader.GetString(4), ProgramName = reader.GetString(5), Description = Text(reader, 6), Location = Text(reader, 7), StartDate = reader.GetDateTime(8), EndDate = reader.IsDBNull(9) ? (DateTime?)null : reader.GetDateTime(9), TargetAmount = Convert.ToDecimal(reader.GetValue(10)), CurrentAmount = Convert.ToDecimal(reader.GetValue(11)), Status = reader.GetString(12), ImageURL = Text(reader, 13), InterestedCount = reader.GetInt32(14) });
+            }
+        }
+
+        private static string Clean(string value) { return string.IsNullOrWhiteSpace(value) ? null : value.Trim(); }
+        private static string Text(SqlDataReader reader, int ordinal, string fallback = "") { return reader.IsDBNull(ordinal) ? fallback : reader.GetString(ordinal); }
+        private static int ScalarInt(SqlConnection c, string sql) { using (var cmd = new SqlCommand(sql, c)) return Convert.ToInt32(cmd.ExecuteScalar()); }
+        private static decimal ScalarDecimal(SqlConnection c, string sql) { using (var cmd = new SqlCommand(sql, c)) return Convert.ToDecimal(cmd.ExecuteScalar()); }
+        private static string CauseKey(string name) { var x = (name ?? "").ToLowerInvariant(); if (x.Contains("water")) return "water"; if (x.Contains("health")) return "health"; if (x.Contains("education")) return "education"; if (x.Contains("child")) return "children"; if (x.Contains("women")) return "women"; return "community"; }
     }
 }

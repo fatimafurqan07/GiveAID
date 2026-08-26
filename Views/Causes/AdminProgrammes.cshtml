@@ -1,0 +1,353 @@
+@model GiveAID_Project.Models.AdminProgrammeListViewModel
+@using System
+@using System.Collections.Generic
+@using System.Linq
+
+@{
+    ViewBag.Title = "Programme Management | GiveAID";
+    ViewBag.AdminPageTitle = "Programme management";
+    ViewBag.AdminPageSubtitle = "Manage initiatives connected to causes and NGOs";
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+
+    var programmes = Model.Programmes ?? new List<GiveAID_Project.Models.AdminProgrammeListItemViewModel>();
+    var causes = Model.AvailableCauses ?? new List<GiveAID_Project.Models.CauseAdminLookupItem>();
+    var ngos = Model.AvailableNGOs ?? new List<GiveAID_Project.Models.CauseAdminLookupItem>();
+    var selectedStatus = string.IsNullOrWhiteSpace(Model.SelectedStatus) ? "all" : Model.SelectedStatus;
+}
+
+@section Styles {
+    <link href="@Url.Content("~/Content/CauseProgrammeAdmin.css?v=20260826-1")"
+          rel="stylesheet" />
+}
+
+<main class="admin-page programme-admin-page">
+    <header class="admin-hero programme-admin-hero">
+        <div class="admin-hero-copy">
+            <span class="admin-eyebrow">Initiative administration</span>
+            <h1>Programme management</h1>
+            <p>
+                Maintain programme records, connect them to the correct NGO and
+                cause, and control their public lifecycle.
+            </p>
+        </div>
+
+        <div class="admin-hero-actions">
+            <a class="admin-button admin-button-secondary"
+               href="@Url.Action("AdminCauses", "Causes")">
+                Manage causes
+            </a>
+
+            <a class="admin-button admin-button-primary"
+               href="@Url.Action("CreateProgramme", "Causes")">
+                <span aria-hidden="true">+</span>
+                Create programme
+            </a>
+        </div>
+    </header>
+
+    <section class="admin-stat-grid programme-stat-grid"
+             aria-label="Programme statistics">
+        <article class="admin-stat-card stat-green">
+            <span class="admin-stat-code">ALL</span>
+            <strong>@Model.TotalProgrammes</strong>
+            <small>Total programmes</small>
+        </article>
+
+        <article class="admin-stat-card stat-teal">
+            <span class="admin-stat-code">ON</span>
+            <strong>@Model.ActiveProgrammes</strong>
+            <small>Active</small>
+        </article>
+
+        <article class="admin-stat-card stat-blue">
+            <span class="admin-stat-code">UP</span>
+            <strong>@Model.UpcomingProgrammes</strong>
+            <small>Upcoming</small>
+        </article>
+
+        <article class="admin-stat-card stat-purple">
+            <span class="admin-stat-code">OK</span>
+            <strong>@Model.CompletedProgrammes</strong>
+            <small>Completed</small>
+        </article>
+
+        <article class="admin-stat-card stat-coral">
+            <span class="admin-stat-code">CN</span>
+            <strong>@Model.CancelledProgrammes</strong>
+            <small>Cancelled</small>
+        </article>
+    </section>
+
+    <section class="programme-finance-strip" aria-label="Programme financial summary">
+        <div>
+            <span>Total programme targets</span>
+            <strong>PKR @Model.TotalTargetAmount.ToString("N0")</strong>
+        </div>
+        <div>
+            <span>Completed contributions</span>
+            <strong>PKR @Model.CompletedFunds.ToString("N0")</strong>
+        </div>
+        <div>
+            <span>Overall recorded progress</span>
+            <strong>
+                @(Model.TotalTargetAmount <= 0
+                    ? 0
+                    : Math.Min(100, Math.Round((Model.CompletedFunds / Model.TotalTargetAmount) * 100)))%
+            </strong>
+        </div>
+    </section>
+
+    <section class="admin-filter-panel" aria-label="Programme filters">
+        @using (Html.BeginForm("AdminProgrammes", "Causes", FormMethod.Get, new { @class = "admin-filter-form programme-filter-form" }))
+        {
+            <div class="admin-filter-field admin-filter-search">
+                <label for="programmeSearch">Search records</label>
+                <input id="programmeSearch"
+                       type="search"
+                       name="search"
+                       value="@Model.SearchQuery"
+                       placeholder="Programme, NGO, cause, slug or location"
+                       autocomplete="off" />
+            </div>
+
+            <div class="admin-filter-field">
+                <label for="programmeStatus">Status</label>
+                <select id="programmeStatus" name="status">
+                    <option value="all" @(selectedStatus == "all" ? "selected" : "")>All statuses</option>
+                    <option value="Upcoming" @(selectedStatus.Equals("Upcoming", StringComparison.OrdinalIgnoreCase) ? "selected" : "")>Upcoming</option>
+                    <option value="Active" @(selectedStatus.Equals("Active", StringComparison.OrdinalIgnoreCase) ? "selected" : "")>Active</option>
+                    <option value="Completed" @(selectedStatus.Equals("Completed", StringComparison.OrdinalIgnoreCase) ? "selected" : "")>Completed</option>
+                    <option value="Cancelled" @(selectedStatus.Equals("Cancelled", StringComparison.OrdinalIgnoreCase) ? "selected" : "")>Cancelled</option>
+                </select>
+            </div>
+
+            <div class="admin-filter-field">
+                <label for="programmeCause">Cause</label>
+                <select id="programmeCause" name="causeId">
+                    <option value="">All causes</option>
+                    @foreach (var cause in causes)
+                    {
+                        <option value="@cause.ID" @(Model.SelectedCauseID == cause.ID ? "selected" : "")>
+                            @cause.Name
+                        </option>
+                    }
+                </select>
+            </div>
+
+            <div class="admin-filter-field">
+                <label for="programmeNgo">NGO</label>
+                <select id="programmeNgo" name="ngoId">
+                    <option value="">All NGOs</option>
+                    @foreach (var ngo in ngos)
+                    {
+                        <option value="@ngo.ID" @(Model.SelectedNGOID == ngo.ID ? "selected" : "")>
+                            @ngo.Name
+                        </option>
+                    }
+                </select>
+            </div>
+
+            <div class="admin-filter-actions">
+                <button class="admin-button admin-button-primary" type="submit">
+                    Apply filters
+                </button>
+
+                <a class="admin-button admin-button-ghost"
+                   href="@Url.Action("AdminProgrammes", "Causes")">
+                    Reset
+                </a>
+            </div>
+        }
+    </section>
+
+    <section class="admin-record-panel">
+        <header class="admin-record-header">
+            <div>
+                <span class="admin-eyebrow">Database records</span>
+                <h2>Social programmes</h2>
+                <p>
+                    Edit programme information or move a record through its
+                    Upcoming, Active, Completed or Cancelled lifecycle.
+                </p>
+            </div>
+
+            <span class="admin-count-pill">@programmes.Count record(s)</span>
+        </header>
+
+        @if (programmes.Any())
+        {
+            <div class="admin-table-wrap">
+                <table class="admin-data-table programme-data-table">
+                    <thead>
+                        <tr>
+                            <th>Programme</th>
+                            <th>Organisation and cause</th>
+                            <th>Schedule</th>
+                            <th>Funding</th>
+                            <th>Interest</th>
+                            <th>Status</th>
+                            <th class="admin-action-column">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var programme in programmes)
+                        {
+                            var statusName = string.IsNullOrWhiteSpace(programme.Status)
+                                ? "Upcoming"
+                                : programme.Status;
+                            var statusClass = "admin-status " + statusName.ToLowerInvariant();
+
+                            <tr>
+                                <td>
+                                    <div class="programme-identity">
+                                        <div class="programme-thumb">
+                                            @if (!string.IsNullOrWhiteSpace(programme.ImageURL))
+                                            {
+                                                <img src="@programme.ImageURL"
+                                                     alt=""
+                                                     loading="lazy" />
+                                            }
+                                            else
+                                            {
+                                                <span aria-hidden="true">PR</span>
+                                            }
+                                        </div>
+
+                                        <div>
+                                            <strong>@programme.ProgrammeName</strong>
+                                            <span class="admin-secondary-text">/@programme.Slug</span>
+                                            @if (!string.IsNullOrWhiteSpace(programme.Location))
+                                            {
+                                                <small>@programme.Location</small>
+                                            }
+                                        </div>
+                                    </div>
+                                </td>
+
+                                <td>
+                                    <strong>@programme.NGOName</strong>
+                                    <span class="admin-secondary-text">@programme.CauseName</span>
+                                </td>
+
+                                <td>
+                                    <strong>@programme.StartDate.ToString("dd MMM yyyy")</strong>
+                                    <span class="admin-secondary-text">
+                                        @if (programme.EndDate.HasValue)
+                                        {
+                                            @("Until " + programme.EndDate.Value.ToString("dd MMM yyyy"))
+                                        }
+                                        else
+                                        {
+                                            @:No end date
+                                        }
+                                    </span>
+                                </td>
+
+                                <td>
+                                    <strong>PKR @programme.CompletedFunds.ToString("N0")</strong>
+                                    <span class="admin-secondary-text">
+                                        of PKR @programme.TargetAmount.ToString("N0")
+                                    </span>
+                                    <div class="admin-progress" aria-label="@programme.ProgressPercent percent funded">
+                                        <i style="width: @programme.ProgressPercent%"></i>
+                                    </div>
+                                    <small>@programme.ProgressPercent% recorded</small>
+                                </td>
+
+                                <td>
+                                    <strong>@programme.InterestedUsers</strong>
+                                    <span class="admin-secondary-text">interested user(s)</span>
+                                </td>
+
+                                <td>
+                                    <span class="@statusClass">@statusName</span>
+                                    @if (programme.IsFeatured)
+                                    {
+                                        <span class="admin-featured-pill">Featured</span>
+                                    }
+                                </td>
+
+                                <td class="admin-action-column">
+                                    <div class="admin-row-actions programme-row-actions">
+                                        <a class="admin-small-button primary"
+                                           href="@Url.Action("EditProgramme", "Causes", new { id = programme.ProgrammeID })">
+                                            Edit
+                                        </a>
+
+                                        <a class="admin-small-button"
+                                           href="@Url.Action("Details", "Causes", new { id = programme.CauseID })"
+                                           target="_blank"
+                                           rel="noopener">
+                                            Public cause
+                                        </a>
+
+                                        @using (Html.BeginForm("SetProgrammeStatus", "Causes", FormMethod.Post, new { @class = "inline-admin-form status-update-form" }))
+                                        {
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="programmeId" value="@programme.ProgrammeID" />
+                                            <input type="hidden" name="search" value="@Model.SearchQuery" />
+                                            <input type="hidden" name="status" value="@selectedStatus" />
+                                            <input type="hidden" name="causeId" value="@Model.SelectedCauseID" />
+                                            <input type="hidden" name="ngoId" value="@Model.SelectedNGOID" />
+
+                                            <select name="newStatus"
+                                                    aria-label="Change status for @programme.ProgrammeName">
+                                                <option value="Upcoming" @(statusName == "Upcoming" ? "selected" : "")>Upcoming</option>
+                                                <option value="Active" @(statusName == "Active" ? "selected" : "")>Active</option>
+                                                <option value="Completed" @(statusName == "Completed" ? "selected" : "")>Completed</option>
+                                                <option value="Cancelled" @(statusName == "Cancelled" ? "selected" : "")>Cancelled</option>
+                                            </select>
+
+                                            <button type="submit"
+                                                    class="admin-small-button success"
+                                                    data-status-submit>
+                                                Update
+                                            </button>
+                                        }
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+        else
+        {
+            <div class="admin-empty-state">
+                <span class="admin-empty-mark" aria-hidden="true">PR</span>
+                <h3>No programme records matched these filters</h3>
+                <p>Clear the filters or create a programme connected to an NGO and cause.</p>
+                <div class="admin-empty-actions">
+                    <a class="admin-button admin-button-ghost"
+                       href="@Url.Action("AdminProgrammes", "Causes")">
+                        Clear filters
+                    </a>
+                    <a class="admin-button admin-button-primary"
+                       href="@Url.Action("CreateProgramme", "Causes")">
+                        Create programme
+                    </a>
+                </div>
+            </div>
+        }
+    </section>
+</main>
+
+@section Scripts {
+    <script>
+        (function () {
+            var forms = document.querySelectorAll('.status-update-form');
+
+            for (var i = 0; i < forms.length; i++) {
+                forms[i].addEventListener('submit', function (event) {
+                    var selector = this.querySelector('select[name="newStatus"]');
+                    var nextStatus = selector ? selector.value : '';
+
+                    if (!window.confirm('Change this programme status to ' + nextStatus + '?')) {
+                        event.preventDefault();
+                    }
+                });
+            }
+        }());
+    </script>
+}

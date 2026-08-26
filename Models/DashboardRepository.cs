@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Configuration;
+using System.Data;
 using System.Data.SqlClient;
 
 namespace GiveAID_Project.Models
@@ -11,862 +12,240 @@ namespace GiveAID_Project.Models
 
         public DashboardRepository()
         {
-            var connSetting = ConfigurationManager.ConnectionStrings["GiveAIDConnection"];
-            if (connSetting != null && !string.IsNullOrEmpty(connSetting.ConnectionString))
-            {
-                _connectionString = connSetting.ConnectionString;
-            }
-            else
-            {
-                _connectionString = @"Data Source=(localdb)\MSSQLLocalDB;Initial Catalog=GiveAID;Integrated Security=True;MultipleActiveResultSets=True;";
-            }
+            var setting = ConfigurationManager.ConnectionStrings["GiveAIDConnection"];
+            if (setting == null || string.IsNullOrWhiteSpace(setting.ConnectionString))
+                throw new ConfigurationErrorsException("GiveAIDConnection is missing from Web.config.");
+            _connectionString = setting.ConnectionString;
         }
 
-        private SqlConnection GetConnection()
-        {
-            return new SqlConnection(_connectionString);
-        }
+        private SqlConnection GetConnection() => new SqlConnection(_connectionString);
 
-        // ==========================================
-        // 1. ADMIN DASHBOARD DATA
-        // ==========================================
         public AdminDashboardViewModel GetAdminDashboardData()
         {
             var model = new AdminDashboardViewModel();
-
             using (var conn = GetConnection())
             {
                 conn.Open();
+                model.TotalUsers = ScalarInt(conn, "SELECT COUNT(*) FROM dbo.Users WHERE IsActive=1");
+                model.TotalNGOs = ScalarInt(conn, "SELECT COUNT(*) FROM dbo.NGOs WHERE IsActive=1");
+                model.TotalPrograms = ScalarInt(conn, "SELECT COUNT(*) FROM dbo.Programmes WHERE Status IN (N'Active',N'Upcoming')");
+                model.TotalCauses = ScalarInt(conn, "SELECT COUNT(*) FROM dbo.Causes WHERE IsActive=1");
+                model.PendingApplicationsCount = 0;
+                model.PendingDonationsCount = ScalarInt(conn, "SELECT COUNT(*) FROM dbo.Donations WHERE DonationStatus=N'Pending'");
 
-                // 1. Metrics
-                using (var cmd = new SqlCommand("SELECT COUNT(1) FROM Users", conn))
-                {
-                    model.TotalUsers = Convert.ToInt32(cmd.ExecuteScalar());
-                }
-                using (var cmd = new SqlCommand("SELECT COUNT(1) FROM NGOs WHERE Status = 'Active'", conn))
-                {
-                    model.TotalNGOs = Convert.ToInt32(cmd.ExecuteScalar());
-                }
-                using (var cmd = new SqlCommand("SELECT COUNT(1) FROM Programs WHERE Status = 'Active'", conn))
-                {
-                    model.TotalPrograms = Convert.ToInt32(cmd.ExecuteScalar());
-                }
-                using (var cmd = new SqlCommand("SELECT COUNT(1) FROM Causes WHERE IsActive = 1", conn))
-                {
-                    model.TotalCauses = Convert.ToInt32(cmd.ExecuteScalar());
-                }
-                using (var cmd = new SqlCommand("SELECT COUNT(1), ISNULL(SUM(Amount), 0) FROM Donations WHERE DonationStatus IN ('Approved', 'Completed')", conn))
-                {
-                    using (var reader = cmd.ExecuteReader())
-                    {
-                        if (reader.Read())
-                        {
-                            model.TotalDonationsCount = reader.GetInt32(0);
-                            model.TotalFundsRaised = reader.GetDecimal(1);
-                        }
-                    }
-                }
-                using (var cmd = new SqlCommand("SELECT COUNT(1) FROM NGOApplications WHERE ApplicationStatus = 'Pending'", conn))
-                {
-                    model.PendingApplicationsCount = Convert.ToInt32(cmd.ExecuteScalar());
-                }
-                using (var cmd = new SqlCommand("SELECT COUNT(1) FROM Donations WHERE DonationStatus = 'Pending' OR AdminApprovalStatus = 'Pending'", conn))
-                {
-                    model.PendingDonationsCount = Convert.ToInt32(cmd.ExecuteScalar());
-                }
-
-                // 2. Monthly Donations Trend
-                const string monthlySql = @"
-                    SELECT FORMAT(DonationDate, 'MMM yyyy') AS MonthLabel, 
-                           FORMAT(DonationDate, 'yyyyMM') AS MonthKey, 
-                           SUM(Amount) AS TotalAmount
-                    FROM Donations
-                    WHERE DonationStatus IN ('Approved', 'Completed')
-                    GROUP BY FORMAT(DonationDate, 'MMM yyyy'), FORMAT(DonationDate, 'yyyyMM')
-                    ORDER BY MonthKey ASC";
-
-                using (var cmd = new SqlCommand(monthlySql, conn))
+                using (var cmd = new SqlCommand("SELECT COUNT(*),COALESCE(SUM(Amount),0) FROM dbo.Donations WHERE DonationStatus=N'Completed'", conn))
                 using (var reader = cmd.ExecuteReader())
-                {
-                    while (reader.Read())
-                    {
-                        model.MonthlyLabels.Add(reader.GetString(0));
-                        model.MonthlyAmounts.Add(reader.GetDecimal(2));
-                    }
-                }
+                    if (reader.Read()) { model.TotalDonationsCount = reader.GetInt32(0); model.TotalFundsRaised = reader.GetDecimal(1); }
 
-                // 3. Cause Distribution
-                const string causeSql = @"
-                    SELECT c.CauseName, ISNULL(SUM(d.Amount), 0) AS TotalAmount
-                    FROM Causes c
-                    INNER JOIN Donations d ON c.CauseID = d.CauseID
-                    WHERE d.DonationStatus IN ('Approved', 'Completed')
-                    GROUP BY c.CauseName
-                    ORDER BY TotalAmount DESC";
+                ReadChart(conn, @"SELECT FORMAT(DonationDate,'MMM yyyy'),FORMAT(DonationDate,'yyyyMM'),SUM(Amount)
+                    FROM dbo.Donations WHERE DonationStatus=N'Completed'
+                    GROUP BY FORMAT(DonationDate,'MMM yyyy'),FORMAT(DonationDate,'yyyyMM') ORDER BY 2",
+                    model.MonthlyLabels, model.MonthlyAmounts, 0, 2);
 
-                using (var cmd = new SqlCommand(causeSql, conn))
+                ReadChart(conn, @"SELECT c.CauseName,SUM(d.Amount) FROM dbo.Donations d
+                    JOIN dbo.Causes c ON c.CauseID=d.CauseID WHERE d.DonationStatus=N'Completed'
+                    GROUP BY c.CauseName ORDER BY 2 DESC", model.CauseLabels, model.CauseAmounts, 0, 1);
+
+                using (var cmd = new SqlCommand("SELECT Status,COUNT(*) FROM dbo.Programmes GROUP BY Status", conn))
                 using (var reader = cmd.ExecuteReader())
+                    while (reader.Read()) { model.ProgramStatusLabels.Add(reader.GetString(0)); model.ProgramStatusCounts.Add(reader.GetInt32(1)); }
+
+                foreach (var item in ReadDonations(conn, null))
                 {
-                    while (reader.Read())
-                    {
-                        model.CauseLabels.Add(reader.GetString(0));
-                        model.CauseAmounts.Add(reader.GetDecimal(1));
-                    }
+                    model.AllDonations.Add(item);
+                    if (model.RecentDonations.Count < 10) model.RecentDonations.Add(item);
                 }
 
-                // 4. Program Statuses
-                const string progStatusSql = @"
-                    SELECT Status, COUNT(1) AS StatusCount
-                    FROM Programs
-                    GROUP BY Status";
-
-                using (var cmd = new SqlCommand(progStatusSql, conn))
+                using (var cmd = new SqlCommand(@"SELECT TOP 5 u.UserID,u.FullName,u.Email,COALESCE(r.RoleName,N'User'),u.CreatedAt,u.IsActive
+                    FROM dbo.Users u LEFT JOIN dbo.UserRoles ur ON ur.UserID=u.UserID LEFT JOIN dbo.Roles r ON r.RoleID=ur.RoleID
+                    ORDER BY u.CreatedAt DESC", conn))
                 using (var reader = cmd.ExecuteReader())
-                {
-                    while (reader.Read())
-                    {
-                        model.ProgramStatusLabels.Add(reader.GetString(0));
-                        model.ProgramStatusCounts.Add(reader.GetInt32(1));
-                    }
-                }
-
-                // 5. All & Recent Donations
-                const string allDonationsSql = @"
-                    SELECT d.DonationID, ISNULL(p.PaymentReference, 'GA-REF-' + CAST(d.DonationID AS VARCHAR)) AS PaymentRef,
-                           d.UserID, u.FullName AS DonorName, u.Email AS DonorEmail, 
-                           d.NGOID, n.NGOName,
-                           d.ProgramID, ISNULL(pr.ProgramName, 'General Cause Fund') AS ProgramName, 
-                           d.CauseID, c.CauseName,
-                           d.Amount, d.DonationDate, d.DonationStatus, d.AdminApprovalStatus, d.NGOApprovalStatus,
-                           d.AdminRemarks, d.AdminReviewedAt
-                    FROM Donations d
-                    INNER JOIN Users u ON d.UserID = u.UserID
-                    INNER JOIN NGOs n ON d.NGOID = n.NGOID
-                    INNER JOIN Causes c ON d.CauseID = c.CauseID
-                    LEFT JOIN Programs pr ON d.ProgramID = pr.ProgramID
-                    LEFT JOIN Payments p ON d.DonationID = p.DonationID
-                    ORDER BY d.DonationDate DESC";
-
-                using (var cmd = new SqlCommand(allDonationsSql, conn))
-                using (var reader = cmd.ExecuteReader())
-                {
-                    while (reader.Read())
-                    {
-                        var item = new RecentDonationItem
-                        {
-                            DonationID = reader.GetInt32(0),
-                            PaymentReference = reader.GetString(1),
-                            UserID = reader.GetInt32(2),
-                            DonorName = reader.GetString(3),
-                            DonorEmail = reader.GetString(4),
-                            NGOID = reader.GetInt32(5),
-                            NGOName = reader.GetString(6),
-                            ProgramID = reader.IsDBNull(7) ? (int?)null : reader.GetInt32(7),
-                            ProgramName = reader.GetString(8),
-                            CauseID = reader.GetInt32(9),
-                            CauseName = reader.GetString(10),
-                            Amount = reader.GetDecimal(11),
-                            DonationDate = reader.GetDateTime(12),
-                            Status = reader.GetString(13),
-                            AdminApprovalStatus = reader.GetString(14),
-                            NGOApprovalStatus = reader.GetString(15),
-                            AdminRemarks = reader.IsDBNull(16) ? null : reader.GetString(16),
-                            AdminReviewedAt = reader.IsDBNull(17) ? (DateTime?)null : reader.GetDateTime(17)
-                        };
-
-                        model.AllDonations.Add(item);
-
-                        if (model.RecentDonations.Count < 10)
-                        {
-                            model.RecentDonations.Add(item);
-                        }
-                    }
-                }
-
-                // 6. Recent Applications & All Applications
-                const string allAppsSql = @"
-                    SELECT a.ApplicationID, a.ApplicantUserID, ISNULL(na.NGOID, 0) AS NGOID,
-                           a.NGOName, u.FullName AS ApplicantName, a.Email, a.Phone, a.City, a.Address,
-                           a.Description, ISNULL(n.WebsiteURL, '') AS WebsiteURL,
-                           a.ApplicationStatus, u.IsActive, a.SubmittedAt, a.ReviewedAt, a.AdminRemarks
-                    FROM NGOApplications a
-                    INNER JOIN Users u ON a.ApplicantUserID = u.UserID
-                    LEFT JOIN NGOAccounts na ON u.UserID = na.UserID
-                    LEFT JOIN NGOs n ON na.NGOID = n.NGOID
-                    ORDER BY a.SubmittedAt DESC";
-
-                using (var cmd = new SqlCommand(allAppsSql, conn))
-                using (var reader = cmd.ExecuteReader())
-                {
-                    while (reader.Read())
-                    {
-                        var item = new AdminNgoApplicationItem
-                        {
-                            ApplicationID = reader.GetInt32(0),
-                            ApplicantUserID = reader.GetInt32(1),
-                            NGOID = reader.GetInt32(2),
-                            NGOName = reader.GetString(3),
-                            ApplicantName = reader.GetString(4),
-                            Email = reader.IsDBNull(5) ? "" : reader.GetString(5),
-                            Phone = reader.IsDBNull(6) ? "" : reader.GetString(6),
-                            City = reader.IsDBNull(7) ? "N/A" : reader.GetString(7),
-                            Address = reader.IsDBNull(8) ? "N/A" : reader.GetString(8),
-                            Description = reader.IsDBNull(9) ? "" : reader.GetString(9),
-                            WebsiteURL = reader.IsDBNull(10) ? "" : reader.GetString(10),
-                            ApplicationStatus = reader.GetString(11),
-                            IsActive = reader.GetBoolean(12),
-                            SubmittedAt = reader.GetDateTime(13),
-                            ReviewedAt = reader.IsDBNull(14) ? (DateTime?)null : reader.GetDateTime(14),
-                            AdminRemarks = reader.IsDBNull(15) ? null : reader.GetString(15)
-                        };
-
-                        model.AllNgoApplications.Add(item);
-
-                        if (model.RecentApplications.Count < 10)
-                        {
-                            model.RecentApplications.Add(new RecentApplicationItem
-                            {
-                                ApplicationID = item.ApplicationID,
-                                NGOName = item.NGOName,
-                                ApplicantName = item.ApplicantName,
-                                ApplicantEmail = item.Email,
-                                City = item.City,
-                                Status = item.ApplicationStatus,
-                                IsActive = item.IsActive,
-                                SubmittedAt = item.SubmittedAt
-                            });
-                        }
-                    }
-                }
-
-                // 7. Recent Users
-                const string recentUsersSql = @"
-                    SELECT TOP 5 u.UserID, u.FullName, u.Email, ISNULL(r.RoleName, 'User') AS RoleName,
-                           u.CreatedAt, u.IsActive
-                    FROM Users u
-                    LEFT JOIN UserRoles ur ON u.UserID = ur.UserID
-                    LEFT JOIN Roles r ON ur.RoleID = r.RoleID
-                    ORDER BY u.CreatedAt DESC";
-
-                using (var cmd = new SqlCommand(recentUsersSql, conn))
-                using (var reader = cmd.ExecuteReader())
-                {
-                    while (reader.Read())
-                    {
-                        model.RecentUsers.Add(new RecentUserItem
-                        {
-                            UserID = reader.GetInt32(0),
-                            FullName = reader.GetString(1),
-                            Email = reader.GetString(2),
-                            RoleName = reader.GetString(3),
-                            CreatedAt = reader.GetDateTime(4),
-                            IsActive = reader.GetBoolean(5)
-                        });
-                    }
-                }
+                    while (reader.Read()) model.RecentUsers.Add(new RecentUserItem { UserID = reader.GetInt32(0), FullName = reader.GetString(1), Email = reader.GetString(2), RoleName = reader.GetString(3), CreatedAt = reader.GetDateTime(4), IsActive = reader.GetBoolean(5) });
             }
-
             return model;
         }
 
-        public List<AdminNgoApplicationItem> GetAllNgoApplications()
-        {
-            var list = new List<AdminNgoApplicationItem>();
-
-            using (var conn = GetConnection())
-            {
-                conn.Open();
-                const string sql = @"
-                    SELECT a.ApplicationID, a.ApplicantUserID, ISNULL(na.NGOID, 0) AS NGOID,
-                           a.NGOName, u.FullName AS ApplicantName, a.Email, a.Phone, a.City, a.Address,
-                           a.Description, ISNULL(n.WebsiteURL, '') AS WebsiteURL,
-                           a.ApplicationStatus, u.IsActive, a.SubmittedAt, a.ReviewedAt, a.AdminRemarks
-                    FROM NGOApplications a
-                    INNER JOIN Users u ON a.ApplicantUserID = u.UserID
-                    LEFT JOIN NGOAccounts na ON u.UserID = na.UserID
-                    LEFT JOIN NGOs n ON na.NGOID = n.NGOID
-                    ORDER BY a.SubmittedAt DESC";
-
-                using (var cmd = new SqlCommand(sql, conn))
-                using (var reader = cmd.ExecuteReader())
-                {
-                    while (reader.Read())
-                    {
-                        list.Add(new AdminNgoApplicationItem
-                        {
-                            ApplicationID = reader.GetInt32(0),
-                            ApplicantUserID = reader.GetInt32(1),
-                            NGOID = reader.GetInt32(2),
-                            NGOName = reader.GetString(3),
-                            ApplicantName = reader.GetString(4),
-                            Email = reader.IsDBNull(5) ? "" : reader.GetString(5),
-                            Phone = reader.IsDBNull(6) ? "" : reader.GetString(6),
-                            City = reader.IsDBNull(7) ? "N/A" : reader.GetString(7),
-                            Address = reader.IsDBNull(8) ? "N/A" : reader.GetString(8),
-                            Description = reader.IsDBNull(9) ? "" : reader.GetString(9),
-                            WebsiteURL = reader.IsDBNull(10) ? "" : reader.GetString(10),
-                            ApplicationStatus = reader.GetString(11),
-                            IsActive = reader.GetBoolean(12),
-                            SubmittedAt = reader.GetDateTime(13),
-                            ReviewedAt = reader.IsDBNull(14) ? (DateTime?)null : reader.GetDateTime(14),
-                            AdminRemarks = reader.IsDBNull(15) ? null : reader.GetString(15)
-                        });
-                    }
-                }
-            }
-
-            return list;
-        }
-
-        public bool ApproveNgoApplication(int applicationId, int reviewerUserId)
-        {
-            using (var conn = GetConnection())
-            {
-                conn.Open();
-                using (var trans = conn.BeginTransaction())
-                {
-                    try
-                    {
-                        int applicantUserId = 0;
-                        const string getApplicantSql = "SELECT ApplicantUserID FROM NGOApplications WHERE ApplicationID = @AppID";
-                        using (var cmd = new SqlCommand(getApplicantSql, conn, trans))
-                        {
-                            cmd.Parameters.AddWithValue("@AppID", applicationId);
-                            var obj = cmd.ExecuteScalar();
-                            if (obj != null && obj != DBNull.Value)
-                            {
-                                applicantUserId = Convert.ToInt32(obj);
-                            }
-                        }
-
-                        if (applicantUserId == 0)
-                        {
-                            trans.Rollback();
-                            return false;
-                        }
-
-                        const string updateAppSql = @"
-                            UPDATE NGOApplications 
-                            SET ApplicationStatus = 'Approved', ReviewedAt = GETDATE(), ReviewedBy = @ReviewerID 
-                            WHERE ApplicationID = @AppID";
-
-                        using (var cmd = new SqlCommand(updateAppSql, conn, trans))
-                        {
-                            cmd.Parameters.AddWithValue("@AppID", applicationId);
-                            cmd.Parameters.AddWithValue("@ReviewerID", reviewerUserId > 0 ? (object)reviewerUserId : DBNull.Value);
-                            cmd.ExecuteNonQuery();
-                        }
-
-                        const string updateUserSql = "UPDATE Users SET IsActive = 1 WHERE UserID = @UserID";
-                        using (var cmd = new SqlCommand(updateUserSql, conn, trans))
-                        {
-                            cmd.Parameters.AddWithValue("@UserID", applicantUserId);
-                            cmd.ExecuteNonQuery();
-                        }
-
-                        const string updateNgoSql = @"
-                            UPDATE NGOs 
-                            SET Status = 'Active', UpdatedAt = GETDATE() 
-                            WHERE NGOID IN (SELECT NGOID FROM NGOAccounts WHERE UserID = @UserID)";
-
-                        using (var cmd = new SqlCommand(updateNgoSql, conn, trans))
-                        {
-                            cmd.Parameters.AddWithValue("@UserID", applicantUserId);
-                            cmd.ExecuteNonQuery();
-                        }
-
-                        trans.Commit();
-                        return true;
-                    }
-                    catch
-                    {
-                        trans.Rollback();
-                        throw;
-                    }
-                }
-            }
-        }
-
-        public bool DenyNgoApplication(int applicationId, int reviewerUserId, string remarks = null)
-        {
-            using (var conn = GetConnection())
-            {
-                conn.Open();
-                using (var trans = conn.BeginTransaction())
-                {
-                    try
-                    {
-                        int applicantUserId = 0;
-                        const string getApplicantSql = "SELECT ApplicantUserID FROM NGOApplications WHERE ApplicationID = @AppID";
-                        using (var cmd = new SqlCommand(getApplicantSql, conn, trans))
-                        {
-                            cmd.Parameters.AddWithValue("@AppID", applicationId);
-                            var obj = cmd.ExecuteScalar();
-                            if (obj != null && obj != DBNull.Value)
-                            {
-                                applicantUserId = Convert.ToInt32(obj);
-                            }
-                        }
-
-                        if (applicantUserId == 0)
-                        {
-                            trans.Rollback();
-                            return false;
-                        }
-
-                        const string updateAppSql = @"
-                            UPDATE NGOApplications 
-                            SET ApplicationStatus = 'Rejected', ReviewedAt = GETDATE(), ReviewedBy = @ReviewerID, AdminRemarks = @Remarks 
-                            WHERE ApplicationID = @AppID";
-
-                        using (var cmd = new SqlCommand(updateAppSql, conn, trans))
-                        {
-                            cmd.Parameters.AddWithValue("@AppID", applicationId);
-                            cmd.Parameters.AddWithValue("@ReviewerID", reviewerUserId > 0 ? (object)reviewerUserId : DBNull.Value);
-                            cmd.Parameters.AddWithValue("@Remarks", (object)remarks?.Trim() ?? DBNull.Value);
-                            cmd.ExecuteNonQuery();
-                        }
-
-                        const string updateUserSql = "UPDATE Users SET IsActive = 0 WHERE UserID = @UserID";
-                        using (var cmd = new SqlCommand(updateUserSql, conn, trans))
-                        {
-                            cmd.Parameters.AddWithValue("@UserID", applicantUserId);
-                            cmd.ExecuteNonQuery();
-                        }
-
-                        const string updateNgoSql = @"
-                            UPDATE NGOs 
-                            SET Status = 'Inactive', UpdatedAt = GETDATE() 
-                            WHERE NGOID IN (SELECT NGOID FROM NGOAccounts WHERE UserID = @UserID)";
-
-                        using (var cmd = new SqlCommand(updateNgoSql, conn, trans))
-                        {
-                            cmd.Parameters.AddWithValue("@UserID", applicantUserId);
-                            cmd.ExecuteNonQuery();
-                        }
-
-                        trans.Commit();
-                        return true;
-                    }
-                    catch
-                    {
-                        trans.Rollback();
-                        throw;
-                    }
-                }
-            }
-        }
-
-        public bool SetNgoActiveStatus(int applicationId, bool isActive)
-        {
-            using (var conn = GetConnection())
-            {
-                conn.Open();
-                using (var trans = conn.BeginTransaction())
-                {
-                    try
-                    {
-                        int applicantUserId = 0;
-                        const string getApplicantSql = "SELECT ApplicantUserID FROM NGOApplications WHERE ApplicationID = @AppID";
-                        using (var cmd = new SqlCommand(getApplicantSql, conn, trans))
-                        {
-                            cmd.Parameters.AddWithValue("@AppID", applicationId);
-                            var obj = cmd.ExecuteScalar();
-                            if (obj != null && obj != DBNull.Value)
-                            {
-                                applicantUserId = Convert.ToInt32(obj);
-                            }
-                        }
-
-                        if (applicantUserId == 0)
-                        {
-                            trans.Rollback();
-                            return false;
-                        }
-
-                        const string updateUserSql = "UPDATE Users SET IsActive = @IsActive WHERE UserID = @UserID";
-                        using (var cmd = new SqlCommand(updateUserSql, conn, trans))
-                        {
-                            cmd.Parameters.AddWithValue("@IsActive", isActive ? 1 : 0);
-                            cmd.Parameters.AddWithValue("@UserID", applicantUserId);
-                            cmd.ExecuteNonQuery();
-                        }
-
-                        string ngoStatus = isActive ? "Active" : "Inactive";
-                        const string updateNgoSql = @"
-                            UPDATE NGOs 
-                            SET Status = @Status, UpdatedAt = GETDATE() 
-                            WHERE NGOID IN (SELECT NGOID FROM NGOAccounts WHERE UserID = @UserID)";
-
-                        using (var cmd = new SqlCommand(updateNgoSql, conn, trans))
-                        {
-                            cmd.Parameters.AddWithValue("@Status", ngoStatus);
-                            cmd.Parameters.AddWithValue("@UserID", applicantUserId);
-                            cmd.ExecuteNonQuery();
-                        }
-
-                        trans.Commit();
-                        return true;
-                    }
-                    catch
-                    {
-                        trans.Rollback();
-                        throw;
-                    }
-                }
-            }
-        }
-
-        // ==========================================
-        // 2. NGO DASHBOARD DATA
-        // ==========================================
-        public NgoDashboardViewModel GetNgoDashboardData(int userId)
-        {
-            var model = new NgoDashboardViewModel();
-
-            using (var conn = GetConnection())
-            {
-                conn.Open();
-
-                // 1. Resolve NGOID for user
-                int ngoId = 0;
-                const string getNgoSql = @"
-                    SELECT TOP 1 n.NGOID, n.NGOName, n.Email, n.Phone, n.City, n.Status
-                    FROM NGOs n
-                    INNER JOIN NGOAccounts na ON n.NGOID = na.NGOID
-                    WHERE na.UserID = @UserID";
-
-                using (var cmd = new SqlCommand(getNgoSql, conn))
-                {
-                    cmd.Parameters.AddWithValue("@UserID", userId);
-                    using (var reader = cmd.ExecuteReader())
-                    {
-                        if (reader.Read())
-                        {
-                            ngoId = reader.GetInt32(0);
-                            model.NGOID = ngoId;
-                            model.NGOName = reader.GetString(1);
-                            model.Email = reader.IsDBNull(2) ? "" : reader.GetString(2);
-                            model.Phone = reader.IsDBNull(3) ? "" : reader.GetString(3);
-                            model.City = reader.IsDBNull(4) ? "" : reader.GetString(4);
-                            model.Status = reader.GetString(5);
-                        }
-                    }
-                }
-
-                // If not found in NGOAccounts, fallback to first active NGO or user match
-                if (ngoId == 0)
-                {
-                    const string fallbackNgoSql = "SELECT TOP 1 NGOID, NGOName, Email, Phone, City, Status FROM NGOs WHERE Status = 'Active' ORDER BY NGOID ASC";
-                    using (var cmd = new SqlCommand(fallbackNgoSql, conn))
-                    using (var reader = cmd.ExecuteReader())
-                    {
-                        if (reader.Read())
-                        {
-                            ngoId = reader.GetInt32(0);
-                            model.NGOID = ngoId;
-                            model.NGOName = reader.GetString(1);
-                            model.Email = reader.IsDBNull(2) ? "" : reader.GetString(2);
-                            model.Phone = reader.IsDBNull(3) ? "" : reader.GetString(3);
-                            model.City = reader.IsDBNull(4) ? "" : reader.GetString(4);
-                            model.Status = reader.GetString(5);
-                        }
-                    }
-                }
-
-                if (ngoId == 0)
-                    return model;
-
-                // 2. NGO Metrics
-                using (var cmd = new SqlCommand("SELECT COUNT(1), ISNULL(SUM(Amount), 0), COUNT(DISTINCT UserID) FROM Donations WHERE NGOID = @NGOID AND DonationStatus IN ('Approved', 'Completed')", conn))
-                {
-                    cmd.Parameters.AddWithValue("@NGOID", ngoId);
-                    using (var reader = cmd.ExecuteReader())
-                    {
-                        if (reader.Read())
-                        {
-                            model.TotalDonationsCount = reader.GetInt32(0);
-                            model.TotalRaised = reader.GetDecimal(1);
-                            model.TotalDonorsCount = reader.GetInt32(2);
-                        }
-                    }
-                }
-
-                using (var cmd = new SqlCommand("SELECT COUNT(1) FROM Donations WHERE NGOID = @NGOID AND (DonationStatus = 'Pending' OR AdminApprovalStatus = 'Pending')", conn))
-                {
-                    cmd.Parameters.AddWithValue("@NGOID", ngoId);
-                    model.PendingDonationsCount = Convert.ToInt32(cmd.ExecuteScalar());
-                }
-
-                using (var cmd = new SqlCommand("SELECT COUNT(1) FROM Programs WHERE NGOID = @NGOID", conn))
-                {
-                    cmd.Parameters.AddWithValue("@NGOID", ngoId);
-                    model.TotalProgramsCount = Convert.ToInt32(cmd.ExecuteScalar());
-                }
-
-                using (var cmd = new SqlCommand("SELECT COUNT(1) FROM ProgramInterests pi INNER JOIN Programs pr ON pi.ProgramID = pr.ProgramID WHERE pr.NGOID = @NGOID", conn))
-                {
-                    cmd.Parameters.AddWithValue("@NGOID", ngoId);
-                    model.TotalInterestedUsersCount = Convert.ToInt32(cmd.ExecuteScalar());
-                }
-
-                // 3. NGO Programs
-                const string progSql = @"
-                    SELECT pr.ProgramID, pr.ProgramName, c.CauseName, pr.Location, pr.TargetAmount, pr.CurrentAmount, pr.Status,
-                           (SELECT COUNT(1) FROM ProgramInterests pi WHERE pi.ProgramID = pr.ProgramID) AS InterestedCount
-                    FROM Programs pr
-                    INNER JOIN Causes c ON pr.CauseID = c.CauseID
-                    WHERE pr.NGOID = @NGOID
-                    ORDER BY pr.CreatedAt DESC";
-
-                using (var cmd = new SqlCommand(progSql, conn))
-                {
-                    cmd.Parameters.AddWithValue("@NGOID", ngoId);
-                    using (var reader = cmd.ExecuteReader())
-                    {
-                        while (reader.Read())
-                        {
-                            var item = new NgoProgramItem
-                            {
-                                ProgramID = reader.GetInt32(0),
-                                ProgramName = reader.GetString(1),
-                                CauseName = reader.GetString(2),
-                                Location = reader.IsDBNull(3) ? "Worldwide" : reader.GetString(3),
-                                TargetAmount = reader.GetDecimal(4),
-                                CurrentAmount = reader.GetDecimal(5),
-                                Status = reader.GetString(6),
-                                InterestedCount = reader.GetInt32(7)
-                            };
-                            model.Programs.Add(item);
-
-                            model.ProgramNames.Add(item.ProgramName.Length > 20 ? item.ProgramName.Substring(0, 18) + "..." : item.ProgramName);
-                            model.ProgramRaised.Add(item.CurrentAmount);
-                            model.ProgramTargets.Add(item.TargetAmount);
-                        }
-                    }
-                }
-
-                // 4. Monthly Inflow
-                const string monthlySql = @"
-                    SELECT FORMAT(DonationDate, 'MMM yyyy') AS MonthLabel, 
-                           FORMAT(DonationDate, 'yyyyMM') AS MonthKey, 
-                           SUM(Amount) AS TotalAmount
-                    FROM Donations
-                    WHERE NGOID = @NGOID AND DonationStatus IN ('Approved', 'Completed')
-                    GROUP BY FORMAT(DonationDate, 'MMM yyyy'), FORMAT(DonationDate, 'yyyyMM')
-                    ORDER BY MonthKey ASC";
-
-                using (var cmd = new SqlCommand(monthlySql, conn))
-                {
-                    cmd.Parameters.AddWithValue("@NGOID", ngoId);
-                    using (var reader = cmd.ExecuteReader())
-                    {
-                        while (reader.Read())
-                        {
-                            model.MonthlyLabels.Add(reader.GetString(0));
-                            model.MonthlyAmounts.Add(reader.GetDecimal(2));
-                        }
-                    }
-                }
-
-                // 5. All & Recent Donations Received for this NGO
-                const string recentDonationsSql = @"
-                    SELECT d.DonationID, ISNULL(p.PaymentReference, 'GA-REF-' + CAST(d.DonationID AS VARCHAR)) AS PaymentRef,
-                           d.UserID, u.FullName AS DonorName, u.Email AS DonorEmail, 
-                           d.NGOID, n.NGOName,
-                           d.ProgramID, ISNULL(pr.ProgramName, 'General Cause Fund') AS ProgramName, 
-                           d.CauseID, c.CauseName,
-                           d.Amount, d.DonationDate, d.DonationStatus, d.AdminApprovalStatus, d.NGOApprovalStatus,
-                           d.AdminRemarks, d.AdminReviewedAt
-                    FROM Donations d
-                    INNER JOIN Users u ON d.UserID = u.UserID
-                    INNER JOIN NGOs n ON d.NGOID = n.NGOID
-                    INNER JOIN Causes c ON d.CauseID = c.CauseID
-                    LEFT JOIN Programs pr ON d.ProgramID = pr.ProgramID
-                    LEFT JOIN Payments p ON d.DonationID = p.DonationID
-                    WHERE d.NGOID = @NGOID
-                    ORDER BY d.DonationDate DESC";
-
-                using (var cmd = new SqlCommand(recentDonationsSql, conn))
-                {
-                    cmd.Parameters.AddWithValue("@NGOID", ngoId);
-                    using (var reader = cmd.ExecuteReader())
-                    {
-                        while (reader.Read())
-                        {
-                            var item = new RecentDonationItem
-                            {
-                                DonationID = reader.GetInt32(0),
-                                PaymentReference = reader.GetString(1),
-                                UserID = reader.GetInt32(2),
-                                DonorName = reader.GetString(3),
-                                DonorEmail = reader.GetString(4),
-                                NGOID = reader.GetInt32(5),
-                                NGOName = reader.GetString(6),
-                                ProgramID = reader.IsDBNull(7) ? (int?)null : reader.GetInt32(7),
-                                ProgramName = reader.GetString(8),
-                                CauseID = reader.GetInt32(9),
-                                CauseName = reader.GetString(10),
-                                Amount = reader.GetDecimal(11),
-                                DonationDate = reader.GetDateTime(12),
-                                Status = reader.GetString(13),
-                                AdminApprovalStatus = reader.GetString(14),
-                                NGOApprovalStatus = reader.GetString(15),
-                                AdminRemarks = reader.IsDBNull(16) ? null : reader.GetString(16),
-                                AdminReviewedAt = reader.IsDBNull(17) ? (DateTime?)null : reader.GetDateTime(17)
-                            };
-
-                            model.AllDonations.Add(item);
-
-                            if (model.RecentDonations.Count < 10)
-                            {
-                                model.RecentDonations.Add(item);
-                            }
-                        }
-                    }
-                }
-
-                // 6. Top Supporters
-                const string supportersSql = @"
-                    SELECT TOP 5 u.FullName, u.Email, SUM(d.Amount) AS TotalDonated, COUNT(d.DonationID) AS DonationsCount, MAX(d.DonationDate) AS LastDonationDate
-                    FROM Donations d
-                    INNER JOIN Users u ON d.UserID = u.UserID
-                    WHERE d.NGOID = @NGOID AND d.DonationStatus IN ('Approved', 'Completed')
-                    GROUP BY u.FullName, u.Email
-                    ORDER BY TotalDonated DESC";
-
-                using (var cmd = new SqlCommand(supportersSql, conn))
-                {
-                    cmd.Parameters.AddWithValue("@NGOID", ngoId);
-                    using (var reader = cmd.ExecuteReader())
-                    {
-                        while (reader.Read())
-                        {
-                            model.TopSupporters.Add(new NgoSupporterItem
-                            {
-                                SupporterName = reader.GetString(0),
-                                SupporterEmail = reader.GetString(1),
-                                TotalDonated = reader.GetDecimal(2),
-                                DonationsCount = reader.GetInt32(3),
-                                LastDonationDate = reader.GetDateTime(4)
-                            });
-                        }
-                    }
-                }
-            }
-
-            return model;
-        }
-
-        // ==========================================
-        // 3. USER DASHBOARD DATA
-        // ==========================================
         public UserDashboardViewModel GetUserDashboardData(int userId)
         {
             var model = new UserDashboardViewModel { UserID = userId };
+            using (var conn = GetConnection())
+            {
+                conn.Open();
+                using (var cmd = new SqlCommand("SELECT FullName,Email,CreatedAt FROM dbo.Users WHERE UserID=@id", conn))
+                { cmd.Parameters.Add("@id", SqlDbType.Int).Value = userId; using (var r = cmd.ExecuteReader()) if (r.Read()) { model.FullName = r.GetString(0); model.Email = r.GetString(1); model.MemberSince = r.GetDateTime(2); } }
+                using (var cmd = new SqlCommand("SELECT COUNT(*),COALESCE(SUM(Amount),0),COUNT(DISTINCT CauseID) FROM dbo.Donations WHERE UserID=@id AND DonationStatus=N'Completed'", conn))
+                { cmd.Parameters.Add("@id", SqlDbType.Int).Value = userId; using (var r = cmd.ExecuteReader()) if (r.Read()) { model.TotalDonationsCount = r.GetInt32(0); model.TotalDonated = r.GetDecimal(1); model.CausesSupportedCount = r.GetInt32(2); } }
+                using (var cmd = new SqlCommand("SELECT COUNT(*) FROM dbo.ProgrammeInterests WHERE UserID=@id AND Status=N'Interested'", conn))
+                { cmd.Parameters.Add("@id", SqlDbType.Int).Value = userId; model.SavedProgramsCount = Convert.ToInt32(cmd.ExecuteScalar()); }
+
+                const string donationSql = @"SELECT d.DonationID,COALESCE(pay.PaymentReference,N'GA-'+CONVERT(nvarchar(20),d.DonationID)),COALESCE(n.NGOName,N'General Fund'),COALESCE(p.ProgrammeName,c.CauseName),c.CauseName,d.Amount,d.DonationDate,d.DonationStatus,COALESCE(pay.CardBrand,pay.PaymentMethod,N'Dummy Payment'),COALESCE(pay.CardLastFour,N'----') FROM dbo.Donations d JOIN dbo.Causes c ON c.CauseID=d.CauseID LEFT JOIN dbo.NGOs n ON n.NGOID=d.NGOID LEFT JOIN dbo.Programmes p ON p.ProgrammeID=d.ProgrammeID LEFT JOIN dbo.Payments pay ON pay.DonationID=d.DonationID WHERE d.UserID=@id ORDER BY d.DonationDate DESC";
+                using (var cmd = new SqlCommand(donationSql, conn)) { cmd.Parameters.Add("@id", SqlDbType.Int).Value = userId; using (var r = cmd.ExecuteReader()) while (r.Read()) model.Donations.Add(new UserDonationItem { DonationID = r.GetInt32(0), PaymentReference = r.GetString(1), NGOName = r.GetString(2), ProgramName = r.GetString(3), CauseName = r.GetString(4), Amount = r.GetDecimal(5), DonationDate = r.GetDateTime(6), Status = r.GetString(7), CardType = r.GetString(8), CardLastFour = r.GetString(9) }); }
+
+                const string interestSql = @"SELECT p.ProgrammeID,p.ProgrammeName,n.NGOName,c.CauseName,p.TargetAmount,COALESCE((SELECT SUM(d.Amount) FROM dbo.Donations d WHERE d.ProgrammeID=p.ProgrammeID AND d.DonationStatus=N'Completed'),0),p.Status,pi.CreatedAt FROM dbo.ProgrammeInterests pi JOIN dbo.Programmes p ON p.ProgrammeID=pi.ProgrammeID JOIN dbo.NGOs n ON n.NGOID=p.NGOID JOIN dbo.Causes c ON c.CauseID=p.CauseID WHERE pi.UserID=@id AND pi.Status=N'Interested' ORDER BY pi.CreatedAt DESC";
+                using (var cmd = new SqlCommand(interestSql, conn)) { cmd.Parameters.Add("@id", SqlDbType.Int).Value = userId; using (var r = cmd.ExecuteReader()) while (r.Read()) model.SavedPrograms.Add(new UserInterestItem { ProgramID = r.GetInt32(0), ProgramName = r.GetString(1), NGOName = r.GetString(2), CauseName = r.GetString(3), TargetAmount = r.GetDecimal(4), CurrentAmount = r.GetDecimal(5), Status = r.GetString(6), InterestDate = r.GetDateTime(7) }); }
+            }
+            return model;
+        }
+
+        public UserProfileViewModel GetUserProfile(int userId)
+        {
+            if (userId <= 0)
+                return null;
+
+            const string sql = @"
+                SELECT UserID, FullName, Email, Phone, Gender, Profession,
+                       Address, City, Country, CreatedAt, LastLoginAt
+                FROM dbo.Users
+                WHERE UserID = @UserID AND IsActive = 1";
+
+            using (var conn = GetConnection())
+            using (var cmd = new SqlCommand(sql, conn))
+            {
+                cmd.Parameters.Add("@UserID", SqlDbType.Int).Value = userId;
+                conn.Open();
+
+                using (var reader = cmd.ExecuteReader())
+                {
+                    if (!reader.Read())
+                        return null;
+
+                    return new UserProfileViewModel
+                    {
+                        UserID = reader.GetInt32(reader.GetOrdinal("UserID")),
+                        FullName = reader.GetString(reader.GetOrdinal("FullName")),
+                        Email = reader.GetString(reader.GetOrdinal("Email")),
+                        Phone = ReadNullableString(reader, "Phone"),
+                        Gender = ReadNullableString(reader, "Gender"),
+                        Profession = ReadNullableString(reader, "Profession"),
+                        Address = ReadNullableString(reader, "Address"),
+                        City = ReadNullableString(reader, "City"),
+                        Country = ReadNullableString(reader, "Country"),
+                        MemberSince = reader.GetDateTime(reader.GetOrdinal("CreatedAt")),
+                        LastLoginAt = reader.IsDBNull(reader.GetOrdinal("LastLoginAt"))
+                            ? (DateTime?)null
+                            : reader.GetDateTime(reader.GetOrdinal("LastLoginAt"))
+                    };
+                }
+            }
+        }
+
+        public bool UpdateUserProfile(UserProfileViewModel model)
+        {
+            if (model == null)
+                throw new ArgumentNullException(nameof(model));
+
+            if (model.UserID <= 0 || string.IsNullOrWhiteSpace(model.FullName))
+                return false;
+
+            string gender = NormalizeGender(model.Gender);
+
+            const string sql = @"
+                UPDATE dbo.Users
+                SET FullName = @FullName,
+                    Phone = @Phone,
+                    Gender = @Gender,
+                    Profession = @Profession,
+                    Address = @Address,
+                    City = @City,
+                    Country = @Country,
+                    UpdatedAt = SYSUTCDATETIME()
+                WHERE UserID = @UserID AND IsActive = 1";
+
+            using (var conn = GetConnection())
+            using (var cmd = new SqlCommand(sql, conn))
+            {
+                cmd.Parameters.Add("@FullName", SqlDbType.NVarChar, 150).Value = model.FullName.Trim();
+                cmd.Parameters.Add("@Phone", SqlDbType.NVarChar, 30).Value = NullableDbValue(model.Phone);
+                cmd.Parameters.Add("@Gender", SqlDbType.NVarChar, 20).Value = NullableDbValue(gender);
+                cmd.Parameters.Add("@Profession", SqlDbType.NVarChar, 120).Value = NullableDbValue(model.Profession);
+                cmd.Parameters.Add("@Address", SqlDbType.NVarChar, 500).Value = NullableDbValue(model.Address);
+                cmd.Parameters.Add("@City", SqlDbType.NVarChar, 100).Value = NullableDbValue(model.City);
+                cmd.Parameters.Add("@Country", SqlDbType.NVarChar, 100).Value = NullableDbValue(model.Country);
+                cmd.Parameters.Add("@UserID", SqlDbType.Int).Value = model.UserID;
+
+                conn.Open();
+                return cmd.ExecuteNonQuery() == 1;
+            }
+        }
+
+        public UserDonationsViewModel GetUserDonations(int userId, string search, string status)
+        {
+            search = (search ?? string.Empty).Trim();
+            status = string.IsNullOrWhiteSpace(status)
+                ? "all"
+                : status.Trim().ToLowerInvariant();
+
+            if (status != "completed" && status != "pending" && status != "cancelled")
+                status = "all";
+
+            var model = new UserDonationsViewModel
+            {
+                Search = search,
+                Status = status
+            };
+
+            if (userId <= 0)
+                return model;
 
             using (var conn = GetConnection())
             {
                 conn.Open();
 
-                // 1. User Info
-                using (var cmd = new SqlCommand("SELECT FullName, Email, CreatedAt FROM Users WHERE UserID = @UserID", conn))
+                const string totalsSql = @"
+                    SELECT COUNT(*) AS TotalRecords,
+                           SUM(CASE WHEN DonationStatus=N'Completed' THEN 1 ELSE 0 END) AS CompletedRecords,
+                           SUM(CASE WHEN DonationStatus=N'Pending' THEN 1 ELSE 0 END) AS PendingRecords,
+                           COALESCE(SUM(CASE WHEN DonationStatus=N'Completed' THEN Amount ELSE 0 END),0) AS CompletedAmount
+                    FROM dbo.Donations
+                    WHERE UserID=@UserID";
+
+                using (var cmd = new SqlCommand(totalsSql, conn))
                 {
-                    cmd.Parameters.AddWithValue("@UserID", userId);
+                    cmd.Parameters.Add("@UserID", SqlDbType.Int).Value = userId;
+
                     using (var reader = cmd.ExecuteReader())
                     {
                         if (reader.Read())
                         {
-                            model.FullName = reader.GetString(0);
-                            model.Email = reader.GetString(1);
-                            model.MemberSince = reader.GetDateTime(2);
+                            model.TotalRecords = reader.GetInt32(0);
+                            model.CompletedRecords = reader.IsDBNull(1) ? 0 : reader.GetInt32(1);
+                            model.PendingRecords = reader.IsDBNull(2) ? 0 : reader.GetInt32(2);
+                            model.CompletedAmount = reader.GetDecimal(3);
                         }
                     }
                 }
 
-                // 2. Metrics
-                using (var cmd = new SqlCommand("SELECT COUNT(1), ISNULL(SUM(Amount), 0), COUNT(DISTINCT CauseID) FROM Donations WHERE UserID = @UserID AND DonationStatus IN ('Approved', 'Completed')", conn))
+                const string recordsSql = @"
+                    SELECT d.DonationID,
+                           COALESCE(pay.PaymentReference,N'GA-'+CONVERT(nvarchar(20),d.DonationID)),
+                           COALESCE(n.NGOName,N'General Fund'),
+                           COALESCE(p.ProgrammeName,c.CauseName),
+                           c.CauseName,
+                           d.Amount,
+                           d.DonationDate,
+                           d.DonationStatus,
+                           COALESCE(pay.CardBrand,pay.PaymentMethod,N'Dummy Payment'),
+                           COALESCE(pay.CardLastFour,N'----')
+                    FROM dbo.Donations d
+                    JOIN dbo.Causes c ON c.CauseID=d.CauseID
+                    LEFT JOIN dbo.NGOs n ON n.NGOID=d.NGOID
+                    LEFT JOIN dbo.Programmes p ON p.ProgrammeID=d.ProgrammeID
+                    LEFT JOIN dbo.Payments pay ON pay.DonationID=d.DonationID
+                    WHERE d.UserID=@UserID
+                      AND (@Status=N'all' OR LOWER(d.DonationStatus)=@Status)
+                      AND (@Search=N''
+                           OR COALESCE(pay.PaymentReference,N'GA-'+CONVERT(nvarchar(20),d.DonationID)) LIKE N'%'+@Search+N'%'
+                           OR COALESCE(n.NGOName,N'General Fund') LIKE N'%'+@Search+N'%'
+                           OR COALESCE(p.ProgrammeName,c.CauseName) LIKE N'%'+@Search+N'%'
+                           OR c.CauseName LIKE N'%'+@Search+N'%')
+                    ORDER BY d.DonationDate DESC,d.DonationID DESC";
+
+                using (var cmd = new SqlCommand(recordsSql, conn))
                 {
-                    cmd.Parameters.AddWithValue("@UserID", userId);
-                    using (var reader = cmd.ExecuteReader())
-                    {
-                        if (reader.Read())
-                        {
-                            model.TotalDonationsCount = reader.GetInt32(0);
-                            model.TotalDonated = reader.GetDecimal(1);
-                            model.CausesSupportedCount = reader.GetInt32(2);
-                        }
-                    }
-                }
+                    cmd.Parameters.Add("@UserID", SqlDbType.Int).Value = userId;
+                    cmd.Parameters.Add("@Search", SqlDbType.NVarChar, 150).Value = search;
+                    cmd.Parameters.Add("@Status", SqlDbType.NVarChar, 20).Value = status;
 
-                using (var cmd = new SqlCommand("SELECT COUNT(1) FROM ProgramInterests WHERE UserID = @UserID AND Status = 'Interested'", conn))
-                {
-                    cmd.Parameters.AddWithValue("@UserID", userId);
-                    model.SavedProgramsCount = Convert.ToInt32(cmd.ExecuteScalar());
-                }
-
-                // 3. Giving by Cause
-                const string causeSql = @"
-                    SELECT c.CauseName, SUM(d.Amount) AS TotalAmount
-                    FROM Donations d
-                    INNER JOIN Causes c ON d.CauseID = c.CauseID
-                    WHERE d.UserID = @UserID AND d.DonationStatus IN ('Approved', 'Completed')
-                    GROUP BY c.CauseName
-                    ORDER BY TotalAmount DESC";
-
-                using (var cmd = new SqlCommand(causeSql, conn))
-                {
-                    cmd.Parameters.AddWithValue("@UserID", userId);
-                    using (var reader = cmd.ExecuteReader())
-                    {
-                        while (reader.Read())
-                        {
-                            model.CauseLabels.Add(reader.GetString(0));
-                            model.CauseAmounts.Add(reader.GetDecimal(1));
-                        }
-                    }
-                }
-
-                // 4. Monthly Giving History
-                const string monthlySql = @"
-                    SELECT FORMAT(DonationDate, 'MMM yyyy') AS MonthLabel, 
-                           FORMAT(DonationDate, 'yyyyMM') AS MonthKey, 
-                           SUM(Amount) AS TotalAmount
-                    FROM Donations
-                    WHERE UserID = @UserID AND DonationStatus IN ('Approved', 'Completed')
-                    GROUP BY FORMAT(DonationDate, 'MMM yyyy'), FORMAT(DonationDate, 'yyyyMM')
-                    ORDER BY MonthKey ASC";
-
-                using (var cmd = new SqlCommand(monthlySql, conn))
-                {
-                    cmd.Parameters.AddWithValue("@UserID", userId);
-                    using (var reader = cmd.ExecuteReader())
-                    {
-                        while (reader.Read())
-                        {
-                            model.MonthlyLabels.Add(reader.GetString(0));
-                            model.MonthlyAmounts.Add(reader.GetDecimal(2));
-                        }
-                    }
-                }
-
-                // 5. User Donations
-                const string donationsSql = @"
-                    SELECT d.DonationID, ISNULL(p.PaymentReference, 'GA-REF-' + CAST(d.DonationID AS VARCHAR)) AS PaymentRef,
-                           n.NGOName, ISNULL(pr.ProgramName, c.CauseName) AS ProgramName, c.CauseName,
-                           d.Amount, d.DonationDate, d.DonationStatus,
-                           ISNULL(p.CardType, 'Card') AS CardType, ISNULL(p.CardLastFour, '••••') AS CardLastFour
-                    FROM Donations d
-                    INNER JOIN NGOs n ON d.NGOID = n.NGOID
-                    INNER JOIN Causes c ON d.CauseID = c.CauseID
-                    LEFT JOIN Programs pr ON d.ProgramID = pr.ProgramID
-                    LEFT JOIN Payments p ON d.DonationID = p.DonationID
-                    WHERE d.UserID = @UserID
-                    ORDER BY d.DonationDate DESC";
-
-                using (var cmd = new SqlCommand(donationsSql, conn))
-                {
-                    cmd.Parameters.AddWithValue("@UserID", userId);
                     using (var reader = cmd.ExecuteReader())
                     {
                         while (reader.Read())
@@ -887,26 +266,233 @@ namespace GiveAID_Project.Models
                         }
                     }
                 }
+            }
 
-                // 6. Saved Programs of Interest
-                const string interestsSql = @"
-                    SELECT pr.ProgramID, pr.ProgramName, n.NGOName, c.CauseName,
-                           pr.TargetAmount, pr.CurrentAmount, pr.Status, pi.InterestDate
-                    FROM ProgramInterests pi
-                    INNER JOIN Programs pr ON pi.ProgramID = pr.ProgramID
-                    INNER JOIN NGOs n ON pr.NGOID = n.NGOID
-                    INNER JOIN Causes c ON pr.CauseID = c.CauseID
-                    WHERE pi.UserID = @UserID AND pi.Status = 'Interested'
-                    ORDER BY pi.InterestDate DESC";
+            return model;
+        }
 
-                using (var cmd = new SqlCommand(interestsSql, conn))
+        public AdminDonationsViewModel GetAdminDonations(string search, string status)
+        {
+            search = (search ?? string.Empty).Trim();
+            status = string.IsNullOrWhiteSpace(status)
+                ? "all"
+                : status.Trim().ToLowerInvariant();
+
+            if (status != "pending" &&
+                status != "completed" &&
+                status != "cancelled" &&
+                status != "failed")
+            {
+                status = "all";
+            }
+
+            var model = new AdminDonationsViewModel
+            {
+                Search = search,
+                Status = status
+            };
+
+            using (var conn = GetConnection())
+            {
+                conn.Open();
+
+                const string totalsSql = @"
+                    SELECT COUNT(*) AS TotalRecords,
+                           SUM(CASE WHEN DonationStatus=N'Pending' THEN 1 ELSE 0 END) AS PendingRecords,
+                           SUM(CASE WHEN DonationStatus=N'Completed' THEN 1 ELSE 0 END) AS CompletedRecords,
+                           SUM(CASE WHEN DonationStatus=N'Cancelled' THEN 1 ELSE 0 END) AS CancelledRecords,
+                           SUM(CASE WHEN DonationStatus=N'Failed' THEN 1 ELSE 0 END) AS FailedRecords,
+                           COALESCE(SUM(CASE WHEN DonationStatus=N'Pending' THEN Amount ELSE 0 END),0) AS PendingAmount,
+                           COALESCE(SUM(CASE WHEN DonationStatus=N'Completed' THEN Amount ELSE 0 END),0) AS CompletedAmount
+                    FROM dbo.Donations;";
+
+                using (var cmd = new SqlCommand(totalsSql, conn))
+                using (var reader = cmd.ExecuteReader())
                 {
-                    cmd.Parameters.AddWithValue("@UserID", userId);
+                    if (reader.Read())
+                    {
+                        model.TotalRecords = reader.GetInt32(0);
+                        model.PendingRecords = reader.IsDBNull(1) ? 0 : reader.GetInt32(1);
+                        model.CompletedRecords = reader.IsDBNull(2) ? 0 : reader.GetInt32(2);
+                        model.CancelledRecords = reader.IsDBNull(3) ? 0 : reader.GetInt32(3);
+                        model.FailedRecords = reader.IsDBNull(4) ? 0 : reader.GetInt32(4);
+                        model.PendingAmount = reader.GetDecimal(5);
+                        model.CompletedAmount = reader.GetDecimal(6);
+                    }
+                }
+
+                const string recordsSql = @"
+                    SELECT d.DonationID,
+                           COALESCE(pay.PaymentReference,N'GA-'+CONVERT(nvarchar(20),d.DonationID)),
+                           d.UserID,
+                           u.FullName,
+                           u.Email,
+                           d.NGOID,
+                           COALESCE(n.NGOName,N'General Fund'),
+                           d.CauseID,
+                           c.CauseName,
+                           d.ProgrammeID,
+                           COALESCE(pr.ProgrammeName,N'General cause fund'),
+                           d.Amount,
+                           d.CurrencyCode,
+                           d.DonorMessage,
+                           d.IsAnonymous,
+                           d.DonationStatus,
+                           d.DonationDate,
+                           d.CompletedAt,
+                           COALESCE(pay.PaymentMethod,N'Dummy Payment'),
+                           COALESCE(pay.PaymentStatus,N'Pending'),
+                           pay.ProcessedAt,
+                           d.AdminRemarks,
+                           d.AdminReviewedAt,
+                           d.ReviewedByUserID,
+                           reviewer.FullName
+                    FROM dbo.Donations d
+                    JOIN dbo.Users u ON u.UserID=d.UserID
+                    JOIN dbo.Causes c ON c.CauseID=d.CauseID
+                    LEFT JOIN dbo.NGOs n ON n.NGOID=d.NGOID
+                    LEFT JOIN dbo.Programmes pr ON pr.ProgrammeID=d.ProgrammeID
+                    LEFT JOIN dbo.Payments pay ON pay.DonationID=d.DonationID
+                    LEFT JOIN dbo.Users reviewer ON reviewer.UserID=d.ReviewedByUserID
+                    WHERE (@Status=N'all' OR LOWER(d.DonationStatus)=@Status)
+                      AND (@Search=N''
+                           OR COALESCE(pay.PaymentReference,N'GA-'+CONVERT(nvarchar(20),d.DonationID)) LIKE N'%'+@Search+N'%'
+                           OR u.FullName LIKE N'%'+@Search+N'%'
+                           OR u.Email LIKE N'%'+@Search+N'%'
+                           OR COALESCE(n.NGOName,N'General Fund') LIKE N'%'+@Search+N'%'
+                           OR c.CauseName LIKE N'%'+@Search+N'%'
+                           OR COALESCE(pr.ProgrammeName,N'General cause fund') LIKE N'%'+@Search+N'%')
+                    ORDER BY CASE WHEN d.DonationStatus=N'Pending' THEN 0 ELSE 1 END,
+                             d.DonationDate DESC,
+                             d.DonationID DESC;";
+
+                using (var cmd = new SqlCommand(recordsSql, conn))
+                {
+                    cmd.Parameters.Add("@Search", SqlDbType.NVarChar, 150).Value = search;
+                    cmd.Parameters.Add("@Status", SqlDbType.NVarChar, 20).Value = status;
+
                     using (var reader = cmd.ExecuteReader())
                     {
                         while (reader.Read())
                         {
-                            model.SavedPrograms.Add(new UserInterestItem
+                            model.Donations.Add(new AdminDonationItemViewModel
+                            {
+                                DonationID = reader.GetInt32(0),
+                                PaymentReference = reader.GetString(1),
+                                UserID = reader.GetInt32(2),
+                                DonorName = reader.GetString(3),
+                                DonorEmail = reader.GetString(4),
+                                NGOID = reader.IsDBNull(5) ? (int?)null : reader.GetInt32(5),
+                                NGOName = reader.GetString(6),
+                                CauseID = reader.GetInt32(7),
+                                CauseName = reader.GetString(8),
+                                ProgramID = reader.IsDBNull(9) ? (int?)null : reader.GetInt32(9),
+                                ProgramName = reader.GetString(10),
+                                Amount = reader.GetDecimal(11),
+                                CurrencyCode = reader.GetString(12),
+                                DonorMessage = reader.IsDBNull(13) ? null : reader.GetString(13),
+                                IsAnonymous = reader.GetBoolean(14),
+                                DonationStatus = reader.GetString(15),
+                                DonationDate = reader.GetDateTime(16),
+                                CompletedAt = reader.IsDBNull(17) ? (DateTime?)null : reader.GetDateTime(17),
+                                PaymentMethod = reader.GetString(18),
+                                PaymentStatus = reader.GetString(19),
+                                PaymentProcessedAt = reader.IsDBNull(20) ? (DateTime?)null : reader.GetDateTime(20),
+                                AdminRemarks = reader.IsDBNull(21) ? null : reader.GetString(21),
+                                AdminReviewedAt = reader.IsDBNull(22) ? (DateTime?)null : reader.GetDateTime(22),
+                                ReviewedByUserID = reader.IsDBNull(23) ? (int?)null : reader.GetInt32(23),
+                                ReviewedByName = reader.IsDBNull(24) ? null : reader.GetString(24)
+                            });
+                        }
+                    }
+                }
+            }
+
+            return model;
+        }
+
+        public bool ReviewDonation(
+            AdminDonationDecisionViewModel model,
+            int reviewerAdminId,
+            out string message)
+        {
+            message = "The donation could not be reviewed.";
+
+            if (model == null || model.DonationID <= 0 || reviewerAdminId <= 0)
+                return false;
+
+            string decision = (model.Decision ?? string.Empty).Trim();
+
+            if (decision.Equals("Complete", StringComparison.OrdinalIgnoreCase))
+            {
+                bool completed = SetDonationStatus(
+                    model.DonationID,
+                    "Completed",
+                    "Successful",
+                    reviewerAdminId,
+                    string.IsNullOrWhiteSpace(model.Remarks) ? null : model.Remarks.Trim());
+
+                message = completed
+                    ? "The donation has been completed successfully."
+                    : "Only a pending donation can be completed.";
+                return completed;
+            }
+
+            if (decision.Equals("Cancel", StringComparison.OrdinalIgnoreCase))
+            {
+                if (string.IsNullOrWhiteSpace(model.Remarks))
+                {
+                    message = "Please enter a cancellation reason.";
+                    return false;
+                }
+
+                bool cancelled = SetDonationStatus(
+                    model.DonationID,
+                    "Cancelled",
+                    "Failed",
+                    reviewerAdminId,
+                    model.Remarks.Trim());
+
+                message = cancelled
+                    ? "The donation has been cancelled and the reason was recorded."
+                    : "Only a pending donation can be cancelled.";
+                return cancelled;
+            }
+
+            message = "The selected review decision is not valid.";
+            return false;
+        }
+
+        public UserInterestsViewModel GetUserInterests(int userId)
+        {
+            var model = new UserInterestsViewModel();
+            if (userId <= 0) return model;
+
+            using (var conn = GetConnection())
+            {
+                conn.Open();
+                const string sql = @"
+                    SELECT p.ProgrammeID,p.ProgrammeName,n.NGOName,c.CauseName,
+                           p.TargetAmount,
+                           COALESCE((SELECT SUM(d.Amount) FROM dbo.Donations d
+                                     WHERE d.ProgrammeID=p.ProgrammeID
+                                       AND d.DonationStatus=N'Completed'),0),
+                           p.Status,pi.CreatedAt
+                    FROM dbo.ProgrammeInterests pi
+                    JOIN dbo.Programmes p ON p.ProgrammeID=pi.ProgrammeID
+                    JOIN dbo.NGOs n ON n.NGOID=p.NGOID
+                    JOIN dbo.Causes c ON c.CauseID=p.CauseID
+                    WHERE pi.UserID=@UserID AND pi.Status=N'Interested'
+                    ORDER BY pi.CreatedAt DESC";
+
+                using (var cmd = new SqlCommand(sql, conn))
+                {
+                    cmd.Parameters.Add("@UserID", SqlDbType.Int).Value = userId;
+                    using (var reader = cmd.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            model.Programs.Add(new UserInterestItem
                             {
                                 ProgramID = reader.GetInt32(0),
                                 ProgramName = reader.GetString(1),
@@ -921,424 +507,274 @@ namespace GiveAID_Project.Models
                     }
                 }
             }
-
             return model;
         }
 
-        // ==========================================
-        // 4. DONATION WORKFLOW CRUD & LOOKUPS
-        // ==========================================
-
-        public List<LookupItem> GetActiveNGOs()
+        public bool SaveProgramInterest(int userId, int programId)
         {
-            var list = new List<LookupItem>();
+            if (userId <= 0 || programId <= 0) return false;
             using (var conn = GetConnection())
             {
                 conn.Open();
-                const string sql = "SELECT NGOID, NGOName FROM NGOs WHERE Status = 'Active' ORDER BY NGOName ASC";
+                const string sql = @"
+                    IF NOT EXISTS (SELECT 1 FROM dbo.Programmes
+                                   WHERE ProgrammeID=@ProgrammeID
+                                     AND Status IN (N'Active',N'Upcoming'))
+                        SELECT CAST(0 AS bit);
+                    ELSE IF EXISTS (SELECT 1 FROM dbo.ProgrammeInterests
+                                    WHERE UserID=@UserID AND ProgrammeID=@ProgrammeID)
+                    BEGIN
+                        UPDATE dbo.ProgrammeInterests
+                           SET Status=N'Interested',CreatedAt=SYSUTCDATETIME()
+                         WHERE UserID=@UserID AND ProgrammeID=@ProgrammeID;
+                        SELECT CAST(1 AS bit);
+                    END
+                    ELSE
+                    BEGIN
+                        INSERT dbo.ProgrammeInterests(UserID,ProgrammeID,Status,CreatedAt)
+                        VALUES(@UserID,@ProgrammeID,N'Interested',SYSUTCDATETIME());
+                        SELECT CAST(1 AS bit);
+                    END";
                 using (var cmd = new SqlCommand(sql, conn))
-                using (var reader = cmd.ExecuteReader())
                 {
-                    while (reader.Read())
-                    {
-                        list.Add(new LookupItem
-                        {
-                            ID = reader.GetInt32(0),
-                            Name = reader.GetString(1)
-                        });
-                    }
+                    cmd.Parameters.Add("@UserID", SqlDbType.Int).Value = userId;
+                    cmd.Parameters.Add("@ProgrammeID", SqlDbType.Int).Value = programId;
+                    return Convert.ToBoolean(cmd.ExecuteScalar());
                 }
             }
-            return list;
         }
 
-        public List<LookupItem> GetActiveCauses()
+        public bool RemoveProgramInterest(int userId, int programId)
         {
-            var list = new List<LookupItem>();
+            if (userId <= 0 || programId <= 0) return false;
             using (var conn = GetConnection())
+            using (var cmd = new SqlCommand(@"
+                DELETE FROM dbo.ProgrammeInterests
+                 WHERE UserID=@UserID AND ProgrammeID=@ProgrammeID", conn))
             {
+                cmd.Parameters.Add("@UserID", SqlDbType.Int).Value = userId;
+                cmd.Parameters.Add("@ProgrammeID", SqlDbType.Int).Value = programId;
                 conn.Open();
-                const string sql = "SELECT CauseID, CauseName FROM Causes WHERE IsActive = 1 ORDER BY CauseName ASC";
-                using (var cmd = new SqlCommand(sql, conn))
-                using (var reader = cmd.ExecuteReader())
-                {
-                    while (reader.Read())
-                    {
-                        list.Add(new LookupItem
-                        {
-                            ID = reader.GetInt32(0),
-                            Name = reader.GetString(1)
-                        });
-                    }
-                }
+                return cmd.ExecuteNonQuery() > 0;
             }
-            return list;
         }
 
-        public List<LookupItem> GetActivePrograms(int? ngoId = null)
+        public AdminUsersViewModel GetAdminUsers(string search, string status)
         {
-            var list = new List<LookupItem>();
+            search = (search ?? string.Empty).Trim();
+            status = string.IsNullOrWhiteSpace(status) ? "all" : status.Trim().ToLowerInvariant();
+            var model = new AdminUsersViewModel { Search = search, Status = status };
+
             using (var conn = GetConnection())
             {
                 conn.Open();
-                string sql = "SELECT ProgramID, ProgramName, NGOID FROM Programs WHERE Status IN ('Active', 'Upcoming')";
-                if (ngoId.HasValue && ngoId.Value > 0)
-                {
-                    sql += " AND NGOID = @NGOID";
-                }
-                sql += " ORDER BY ProgramName ASC";
+                model.TotalUsers = ScalarInt(conn, "SELECT COUNT(*) FROM dbo.Users");
+                model.ActiveUsers = ScalarInt(conn, "SELECT COUNT(*) FROM dbo.Users WHERE IsActive=1");
+                model.InactiveUsers = ScalarInt(conn, "SELECT COUNT(*) FROM dbo.Users WHERE IsActive=0");
+                model.AdminUsers = ScalarInt(conn, @"SELECT COUNT(DISTINCT u.UserID) FROM dbo.Users u
+                    JOIN dbo.UserRoles ur ON ur.UserID=u.UserID JOIN dbo.Roles r ON r.RoleID=ur.RoleID
+                    WHERE r.RoleName=N'Admin'");
+
+                const string sql = @"
+                    SELECT u.UserID,u.FullName,u.Email,u.Phone,u.City,u.Country,u.IsActive,u.CreatedAt,u.LastLoginAt,
+                           COALESCE(STUFF((SELECT ', '+r2.RoleName FROM dbo.UserRoles ur2
+                               JOIN dbo.Roles r2 ON r2.RoleID=ur2.RoleID WHERE ur2.UserID=u.UserID
+                               ORDER BY r2.RoleName FOR XML PATH(''),TYPE).value('.','nvarchar(max)'),1,2,''),N'User') AS Roles
+                    FROM dbo.Users u
+                    WHERE (@Search=N'' OR u.FullName LIKE N'%'+@Search+N'%' OR u.Email LIKE N'%'+@Search+N'%'
+                           OR COALESCE(u.City,N'') LIKE N'%'+@Search+N'%')
+                      AND (@Status=N'all' OR (@Status=N'active' AND u.IsActive=1) OR (@Status=N'inactive' AND u.IsActive=0))
+                    ORDER BY u.CreatedAt DESC,u.UserID DESC";
 
                 using (var cmd = new SqlCommand(sql, conn))
                 {
-                    if (ngoId.HasValue && ngoId.Value > 0)
-                    {
-                        cmd.Parameters.AddWithValue("@NGOID", ngoId.Value);
-                    }
-
+                    cmd.Parameters.Add("@Search", SqlDbType.NVarChar, 150).Value = search;
+                    cmd.Parameters.Add("@Status", SqlDbType.NVarChar, 20).Value = status;
                     using (var reader = cmd.ExecuteReader())
                     {
                         while (reader.Read())
                         {
-                            list.Add(new LookupItem
+                            model.Users.Add(new AdminUserListItem
                             {
-                                ID = reader.GetInt32(0),
-                                Name = reader.GetString(1),
-                                SecondaryID = reader.GetInt32(2)
+                                UserID = reader.GetInt32(0),
+                                FullName = reader.GetString(1),
+                                Email = reader.GetString(2),
+                                Phone = reader.IsDBNull(3) ? null : reader.GetString(3),
+                                City = reader.IsDBNull(4) ? null : reader.GetString(4),
+                                Country = reader.IsDBNull(5) ? null : reader.GetString(5),
+                                IsActive = reader.GetBoolean(6),
+                                CreatedAt = reader.GetDateTime(7),
+                                LastLoginAt = reader.IsDBNull(8) ? (DateTime?)null : reader.GetDateTime(8),
+                                Roles = reader.GetString(9)
                             });
                         }
                     }
                 }
             }
+            return model;
+        }
+
+        public bool SetUserActiveStatus(int userId, bool makeActive, int currentAdminId, out string message)
+        {
+            if (userId <= 0) { message = "Invalid user account."; return false; }
+            if (userId == currentAdminId) { message = "You cannot deactivate your own administrator account."; return false; }
+            using (var conn = GetConnection())
+            {
+                conn.Open();
+                const string sql = @"
+                    UPDATE dbo.Users SET IsActive=@Active,UpdatedAt=SYSUTCDATETIME()
+                    WHERE UserID=@UserID AND NOT EXISTS
+                    (SELECT 1 FROM dbo.UserRoles ur JOIN dbo.Roles r ON r.RoleID=ur.RoleID
+                     WHERE ur.UserID=dbo.Users.UserID AND r.RoleName=N'Admin')";
+                using (var cmd = new SqlCommand(sql, conn))
+                {
+                    cmd.Parameters.Add("@Active", SqlDbType.Bit).Value = makeActive;
+                    cmd.Parameters.Add("@UserID", SqlDbType.Int).Value = userId;
+                    int rows = cmd.ExecuteNonQuery();
+                    if (rows == 0) { message = "Administrator accounts are protected or the user was not found."; return false; }
+                }
+            }
+            message = makeActive ? "User account activated successfully." : "User account deactivated successfully.";
+            return true;
+        }
+
+        public List<LookupItem> GetActiveNGOs() => ReadLookup("SELECT NGOID,NGOName FROM dbo.NGOs WHERE IsActive=1 ORDER BY NGOName");
+        public List<LookupItem> GetActiveCauses() => ReadLookup("SELECT CauseID,CauseName FROM dbo.Causes WHERE IsActive=1 ORDER BY CauseName");
+
+        public List<LookupItem> GetActivePrograms(int? ngoId = null)
+        {
+            var list = new List<LookupItem>();
+            using (var conn = GetConnection()) { conn.Open(); string sql = "SELECT ProgrammeID,ProgrammeName,NGOID FROM dbo.Programmes WHERE Status IN (N'Active',N'Upcoming')" + (ngoId.HasValue ? " AND NGOID=@ngo" : "") + " ORDER BY ProgrammeName"; using (var cmd = new SqlCommand(sql, conn)) { if (ngoId.HasValue) cmd.Parameters.Add("@ngo", SqlDbType.Int).Value = ngoId.Value; using (var r = cmd.ExecuteReader()) while (r.Read()) list.Add(new LookupItem { ID = r.GetInt32(0), Name = r.GetString(1), SecondaryID = r.GetInt32(2) }); } }
             return list;
         }
 
         public int CreateDonation(CreateDonationModel model, int? authenticatedUserId, out string paymentReference)
         {
-            if (model == null)
-                throw new ArgumentNullException(nameof(model));
-
-            paymentReference = "GA-DON-" + DateTime.UtcNow.ToString("yyyyMMdd") + "-" + new Random().Next(1000, 9999);
-
+            if (model == null) throw new ArgumentNullException(nameof(model));
+            if (!authenticatedUserId.HasValue || authenticatedUserId.Value <= 0) throw new InvalidOperationException("Please log in before making a donation.");
+            paymentReference = "GA-" + Guid.NewGuid().ToString("N").Substring(0, 12).ToUpperInvariant();
             using (var conn = GetConnection())
             {
-                conn.Open();
-                using (var trans = conn.BeginTransaction())
+                conn.Open(); using (var tx = conn.BeginTransaction())
                 {
                     try
                     {
-                        // 1. Resolve donor user ID
-                        int donorUserId = 0;
-                        if (authenticatedUserId.HasValue && authenticatedUserId.Value > 0)
-                        {
-                            donorUserId = authenticatedUserId.Value;
-                        }
-                        else
-                        {
-                            // Look up by email
-                            const string findUserSql = "SELECT UserID FROM Users WHERE LOWER(Email) = LOWER(@Email)";
-                            using (var cmd = new SqlCommand(findUserSql, conn, trans))
-                            {
-                                cmd.Parameters.AddWithValue("@Email", model.DonorEmail.Trim().ToLowerInvariant());
-                                var obj = cmd.ExecuteScalar();
-                                if (obj != null && obj != DBNull.Value)
-                                {
-                                    donorUserId = Convert.ToInt32(obj);
-                                }
-                            }
-
-                            // If not found, create lightweight donor user record
-                            if (donorUserId == 0)
-                            {
-                                const string insertUserSql = @"
-                                    INSERT INTO Users (FullName, Email, PasswordHash, IsActive, IsBanned, CreatedAt)
-                                    VALUES (@FullName, @Email, @PasswordHash, 1, 0, GETDATE());
-                                    SELECT CAST(SCOPE_IDENTITY() AS INT);";
-
-                                using (var cmd = new SqlCommand(insertUserSql, conn, trans))
-                                {
-                                    cmd.Parameters.AddWithValue("@FullName", model.DonorName.Trim());
-                                    cmd.Parameters.AddWithValue("@Email", model.DonorEmail.Trim().ToLowerInvariant());
-                                    cmd.Parameters.AddWithValue("@PasswordHash", PasswordSecurity.HashPassword(Guid.NewGuid().ToString("N").Substring(0, 10)));
-                                    donorUserId = (int)cmd.ExecuteScalar();
-                                }
-
-                                // Assign 'User' role
-                                int roleId = 0;
-                                const string findRoleSql = "SELECT RoleID FROM Roles WHERE LOWER(RoleName) = 'user'";
-                                using (var cmd = new SqlCommand(findRoleSql, conn, trans))
-                                {
-                                    var rObj = cmd.ExecuteScalar();
-                                    if (rObj != null && rObj != DBNull.Value)
-                                    {
-                                        roleId = Convert.ToInt32(rObj);
-                                    }
-                                }
-
-                                if (roleId == 0)
-                                {
-                                    const string createRoleSql = "INSERT INTO Roles (RoleName) VALUES ('User'); SELECT SCOPE_IDENTITY();";
-                                    using (var cmd = new SqlCommand(createRoleSql, conn, trans))
-                                    {
-                                        roleId = Convert.ToInt32(cmd.ExecuteScalar());
-                                    }
-                                }
-
-                                const string insertUserRoleSql = "INSERT INTO UserRoles (UserID, RoleID, AssignedAt) VALUES (@UserID, @RoleID, GETDATE());";
-                                using (var cmd = new SqlCommand(insertUserRoleSql, conn, trans))
-                                {
-                                    cmd.Parameters.AddWithValue("@UserID", donorUserId);
-                                    cmd.Parameters.AddWithValue("@RoleID", roleId);
-                                    cmd.ExecuteNonQuery();
-                                }
-                            }
-                        }
-
-                        // 2. Validate NGO and Cause
-                        if (model.ProgramID.HasValue && model.ProgramID.Value > 0)
-                        {
-                            const string progMatchSql = "SELECT NGOID, CauseID FROM Programs WHERE ProgramID = @ProgramID";
-                            using (var cmd = new SqlCommand(progMatchSql, conn, trans))
-                            {
-                                cmd.Parameters.AddWithValue("@ProgramID", model.ProgramID.Value);
-                                using (var reader = cmd.ExecuteReader())
-                                {
-                                    if (reader.Read())
-                                    {
-                                        model.NGOID = reader.GetInt32(0);
-                                        model.CauseID = reader.GetInt32(1);
-                                    }
-                                }
-                            }
-                        }
-
-                        // 3. Insert into Donations table
-                        const string insertDonationSql = @"
-                            INSERT INTO Donations (UserID, NGOID, CauseID, ProgramID, Amount, AdminApprovalStatus, NGOApprovalStatus, DonationStatus, DonationDate, AdminRemarks)
-                            VALUES (@UserID, @NGOID, @CauseID, @ProgramID, @Amount, 'Pending', 'Pending', 'Pending', GETDATE(), @Remarks);
-                            SELECT CAST(SCOPE_IDENTITY() AS INT);";
-
-                        int donationId;
-                        using (var cmd = new SqlCommand(insertDonationSql, conn, trans))
-                        {
-                            cmd.Parameters.AddWithValue("@UserID", donorUserId);
-                            cmd.Parameters.AddWithValue("@NGOID", model.NGOID);
-                            cmd.Parameters.AddWithValue("@CauseID", model.CauseID);
-                            cmd.Parameters.AddWithValue("@ProgramID", model.ProgramID.HasValue && model.ProgramID.Value > 0 ? (object)model.ProgramID.Value : DBNull.Value);
-                            cmd.Parameters.AddWithValue("@Amount", model.Amount);
-                            cmd.Parameters.AddWithValue("@Remarks", (object)model.Message?.Trim() ?? DBNull.Value);
-
-                            donationId = (int)cmd.ExecuteScalar();
-                        }
-
-                        // 4. Insert into Payments table (placeholder record)
-                        const string insertPaymentSql = @"
-                            INSERT INTO Payments (DonationID, PaymentReference, CardType, Amount, PaymentStatus, PaymentDate)
-                            VALUES (@DonationID, @PaymentReference, @CardType, @Amount, 'Pending', GETDATE());";
-
-                        using (var cmd = new SqlCommand(insertPaymentSql, conn, trans))
-                        {
-                            cmd.Parameters.AddWithValue("@DonationID", donationId);
-                            cmd.Parameters.AddWithValue("@PaymentReference", paymentReference);
-                            cmd.Parameters.AddWithValue("@CardType", (object)model.PaymentRail?.Trim() ?? "Raast");
-                            cmd.Parameters.AddWithValue("@Amount", model.Amount);
-                            cmd.ExecuteNonQuery();
-                        }
-
-                        trans.Commit();
-                        return donationId;
+                        const string ds = @"INSERT dbo.Donations(UserID,CauseID,NGOID,ProgrammeID,Amount,DonorMessage,DonationStatus) VALUES(@u,@c,@n,@p,@a,@m,N'Pending');SELECT CAST(SCOPE_IDENTITY() AS int)"; int id; using (var cmd = new SqlCommand(ds, conn, tx)) { cmd.Parameters.Add("@u", SqlDbType.Int).Value = authenticatedUserId.Value; cmd.Parameters.Add("@c", SqlDbType.Int).Value = model.CauseID; cmd.Parameters.Add("@n", SqlDbType.Int).Value = model.NGOID > 0 ? (object)model.NGOID : DBNull.Value; cmd.Parameters.Add("@p", SqlDbType.Int).Value = model.ProgramID.HasValue ? (object)model.ProgramID.Value : DBNull.Value; cmd.Parameters.Add("@a", SqlDbType.Decimal).Value = model.Amount; cmd.Parameters.Add("@m", SqlDbType.NVarChar, 500).Value = (object)model.Message ?? DBNull.Value; id = (int)cmd.ExecuteScalar(); }
+                        const string ps = @"INSERT dbo.Payments(DonationID,PaymentReference,PaymentMethod,Amount,CurrencyCode,PaymentStatus) VALUES(@d,@r,N'Dummy Payment',@a,'PKR',N'Pending')"; using (var cmd = new SqlCommand(ps, conn, tx)) { cmd.Parameters.Add("@d", SqlDbType.Int).Value = id; cmd.Parameters.Add("@r", SqlDbType.NVarChar, 100).Value = paymentReference; cmd.Parameters.Add("@a", SqlDbType.Decimal).Value = model.Amount; cmd.ExecuteNonQuery(); }
+                        tx.Commit(); return id;
                     }
-                    catch
-                    {
-                        trans.Rollback();
-                        throw;
-                    }
+                    catch { tx.Rollback(); throw; }
                 }
             }
         }
 
-        public bool ApproveDonation(int donationId, int reviewerAdminId)
-        {
-            using (var conn = GetConnection())
-            {
-                conn.Open();
-                using (var trans = conn.BeginTransaction())
-                {
-                    try
-                    {
-                        // 1. Get donation program & amount
-                        int? programId = null;
-                        decimal amount = 0;
-                        const string getDonationSql = "SELECT ProgramID, Amount FROM Donations WHERE DonationID = @DonationID";
-                        using (var cmd = new SqlCommand(getDonationSql, conn, trans))
-                        {
-                            cmd.Parameters.AddWithValue("@DonationID", donationId);
-                            using (var reader = cmd.ExecuteReader())
-                            {
-                                if (reader.Read())
-                                {
-                                    programId = reader.IsDBNull(0) ? (int?)null : reader.GetInt32(0);
-                                    amount = reader.GetDecimal(1);
-                                }
-                                else
-                                {
-                                    trans.Rollback();
-                                    return false;
-                                }
-                            }
-                        }
-
-                        // 2. Update Donation Status to 'Approved'
-                        const string updateDonationSql = @"
-                            UPDATE Donations 
-                            SET DonationStatus = 'Approved', AdminApprovalStatus = 'Approved', AdminReviewedAt = GETDATE()
-                            WHERE DonationID = @DonationID";
-
-                        using (var cmd = new SqlCommand(updateDonationSql, conn, trans))
-                        {
-                            cmd.Parameters.AddWithValue("@DonationID", donationId);
-                            cmd.ExecuteNonQuery();
-                        }
-
-                        // 3. Update Program CurrentAmount if program is attached
-                        if (programId.HasValue && programId.Value > 0)
-                        {
-                            const string updateProgramSql = "UPDATE Programs SET CurrentAmount = CurrentAmount + @Amount, UpdatedAt = GETDATE() WHERE ProgramID = @ProgramID";
-                            using (var cmd = new SqlCommand(updateProgramSql, conn, trans))
-                            {
-                                cmd.Parameters.AddWithValue("@Amount", amount);
-                                cmd.Parameters.AddWithValue("@ProgramID", programId.Value);
-                                cmd.ExecuteNonQuery();
-                            }
-                        }
-
-                        // 4. Update Payment Status to 'Successful' placeholder
-                        const string updatePaymentSql = "UPDATE Payments SET PaymentStatus = 'Successful' WHERE DonationID = @DonationID";
-                        using (var cmd = new SqlCommand(updatePaymentSql, conn, trans))
-                        {
-                            cmd.Parameters.AddWithValue("@DonationID", donationId);
-                            cmd.ExecuteNonQuery();
-                        }
-
-                        trans.Commit();
-                        return true;
-                    }
-                    catch
-                    {
-                        trans.Rollback();
-                        throw;
-                    }
-                }
-            }
-        }
-
-        public bool DenyDonation(int donationId, int reviewerAdminId, string remarks = null)
-        {
-            using (var conn = GetConnection())
-            {
-                conn.Open();
-                using (var trans = conn.BeginTransaction())
-                {
-                    try
-                    {
-                        // 1. Update Donation Status to 'Denied'
-                        const string updateDonationSql = @"
-                            UPDATE Donations 
-                            SET DonationStatus = 'Denied', AdminApprovalStatus = 'Denied', AdminReviewedAt = GETDATE(), AdminRemarks = @Remarks
-                            WHERE DonationID = @DonationID";
-
-                        using (var cmd = new SqlCommand(updateDonationSql, conn, trans))
-                        {
-                            cmd.Parameters.AddWithValue("@DonationID", donationId);
-                            cmd.Parameters.AddWithValue("@Remarks", (object)remarks?.Trim() ?? "Denied by Administrator");
-                            int rows = cmd.ExecuteNonQuery();
-                            if (rows == 0)
-                            {
-                                trans.Rollback();
-                                return false;
-                            }
-                        }
-
-                        // 2. Update Payment Status to 'Failed'
-                        const string updatePaymentSql = "UPDATE Payments SET PaymentStatus = 'Failed', FailureReason = @Reason WHERE DonationID = @DonationID";
-                        using (var cmd = new SqlCommand(updatePaymentSql, conn, trans))
-                        {
-                            cmd.Parameters.AddWithValue("@DonationID", donationId);
-                            cmd.Parameters.AddWithValue("@Reason", (object)remarks?.Trim() ?? "Donation denied by Platform Administrator");
-                            cmd.ExecuteNonQuery();
-                        }
-
-                        trans.Commit();
-                        return true;
-                    }
-                    catch
-                    {
-                        trans.Rollback();
-                        throw;
-                    }
-                }
-            }
-        }
+        public bool ApproveDonation(int donationId, int reviewerAdminId) => SetDonationStatus(donationId, "Completed", "Successful", reviewerAdminId, null);
+        public bool DenyDonation(int donationId, int reviewerAdminId, string remarks = null) => SetDonationStatus(donationId, "Cancelled", "Failed", reviewerAdminId, remarks);
 
         public DonationDetailViewModel GetDonationById(int donationId)
         {
+            using (var conn = GetConnection()) { conn.Open(); const string sql = @"SELECT d.DonationID,COALESCE(p.PaymentReference,N'GA-'+CONVERT(nvarchar(20),d.DonationID)),d.UserID,u.FullName,u.Email,d.NGOID,COALESCE(n.NGOName,N'General Fund'),d.CauseID,c.CauseName,d.ProgrammeID,COALESCE(pr.ProgrammeName,c.CauseName),d.Amount,d.DonationStatus,COALESCE(p.PaymentStatus,N'Pending'),COALESCE(p.PaymentMethod,N'Dummy Payment'),d.DonationDate,d.DonorMessage,d.AdminRemarks,d.AdminReviewedAt FROM dbo.Donations d JOIN dbo.Users u ON u.UserID=d.UserID JOIN dbo.Causes c ON c.CauseID=d.CauseID LEFT JOIN dbo.NGOs n ON n.NGOID=d.NGOID LEFT JOIN dbo.Programmes pr ON pr.ProgrammeID=d.ProgrammeID LEFT JOIN dbo.Payments p ON p.DonationID=d.DonationID WHERE d.DonationID=@id"; using (var cmd = new SqlCommand(sql, conn)) { cmd.Parameters.Add("@id", SqlDbType.Int).Value = donationId; using (var r = cmd.ExecuteReader()) if (r.Read()) return new DonationDetailViewModel { DonationID = r.GetInt32(0), PaymentReference = r.GetString(1), UserID = r.GetInt32(2), DonorName = r.GetString(3), DonorEmail = r.GetString(4), NGOID = r.IsDBNull(5) ? 0 : r.GetInt32(5), NGOName = r.GetString(6), CauseID = r.GetInt32(7), CauseName = r.GetString(8), ProgramID = r.IsDBNull(9) ? (int?)null : r.GetInt32(9), ProgramName = r.GetString(10), Amount = r.GetDecimal(11), DonationStatus = r.GetString(12), AdminApprovalStatus = r.GetString(12), NGOApprovalStatus = "Not required", PaymentStatus = r.GetString(13), PaymentMethod = r.GetString(14), DonationDate = r.GetDateTime(15), Message = r.IsDBNull(16) ? null : r.GetString(16), AdminRemarks = r.IsDBNull(17) ? null : r.GetString(17), AdminReviewedAt = r.IsDBNull(18) ? (DateTime?)null : r.GetDateTime(18) }; } }
+            return null;
+        }
+
+        private bool SetDonationStatus(int id, string donationStatus, string paymentStatus, int reviewerAdminId, string remarks)
+        {
             using (var conn = GetConnection())
             {
                 conn.Open();
-                const string sql = @"
-                    SELECT d.DonationID, ISNULL(p.PaymentReference, 'GA-REF-' + CAST(d.DonationID AS VARCHAR)) AS PaymentRef,
-                           d.UserID, u.FullName AS DonorName, u.Email AS DonorEmail,
-                           d.NGOID, n.NGOName,
-                           d.CauseID, c.CauseName,
-                           d.ProgramID, ISNULL(pr.ProgramName, 'General Fund') AS ProgramName,
-                           d.Amount, d.DonationStatus, d.AdminApprovalStatus, d.NGOApprovalStatus,
-                           ISNULL(p.PaymentStatus, 'Pending') AS PaymentStatus,
-                           ISNULL(p.CardType, 'Raast') AS PaymentMethod,
-                           d.DonationDate, d.AdminReviewedAt, d.AdminRemarks
-                    FROM Donations d
-                    INNER JOIN Users u ON d.UserID = u.UserID
-                    INNER JOIN NGOs n ON d.NGOID = n.NGOID
-                    INNER JOIN Causes c ON d.CauseID = c.CauseID
-                    LEFT JOIN Programs pr ON d.ProgramID = pr.ProgramID
-                    LEFT JOIN Payments p ON d.DonationID = p.DonationID
-                    WHERE d.DonationID = @DonationID";
-
-                using (var cmd = new SqlCommand(sql, conn))
+                using (var tx = conn.BeginTransaction())
                 {
-                    cmd.Parameters.AddWithValue("@DonationID", donationId);
-                    using (var reader = cmd.ExecuteReader())
+                    try
                     {
-                        if (reader.Read())
+                        int rows;
+                        const string donationSql = @"
+                            UPDATE dbo.Donations
+                            SET DonationStatus=@status,
+                                CompletedAt=CASE WHEN @status=N'Completed' THEN SYSUTCDATETIME() ELSE NULL END,
+                                AdminRemarks=@remarks,
+                                AdminReviewedAt=SYSUTCDATETIME(),
+                                ReviewedByUserID=@reviewer
+                            WHERE DonationID=@id
+                              AND DonationStatus=N'Pending';";
+
+                        using (var cmd = new SqlCommand(donationSql, conn, tx))
                         {
-                            return new DonationDetailViewModel
-                            {
-                                DonationID = reader.GetInt32(0),
-                                PaymentReference = reader.GetString(1),
-                                UserID = reader.GetInt32(2),
-                                DonorName = reader.GetString(3),
-                                DonorEmail = reader.GetString(4),
-                                NGOID = reader.GetInt32(5),
-                                NGOName = reader.GetString(6),
-                                CauseID = reader.GetInt32(7),
-                                CauseName = reader.GetString(8),
-                                ProgramID = reader.IsDBNull(9) ? (int?)null : reader.GetInt32(9),
-                                ProgramName = reader.GetString(10),
-                                Amount = reader.GetDecimal(11),
-                                DonationStatus = reader.GetString(12),
-                                AdminApprovalStatus = reader.GetString(13),
-                                NGOApprovalStatus = reader.GetString(14),
-                                PaymentStatus = reader.GetString(15),
-                                PaymentMethod = reader.GetString(16),
-                                DonationDate = reader.GetDateTime(17),
-                                AdminReviewedAt = reader.IsDBNull(18) ? (DateTime?)null : reader.GetDateTime(18),
-                                AdminRemarks = reader.IsDBNull(19) ? null : reader.GetString(19),
-                                Message = reader.IsDBNull(19) ? null : reader.GetString(19)
-                            };
+                            cmd.Parameters.Add("@status", SqlDbType.NVarChar, 20).Value = donationStatus;
+                            cmd.Parameters.Add("@remarks", SqlDbType.NVarChar, 500).Value = (object)remarks ?? DBNull.Value;
+                            cmd.Parameters.Add("@reviewer", SqlDbType.Int).Value = reviewerAdminId;
+                            cmd.Parameters.Add("@id", SqlDbType.Int).Value = id;
+                            rows = cmd.ExecuteNonQuery();
                         }
+
+                        if (rows == 0)
+                        {
+                            tx.Rollback();
+                            return false;
+                        }
+
+                        const string paymentSql = @"
+                            UPDATE dbo.Payments
+                            SET PaymentStatus=@status,
+                                ProcessedAt=SYSUTCDATETIME()
+                            WHERE DonationID=@id;";
+
+                        using (var cmd = new SqlCommand(paymentSql, conn, tx))
+                        {
+                            cmd.Parameters.Add("@status", SqlDbType.NVarChar, 20).Value = paymentStatus;
+                            cmd.Parameters.Add("@id", SqlDbType.Int).Value = id;
+                            cmd.ExecuteNonQuery();
+                        }
+
+                        tx.Commit();
+                        return true;
+                    }
+                    catch
+                    {
+                        tx.Rollback();
+                        throw;
                     }
                 }
             }
-
-            return null;
         }
+        private static string ReadNullableString(SqlDataReader reader, string columnName) { int ordinal = reader.GetOrdinal(columnName); return reader.IsDBNull(ordinal) ? null : reader.GetString(ordinal); }
+        private static object NullableDbValue(string value) { return string.IsNullOrWhiteSpace(value) ? (object)DBNull.Value : value.Trim(); }
+        private static string NormalizeGender(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value)) return null;
+            value = value.Trim();
+            return value == "Male" || value == "Female" || value == "Other" || value == "Prefer not to say"
+                ? value
+                : null;
+        }
+        private int ScalarInt(SqlConnection c, string sql) { using (var cmd = new SqlCommand(sql, c)) return Convert.ToInt32(cmd.ExecuteScalar()); }
+        private void ReadChart(SqlConnection c, string sql, List<string> labels, List<decimal> values, int li, int vi) { using (var cmd = new SqlCommand(sql, c)) using (var r = cmd.ExecuteReader()) while (r.Read()) { labels.Add(r.GetString(li)); values.Add(r.GetDecimal(vi)); } }
+        private List<LookupItem> ReadLookup(string sql) { var list = new List<LookupItem>(); using (var c = GetConnection()) { c.Open(); using (var cmd = new SqlCommand(sql, c)) using (var r = cmd.ExecuteReader()) while (r.Read()) list.Add(new LookupItem { ID = r.GetInt32(0), Name = r.GetString(1) }); } return list; }
+        private List<RecentDonationItem> ReadDonations(SqlConnection c, int? userId) { var list = new List<RecentDonationItem>(); string sql = @"SELECT d.DonationID,COALESCE(pay.PaymentReference,N'GA-'+CONVERT(nvarchar(20),d.DonationID)),d.UserID,u.FullName,u.Email,d.NGOID,COALESCE(n.NGOName,N'General Fund'),d.ProgrammeID,COALESCE(p.ProgrammeName,c.CauseName),d.CauseID,c.CauseName,d.Amount,d.DonationDate,d.DonationStatus,d.DonorMessage FROM dbo.Donations d JOIN dbo.Users u ON u.UserID=d.UserID JOIN dbo.Causes c ON c.CauseID=d.CauseID LEFT JOIN dbo.NGOs n ON n.NGOID=d.NGOID LEFT JOIN dbo.Programmes p ON p.ProgrammeID=d.ProgrammeID LEFT JOIN dbo.Payments pay ON pay.DonationID=d.DonationID" + (userId.HasValue ? " WHERE d.UserID=@uid" : "") + " ORDER BY d.DonationDate DESC"; using (var cmd = new SqlCommand(sql, c)) { if (userId.HasValue) cmd.Parameters.Add("@uid", SqlDbType.Int).Value = userId.Value; using (var r = cmd.ExecuteReader()) while (r.Read()) { string status = r.GetString(13); list.Add(new RecentDonationItem { DonationID = r.GetInt32(0), PaymentReference = r.GetString(1), UserID = r.GetInt32(2), DonorName = r.GetString(3), DonorEmail = r.GetString(4), NGOID = r.IsDBNull(5) ? 0 : r.GetInt32(5), NGOName = r.GetString(6), ProgramID = r.IsDBNull(7) ? (int?)null : r.GetInt32(7), ProgramName = r.GetString(8), CauseID = r.GetInt32(9), CauseName = r.GetString(10), Amount = r.GetDecimal(11), DonationDate = r.GetDateTime(12), Status = status, AdminApprovalStatus = status, NGOApprovalStatus = "Not required", Message = r.IsDBNull(14) ? null : r.GetString(14) }); } } return list; }
+    }
+
+    public class AdminUsersViewModel
+    {
+        public string Search { get; set; }
+        public string Status { get; set; }
+        public int TotalUsers { get; set; }
+        public int ActiveUsers { get; set; }
+        public int InactiveUsers { get; set; }
+        public int AdminUsers { get; set; }
+        public List<AdminUserListItem> Users { get; set; } = new List<AdminUserListItem>();
+    }
+
+    public class AdminUserListItem
+    {
+        public int UserID { get; set; }
+        public string FullName { get; set; }
+        public string Email { get; set; }
+        public string Phone { get; set; }
+        public string City { get; set; }
+        public string Country { get; set; }
+        public bool IsActive { get; set; }
+        public DateTime CreatedAt { get; set; }
+        public DateTime? LastLoginAt { get; set; }
+        public string Roles { get; set; }
+        public bool IsAdmin => (Roles ?? "").IndexOf("Admin", StringComparison.OrdinalIgnoreCase) >= 0;
     }
 }

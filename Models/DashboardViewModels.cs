@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 
 namespace GiveAID_Project.Models
 {
@@ -120,6 +121,112 @@ namespace GiveAID_Project.Models
         public int ProgressPercent => TargetAmount > 0 ? (int)Math.Min(100, Math.Round((CurrentAmount / TargetAmount) * 100)) : 0;
         public string Status { get; set; }
         public DateTime InterestDate { get; set; }
+    }
+
+    // ==========================================
+    // ADMIN DONATION MANAGEMENT MODELS
+    // ==========================================
+
+    public class AdminDonationItemViewModel
+    {
+        public int DonationID { get; set; }
+        public string PaymentReference { get; set; }
+
+        public int UserID { get; set; }
+        public string DonorName { get; set; }
+        public string DonorEmail { get; set; }
+
+        public int? NGOID { get; set; }
+        public string NGOName { get; set; }
+
+        public int CauseID { get; set; }
+        public string CauseName { get; set; }
+
+        public int? ProgramID { get; set; }
+        public string ProgramName { get; set; }
+
+        public decimal Amount { get; set; }
+        public string CurrencyCode { get; set; }
+        public string DonorMessage { get; set; }
+        public bool IsAnonymous { get; set; }
+
+        public string DonationStatus { get; set; }
+        public DateTime DonationDate { get; set; }
+        public DateTime? CompletedAt { get; set; }
+
+        public string PaymentMethod { get; set; }
+        public string PaymentStatus { get; set; }
+        public DateTime? PaymentProcessedAt { get; set; }
+
+        public string AdminRemarks { get; set; }
+        public DateTime? AdminReviewedAt { get; set; }
+        public int? ReviewedByUserID { get; set; }
+        public string ReviewedByName { get; set; }
+
+        public string DisplayStatus
+        {
+            get
+            {
+                return string.IsNullOrWhiteSpace(DonationStatus)
+                    ? "Pending"
+                    : DonationStatus;
+            }
+        }
+    }
+
+    public class AdminDonationsViewModel
+    {
+        public string Search { get; set; }
+        public string Status { get; set; } = "all";
+
+        public int TotalRecords { get; set; }
+        public int PendingRecords { get; set; }
+        public int CompletedRecords { get; set; }
+        public int CancelledRecords { get; set; }
+        public int FailedRecords { get; set; }
+
+        public decimal PendingAmount { get; set; }
+        public decimal CompletedAmount { get; set; }
+
+        public List<AdminDonationItemViewModel> Donations { get; set; }
+            = new List<AdminDonationItemViewModel>();
+    }
+
+    public class AdminDonationDecisionViewModel : IValidatableObject
+    {
+        [Range(1, int.MaxValue, ErrorMessage = "Please select a valid donation record.")]
+        public int DonationID { get; set; }
+
+        [Required(ErrorMessage = "Please select a review decision.")]
+        [StringLength(20)]
+        public string Decision { get; set; }
+
+        [StringLength(500, ErrorMessage = "Administrator remarks cannot exceed 500 characters.")]
+        public string Remarks { get; set; }
+
+        public string Search { get; set; }
+        public string Status { get; set; }
+
+        public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
+        {
+            string decision = (Decision ?? string.Empty).Trim();
+
+            if (!decision.Equals("Complete", StringComparison.OrdinalIgnoreCase) &&
+                !decision.Equals("Cancel", StringComparison.OrdinalIgnoreCase))
+            {
+                yield return new ValidationResult(
+                    "The selected donation decision is not valid.",
+                    new[] { "Decision" });
+            }
+
+            if (decision.Equals("Cancel", StringComparison.OrdinalIgnoreCase) &&
+                string.IsNullOrWhiteSpace(Remarks))
+            {
+                yield return new ValidationResult(
+                    "Please enter a reason before cancelling a donation.",
+                    new[] { "Remarks" });
+            }
+        }
     }
 
     // ==========================================

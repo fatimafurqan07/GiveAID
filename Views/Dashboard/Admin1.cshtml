@@ -1,0 +1,697 @@
+@model GiveAID_Project.Models.AdminDashboardViewModel
+@using System
+@using System.Linq
+@{
+    Layout = null;
+    ViewBag.Title = "Admin Dashboard";
+    string adminName = Convert.ToString(Session["UserName"] ?? "Administrator");
+    int completedCount = Model.AllDonations == null ? 0 : Model.AllDonations.Count(x => string.Equals(x.Status, "Completed", StringComparison.OrdinalIgnoreCase));
+    int pendingCount = Model.AllDonations == null ? 0 : Model.AllDonations.Count(x => string.Equals(x.Status, "Pending", StringComparison.OrdinalIgnoreCase));
+}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Admin Dashboard - GiveAID</title>
+    <style>
+        :root {
+            --navy: #10233f;
+            --green: #16794b;
+            --green2: #0f9960;
+            --mint: #eaf7f0;
+            --bg: #f4f7f9;
+            --line: #dce5e9;
+            --muted: #64748b;
+            --white: #fff;
+            --danger: #b42318;
+            --warning: #a15c00
+        }
+
+        * {
+            box-sizing: border-box
+        }
+
+        body {
+            margin: 0;
+            background: var(--bg);
+            color: #142033;
+            font-family: Segoe UI,Arial,sans-serif
+        }
+
+        .shell {
+            display: grid;
+            grid-template-columns: 260px minmax(0,1fr);
+            min-height: 100vh
+        }
+
+        .sidebar {
+            background: var(--navy);
+            color: #fff;
+            padding: 28px 18px;
+            position: sticky;
+            top: 0;
+            height: 100vh
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 11px;
+            padding: 0 10px 26px;
+            border-bottom: 1px solid rgba(255,255,255,.12)
+        }
+
+        .brand-mark {
+            display: grid;
+            place-items: center;
+            width: 39px;
+            height: 39px;
+            border-radius: 11px;
+            background: var(--green2);
+            font-weight: 800
+        }
+
+        .brand-name {
+            font-size: 21px;
+            font-weight: 750
+        }
+
+            .brand-name span {
+                color: #5ee0a1
+            }
+
+        .brand small {
+            display: block;
+            color: #aebdca;
+            font-size: 11px;
+            margin-top: 2px;
+            letter-spacing: .06em;
+            text-transform: uppercase
+        }
+
+        .nav-label {
+            color: #91a4b5;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: .12em;
+            margin: 25px 12px 9px
+        }
+
+        .nav a {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: #d7e0e8;
+            text-decoration: none;
+            padding: 11px 12px;
+            border-radius: 9px;
+            margin: 3px 0;
+            font-size: 14px
+        }
+
+            .nav a:hover, .nav a.active {
+                background: rgba(44,196,122,.16);
+                color: #fff
+            }
+
+        .nav-icon {
+            width: 28px;
+            height: 28px;
+            border: 1px solid rgba(255,255,255,.15);
+            border-radius: 8px;
+            display: grid;
+            place-items: center;
+            font-size: 11px;
+            font-weight: 750
+        }
+
+        .sidebar-note {
+            position: absolute;
+            bottom: 25px;
+            left: 18px;
+            right: 18px;
+            border: 1px solid rgba(255,255,255,.12);
+            border-radius: 11px;
+            padding: 13px;
+            color: #b9c7d2;
+            font-size: 12px;
+            line-height: 1.5
+        }
+
+        .content {
+            min-width: 0
+        }
+
+        .topbar {
+            height: 76px;
+            background: #fff;
+            border-bottom: 1px solid var(--line);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 34px;
+            position: sticky;
+            top: 0;
+            z-index: 5
+        }
+
+        .top-title {
+            font-size: 14px;
+            color: var(--muted)
+        }
+
+            .top-title strong {
+                display: block;
+                color: var(--navy);
+                font-size: 18px;
+                margin-bottom: 2px
+            }
+
+        .account {
+            display: flex;
+            align-items: center;
+            gap: 12px
+        }
+
+        .avatar {
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            background: var(--mint);
+            color: var(--green);
+            display: grid;
+            place-items: center;
+            font-weight: 800
+        }
+
+        .account-meta {
+            font-size: 13px
+        }
+
+            .account-meta span {
+                display: block;
+                color: var(--muted);
+                font-size: 11px
+            }
+
+        .logout {
+            border: 1px solid #d9e1e5;
+            background: #fff;
+            color: #344054;
+            border-radius: 8px;
+            padding: 9px 13px;
+            text-decoration: none;
+            font-size: 13px
+        }
+
+            .logout:hover {
+                border-color: #e4aaa6;
+                color: var(--danger)
+            }
+
+        main {
+            padding: 32px 34px 55px;
+            max-width: 1500px;
+            margin: auto
+        }
+
+        .page-head {
+            display: flex;
+            justify-content: space-between;
+            gap: 20px;
+            align-items: flex-start;
+            margin-bottom: 25px
+        }
+
+        .eyebrow {
+            color: var(--green);
+            font-size: 12px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: .1em
+        }
+
+        .page-head h1 {
+            margin: 6px 0 7px;
+            font-size: 30px;
+            color: var(--navy);
+            letter-spacing: -.03em
+        }
+
+        .page-head p {
+            margin: 0;
+            color: var(--muted);
+            font-size: 14px
+        }
+
+        .live {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: #fff;
+            border: 1px solid var(--line);
+            border-radius: 20px;
+            padding: 8px 12px;
+            color: #44546a;
+            font-size: 12px
+        }
+
+        .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #18b66f
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(5,minmax(145px,1fr));
+            gap: 15px;
+            margin-bottom: 24px
+        }
+
+        .stat {
+            background: #fff;
+            border: 1px solid var(--line);
+            border-radius: 13px;
+            padding: 19px;
+            box-shadow: 0 4px 14px rgba(16,35,63,.035)
+        }
+
+        .stat-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center
+        }
+
+        .stat-code {
+            width: 34px;
+            height: 34px;
+            border-radius: 9px;
+            background: var(--mint);
+            color: var(--green);
+            display: grid;
+            place-items: center;
+            font-size: 11px;
+            font-weight: 800
+        }
+
+        .stat-value {
+            font-size: 27px;
+            font-weight: 800;
+            color: var(--navy);
+            margin-top: 16px
+        }
+
+        .stat-label {
+            color: var(--muted);
+            font-size: 12px;
+            margin-top: 4px
+        }
+
+        .stat.pending .stat-code {
+            background: #fff4df;
+            color: var(--warning)
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: minmax(0,1.65fr) minmax(280px,.8fr);
+            gap: 18px;
+            margin-bottom: 18px
+        }
+
+        .card {
+            background: #fff;
+            border: 1px solid var(--line);
+            border-radius: 14px;
+            box-shadow: 0 4px 14px rgba(16,35,63,.03);
+            overflow: hidden
+        }
+
+        .card-head {
+            padding: 20px 22px 16px;
+            border-bottom: 1px solid #e8eef1;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 15px
+        }
+
+            .card-head h2 {
+                margin: 0;
+                color: var(--navy);
+                font-size: 17px
+            }
+
+            .card-head p {
+                margin: 5px 0 0;
+                color: var(--muted);
+                font-size: 12px
+            }
+
+        .count {
+            background: var(--mint);
+            color: var(--green);
+            border-radius: 15px;
+            padding: 6px 10px;
+            font-size: 11px;
+            font-weight: 700
+        }
+
+        .quick-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 11px;
+            padding: 18px
+        }
+
+        .quick {
+            border: 1px solid var(--line);
+            border-radius: 10px;
+            padding: 14px;
+            text-decoration: none;
+            color: var(--navy);
+            transition: .15s
+        }
+
+            .quick:hover {
+                border-color: #83c9a6;
+                background: #f6fcf8
+            }
+
+            .quick strong {
+                display: block;
+                font-size: 13px
+            }
+
+            .quick span {
+                display: block;
+                color: var(--muted);
+                font-size: 11px;
+                margin-top: 5px
+            }
+
+        .quick-code {
+            color: var(--green);
+            font-weight: 800;
+            font-size: 11px;
+            margin-bottom: 9px
+        }
+
+        .table-wrap {
+            overflow: auto
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 760px
+        }
+
+        th {
+            text-align: left;
+            background: #f8fafb;
+            color: #66758a;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: .05em;
+            padding: 12px 17px;
+            border-bottom: 1px solid var(--line)
+        }
+
+        td {
+            padding: 14px 17px;
+            border-bottom: 1px solid #edf1f3;
+            font-size: 13px;
+            vertical-align: middle
+        }
+
+        tbody tr:hover {
+            background: #fbfdfc
+        }
+
+        .primary {
+            font-weight: 700;
+            color: #213047
+        }
+
+        .secondary {
+            color: var(--muted);
+            font-size: 11px;
+            margin-top: 3px
+        }
+
+        .money {
+            font-weight: 750;
+            color: var(--navy);
+            white-space: nowrap
+        }
+
+        .badge {
+            display: inline-flex;
+            border-radius: 15px;
+            padding: 5px 9px;
+            font-size: 11px;
+            font-weight: 700
+        }
+
+        .badge-pending {
+            background: #fff4df;
+            color: #8b5200
+        }
+
+        .badge-completed {
+            background: #e8f8ef;
+            color: #116c42
+        }
+
+        .badge-cancelled, .badge-failed {
+            background: #fff0ef;
+            color: #a33128
+        }
+
+        .badge-other {
+            background: #eef2f5;
+            color: #536174
+        }
+
+        .actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 6px
+        }
+
+        .btn {
+            border: 0;
+            border-radius: 7px;
+            padding: 7px 10px;
+            font-size: 11px;
+            font-weight: 700;
+            cursor: pointer
+        }
+
+        .btn-ok {
+            background: var(--green);
+            color: #fff
+        }
+
+        .btn-no {
+            background: #fff0ef;
+            color: var(--danger)
+        }
+
+        .empty {
+            padding: 35px;
+            text-align: center;
+            color: var(--muted);
+            font-size: 13px
+        }
+
+        .flash {
+            margin: 0 34px;
+            padding: 12px 15px;
+            border-radius: 9px;
+            font-size: 13px
+        }
+
+        .flash-success {
+            background: #e8f8ef;
+            color: #116c42
+        }
+
+        .flash-error {
+            background: #fff0ef;
+            color: #9f2d25
+        }
+
+        .mobile-top {
+            display: none
+        }
+
+        .section-space {
+            margin-top: 18px
+        }
+
+        @@media(max-width:1100px) {
+            .stats {
+                grid-template-columns: repeat(3,1fr)
+            }
+
+            .grid {
+                grid-template-columns: 1fr
+            }
+
+            .sidebar {
+                width: 220px
+            }
+
+            .shell {
+                grid-template-columns: 220px minmax(0,1fr)
+            }
+        }
+
+        @@media(max-width:760px) {
+            .shell {
+                display: block
+            }
+
+            .sidebar {
+                display: none
+            }
+
+            .topbar {
+                padding: 0 18px
+            }
+
+            .account-meta {
+                display: none
+            }
+
+            main {
+                padding: 24px 16px
+            }
+
+            .stats {
+                grid-template-columns: 1fr 1fr
+            }
+
+            .page-head {
+                display: block
+            }
+
+            .live {
+                display: none
+            }
+
+            .flash {
+                margin: 0 16px
+            }
+
+            .quick-grid {
+                grid-template-columns: 1fr
+            }
+
+            .page-head h1 {
+                font-size: 25px
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="shell">
+        <aside class="sidebar">
+            <div class="brand"><div class="brand-mark">GA</div><div><div class="brand-name">Give<span>AID</span></div><small>Administration</small></div></div>
+            <div class="nav-label">Workspace</div>
+            <nav class="nav">
+                <a class="active" href="#overview"><span class="nav-icon">OV</span>Overview</a>
+                <a href="#donations"><span class="nav-icon">DN</span>Donations</a>
+                <a href="@Url.Action("Users","Dashboard")"><span class="nav-icon">US</span>User management</a>
+            </nav>
+            <div class="nav-label">Website</div>
+            <nav class="nav">
+                <a href="@Url.Action("Index","Home")"><span class="nav-icon">WB</span>View website</a>
+                <a href="@Url.Action("Index","NGO")"><span class="nav-icon">NG</span>NGO directory</a>
+                <a href="@Url.Action("Index","Causes")"><span class="nav-icon">CS</span>Causes</a>
+            </nav>
+            <div class="sidebar-note">Admin tools will be added module by module after their backend actions are verified.</div>
+        </aside>
+        <section class="content">
+            <header class="topbar">
+                <div class="top-title"><strong>Administration</strong>GiveAID management workspace</div>
+                <div class="account"><div class="avatar">@((adminName.Length > 0 ? adminName.Substring(0,1) : "A").ToUpper())</div><div class="account-meta"><b>@adminName</b><span>Administrator</span></div><a class="logout" href="@Url.Action("Logout","Account")">Sign out</a></div>
+            </header>
+            @if (TempData["SuccessMessage"] != null)
+            {<div class="flash flash-success">@TempData["SuccessMessage"]</div>}
+            @if (TempData["ErrorMessage"] != null)
+            {<div class="flash flash-error">@TempData["ErrorMessage"]</div>}
+            <main id="overview">
+                <div class="page-head"><div><div class="eyebrow">Platform overview</div><h1>Welcome back, @adminName</h1><p>Review current activity and manage pending donation records.</p></div><div class="live"><span class="dot"></span>Connected to live database</div></div>
+                <section class="stats">
+                    <article class="stat"><div class="stat-top"><span class="stat-code">US</span></div><div class="stat-value">@Model.TotalUsers</div><div class="stat-label">Active users</div></article>
+                    <article class="stat"><div class="stat-top"><span class="stat-code">NG</span></div><div class="stat-value">@Model.TotalNGOs</div><div class="stat-label">Associated NGOs</div></article>
+                    <article class="stat"><div class="stat-top"><span class="stat-code">PR</span></div><div class="stat-value">@Model.TotalPrograms</div><div class="stat-label">Open programmes</div></article>
+                    <article class="stat"><div class="stat-top"><span class="stat-code">PKR</span></div><div class="stat-value">@Model.TotalFundsRaised.ToString("N0")</div><div class="stat-label">Funds completed (PKR)</div></article>
+                    <article class="stat pending"><div class="stat-top"><span class="stat-code">PN</span></div><div class="stat-value">@pendingCount</div><div class="stat-label">Pending donations</div></article>
+                </section>
+
+                <section class="grid">
+                    <div class="card" id="recent-users">
+                        <div class="card-head"><div><h2>Recent users</h2><p>Latest accounts registered on the platform</p></div><span class="count">@(Model.RecentUsers == null ? 0 : Model.RecentUsers.Count) records</span></div>
+                        @if (Model.RecentUsers != null && Model.RecentUsers.Any())
+                        {
+                            <div class="table-wrap">
+                                <table>
+                                    <thead><tr><th>User</th><th>Role</th><th>Joined</th><th>Status</th></tr></thead>
+                                    <tbody>
+                                        @foreach (var u in Model.RecentUsers)
+                                        {
+                                            <tr><td><div class="primary">@u.FullName</div><div class="secondary">@u.Email</div></td><td>@u.RoleName</td><td>@u.CreatedAt.ToString("dd MMM yyyy")</td><td><span class="badge @(u.IsActive ? "badge-completed" : "badge-cancelled")">@(u.IsActive ? "Active" : "Inactive")</span></td></tr>
+}
+                                    </tbody>
+                                </table>
+                            </div>}
+                        else
+                        {<div class="empty">No users are available yet.</div>}
+                    </div>
+                    <div class="card">
+                        <div class="card-head"><div><h2>Module status</h2><p>Verified areas in this rebuild</p></div></div><div class="quick-grid">
+                            <div class="quick"><div class="quick-code">READY</div><strong>Authentication</strong><span>Admin and user role routing</span></div>
+                            <div class="quick"><div class="quick-code">READY</div><strong>Database</strong><span>Clean SQL Server schema</span></div>
+                            <div class="quick"><div class="quick-code">NEXT</div><strong>User management</strong><span>CRUD module rebuild</span></div>
+                            <div class="quick"><div class="quick-code">NEXT</div><strong>NGO management</strong><span>Admin-managed records</span></div>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="card section-space" id="donations">
+                    <div class="card-head"><div><h2>Donation management</h2><p>Review pending records and monitor completed donations</p></div><span class="count">@pendingCount pending / @completedCount completed</span></div>
+                    @if (Model.AllDonations != null && Model.AllDonations.Any())
+                    {
+                        <div class="table-wrap">
+                            <table>
+                                <thead><tr><th>Reference</th><th>Donor</th><th>Destination</th><th>Amount</th><th>Date</th><th>Status</th><th></th></tr></thead>
+                                <tbody>
+                                    @foreach (var d in Model.AllDonations)
+                                    {
+                                        string state = (d.Status ?? "").ToLowerInvariant(); string badgeClass = state == "completed" ? "badge-completed" : state == "pending" ? "badge-pending" : state == "cancelled" || state == "failed" ? "badge-cancelled" : "badge-other";
+                                        <tr><td><div class="primary">@d.PaymentReference</div></td><td><div class="primary">@d.DonorName</div><div class="secondary">@d.DonorEmail</div></td><td><div class="primary">@d.NGOName</div><div class="secondary">@d.CauseName</div></td><td class="money">PKR @d.Amount.ToString("N0")</td><td>@d.DonationDate.ToString("dd MMM yyyy")</td><td><span class="badge @badgeClass">@d.Status</span></td><td><div class="actions">@if (state == "pending")
+                                        {
+                                            using (Html.BeginForm("ApproveDonation", "Dashboard", FormMethod.Post, new { style = "display:inline" }))
+                                            {@Html.AntiForgeryToken()<input type="hidden" name="donationId" value="@d.DonationID" /><button class="btn btn-ok" type="submit">Complete</button>}
+                                        using (Html.BeginForm("DenyDonation", "Dashboard", FormMethod.Post, new { style = "display:inline" }))
+                                        {@Html.AntiForgeryToken()<input type="hidden" name="donationId" value="@d.DonationID" /><input type="hidden" name="remarks" value="Cancelled by administrator" /><button class="btn btn-no" type="submit">Cancel</button>}
+                                }</div></td></tr>
+}
+                                </tbody>
+                            </table>
+                        </div>}
+                    else
+                    {<div class="empty">No donation records are available. New donations will appear here.</div>}
+                </section>
+            </main>
+        </section>
+    </div>
+</body>
+</html>

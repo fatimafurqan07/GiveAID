@@ -221,11 +221,15 @@ BEGIN
         DonationStatus   NVARCHAR(20) NOT NULL CONSTRAINT DF_Donations_Status DEFAULT (N'Pending'),
         DonationDate     DATETIME2(0) NOT NULL CONSTRAINT DF_Donations_Date DEFAULT (SYSUTCDATETIME()),
         CompletedAt      DATETIME2(0) NULL,
+        AdminRemarks     NVARCHAR(500) NULL,
+        AdminReviewedAt  DATETIME2(0) NULL,
+        ReviewedByUserID INT NULL,
         CONSTRAINT PK_Donations PRIMARY KEY (DonationID),
         CONSTRAINT FK_Donations_Users FOREIGN KEY (UserID) REFERENCES dbo.Users(UserID),
         CONSTRAINT FK_Donations_Causes FOREIGN KEY (CauseID) REFERENCES dbo.Causes(CauseID),
         CONSTRAINT FK_Donations_NGOs FOREIGN KEY (NGOID) REFERENCES dbo.NGOs(NGOID),
         CONSTRAINT FK_Donations_Programmes FOREIGN KEY (ProgrammeID) REFERENCES dbo.Programmes(ProgrammeID),
+        CONSTRAINT FK_Donations_ReviewedByUser FOREIGN KEY (ReviewedByUserID) REFERENCES dbo.Users(UserID),
         CONSTRAINT CK_Donations_Amount CHECK (Amount > 0),
         CONSTRAINT CK_Donations_CurrencyCode CHECK (CurrencyCode IN ('PKR', 'MYR', 'USD')),
         CONSTRAINT CK_Donations_Status CHECK
@@ -233,6 +237,33 @@ BEGIN
             DonationStatus IN (N'Pending', N'Completed', N'Failed', N'Cancelled')
         )
     );
+END
+GO
+
+/* Keep older databases compatible when this verification script is rerun. */
+IF COL_LENGTH(N'dbo.Donations', N'AdminRemarks') IS NULL
+    ALTER TABLE dbo.Donations ADD AdminRemarks NVARCHAR(500) NULL;
+GO
+
+IF COL_LENGTH(N'dbo.Donations', N'AdminReviewedAt') IS NULL
+    ALTER TABLE dbo.Donations ADD AdminReviewedAt DATETIME2(0) NULL;
+GO
+
+IF COL_LENGTH(N'dbo.Donations', N'ReviewedByUserID') IS NULL
+    ALTER TABLE dbo.Donations ADD ReviewedByUserID INT NULL;
+GO
+
+IF NOT EXISTS
+(
+    SELECT 1
+    FROM sys.foreign_keys
+    WHERE name = N'FK_Donations_ReviewedByUser'
+      AND parent_object_id = OBJECT_ID(N'dbo.Donations')
+)
+BEGIN
+    ALTER TABLE dbo.Donations
+    ADD CONSTRAINT FK_Donations_ReviewedByUser
+        FOREIGN KEY (ReviewedByUserID) REFERENCES dbo.Users(UserID);
 END
 GO
 

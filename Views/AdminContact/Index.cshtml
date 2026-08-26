@@ -1,0 +1,671 @@
+@model GiveAID_Project.Models.AdminContactMessagesViewModel
+@using System
+@using System.Linq
+
+@{
+    ViewBag.Title = "Contact Messages | GiveAID";
+    ViewBag.AdminPageTitle = "Contact messages";
+    ViewBag.AdminPageSubtitle = "Review and organise enquiries submitted through the public website";
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+
+    var selectedStatus = string.IsNullOrWhiteSpace(Model.SelectedStatus)
+        ? "all"
+        : Model.SelectedStatus;
+}
+
+@section Styles {
+    <style>
+        .contact-admin-page {
+            padding: 36px;
+            min-height: calc(100vh - 82px);
+            background:
+                radial-gradient(circle at 5% 8%, rgba(36, 199, 145, .11), transparent 27%),
+                radial-gradient(circle at 96% 3%, rgba(255, 137, 105, .10), transparent 25%),
+                #f4f8f8;
+        }
+
+        .contact-hero {
+            position: relative;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 30px;
+            overflow: hidden;
+            padding: 31px 34px;
+            border-radius: 25px;
+            color: #fff;
+            background: linear-gradient(120deg, #073b46 0%, #08705e 58%, #0e9d73 100%);
+            box-shadow: 0 20px 50px rgba(7, 48, 59, .16);
+        }
+
+        .contact-hero::before,
+        .contact-hero::after {
+            position: absolute;
+            content: "";
+            border: 28px solid rgba(255, 255, 255, .075);
+            border-radius: 50%;
+        }
+
+        .contact-hero::before {
+            width: 185px;
+            height: 185px;
+            right: -75px;
+            top: -100px;
+        }
+
+        .contact-hero::after {
+            width: 110px;
+            height: 110px;
+            right: 125px;
+            bottom: -95px;
+        }
+
+        .hero-copy,
+        .hero-badge {
+            position: relative;
+            z-index: 1;
+        }
+
+        .hero-kicker {
+            display: block;
+            margin-bottom: 9px;
+            color: #65f0bf;
+            font-size: 11px;
+            font-weight: 900;
+            letter-spacing: .13em;
+            text-transform: uppercase;
+        }
+
+        .contact-hero h1 {
+            margin: 0;
+            font-size: clamp(29px, 3vw, 43px);
+            letter-spacing: -.045em;
+        }
+
+        .contact-hero p {
+            max-width: 690px;
+            margin: 10px 0 0;
+            color: #d5efeb;
+            font-size: 14px;
+            line-height: 1.7;
+        }
+
+        .hero-badge {
+            min-width: 160px;
+            padding: 18px;
+            border: 1px solid rgba(255, 255, 255, .2);
+            border-radius: 18px;
+            text-align: center;
+            background: rgba(255, 255, 255, .1);
+            backdrop-filter: blur(7px);
+        }
+
+        .hero-badge strong {
+            display: block;
+            font-size: 31px;
+        }
+
+        .hero-badge span {
+            display: block;
+            margin-top: 3px;
+            color: #c8eee6;
+            font-size: 10px;
+            font-weight: 800;
+            letter-spacing: .08em;
+            text-transform: uppercase;
+        }
+
+        .contact-stat-grid {
+            display: grid;
+            grid-template-columns: repeat(5, minmax(0, 1fr));
+            gap: 14px;
+            margin: 18px 0;
+        }
+
+        .contact-stat {
+            position: relative;
+            overflow: hidden;
+            min-height: 128px;
+            padding: 19px;
+            border: 1px solid #d3e2de;
+            border-radius: 19px;
+            background: #fff;
+            box-shadow: 0 12px 30px rgba(8, 43, 53, .055);
+        }
+
+        .contact-stat::after {
+            position: absolute;
+            width: 78px;
+            height: 78px;
+            right: -31px;
+            top: -31px;
+            content: "";
+            border: 17px solid #edf5f2;
+            border-radius: 50%;
+        }
+
+        .contact-stat-code {
+            position: relative;
+            z-index: 1;
+            display: grid;
+            place-items: center;
+            width: 37px;
+            height: 37px;
+            border-radius: 11px;
+            color: #087557;
+            background: #e4f6ee;
+            font-size: 9px;
+            font-weight: 950;
+        }
+
+        .contact-stat:nth-child(2) .contact-stat-code {
+            color: #a46310;
+            background: #fff0da;
+        }
+
+        .contact-stat:nth-child(3) .contact-stat-code {
+            color: #176879;
+            background: #e5f2f6;
+        }
+
+        .contact-stat:nth-child(4) .contact-stat-code {
+            color: #725397;
+            background: #f0e9f7;
+        }
+
+        .contact-stat:nth-child(5) .contact-stat-code {
+            color: #a74739;
+            background: #ffebe7;
+        }
+
+        .contact-stat strong {
+            position: relative;
+            z-index: 1;
+            display: block;
+            margin-top: 13px;
+            color: #092c3a;
+            font-size: 25px;
+        }
+
+        .contact-stat span:last-child {
+            position: relative;
+            z-index: 1;
+            display: block;
+            margin-top: 4px;
+            color: #72858a;
+            font-size: 10px;
+        }
+
+        .message-filter-card,
+        .message-list-card {
+            border: 1px solid #d2e1dd;
+            border-radius: 21px;
+            background: rgba(255, 255, 255, .94);
+            box-shadow: 0 14px 34px rgba(8, 43, 53, .055);
+        }
+
+        .message-filter-card {
+            padding: 20px;
+            margin-bottom: 18px;
+        }
+
+        .filter-form {
+            display: grid;
+            grid-template-columns: minmax(230px, 1fr) 210px auto auto;
+            gap: 12px;
+            align-items: end;
+        }
+
+        .filter-field label {
+            display: block;
+            margin: 0 0 7px;
+            color: #31565d;
+            font-size: 9px;
+            font-weight: 900;
+            letter-spacing: .08em;
+            text-transform: uppercase;
+        }
+
+        .filter-field input,
+        .filter-field select {
+            width: 100%;
+            height: 48px;
+            padding: 0 14px;
+            border: 1px solid #c4d8d2;
+            border-radius: 12px;
+            outline: none;
+            color: #173d45;
+            background: #fbfdfc;
+        }
+
+        .filter-field input:focus,
+        .filter-field select:focus {
+            border-color: #0b9a70;
+            box-shadow: 0 0 0 4px rgba(11, 154, 112, .1);
+        }
+
+        .filter-button,
+        .reset-button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            height: 48px;
+            padding: 0 18px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 900;
+            text-decoration: none;
+            white-space: nowrap;
+        }
+
+        .filter-button {
+            border: 0;
+            color: #fff;
+            background: #07845f;
+            cursor: pointer;
+        }
+
+        .reset-button {
+            border: 1px solid #cadbd6;
+            color: #31575e;
+            background: #fff;
+        }
+
+        .list-heading {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 20px;
+            padding: 21px 23px;
+            border-bottom: 1px solid #e1ebe8;
+        }
+
+        .list-heading h2 {
+            margin: 0;
+            color: #092d3a;
+            font-size: 20px;
+        }
+
+        .list-heading p {
+            margin: 5px 0 0;
+            color: #75888c;
+            font-size: 11px;
+        }
+
+        .record-count {
+            padding: 8px 12px;
+            border-radius: 20px;
+            color: #087455;
+            background: #e4f6ee;
+            font-size: 9px;
+            font-weight: 900;
+        }
+
+        .message-table-wrap {
+            overflow-x: auto;
+        }
+
+        .message-table {
+            width: 100%;
+            min-width: 940px;
+            border-collapse: collapse;
+        }
+
+        .message-table th {
+            padding: 13px 17px;
+            text-align: left;
+            color: #637b80;
+            background: #f5f9f7;
+            font-size: 8px;
+            font-weight: 900;
+            letter-spacing: .08em;
+            text-transform: uppercase;
+        }
+
+        .message-table td {
+            padding: 17px;
+            border-top: 1px solid #e7efec;
+            color: #35555b;
+            font-size: 11px;
+            vertical-align: middle;
+        }
+
+        .message-table tbody tr {
+            transition: background .18s ease, transform .18s ease;
+        }
+
+        .message-table tbody tr:hover {
+            background: #f7fcfa;
+        }
+
+        .message-table tbody tr.unread-row {
+            background: linear-gradient(90deg, #effbf6, #fff 43%);
+        }
+
+        .sender-cell {
+            display: flex;
+            align-items: center;
+            gap: 11px;
+        }
+
+        .sender-avatar {
+            display: grid;
+            place-items: center;
+            flex: 0 0 39px;
+            width: 39px;
+            height: 39px;
+            border-radius: 12px;
+            color: #087557;
+            background: linear-gradient(145deg, #e0f6ed, #f5fbf8);
+            font-weight: 950;
+        }
+
+        .sender-cell strong,
+        .subject-cell strong {
+            display: block;
+            color: #0d3540;
+            font-size: 11px;
+        }
+
+        .sender-cell small,
+        .subject-cell small {
+            display: block;
+            max-width: 330px;
+            margin-top: 4px;
+            overflow: hidden;
+            color: #75898d;
+            font-size: 9px;
+            line-height: 1.5;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .message-status {
+            display: inline-flex;
+            padding: 7px 10px;
+            border-radius: 20px;
+            color: #516c70;
+            background: #edf3f1;
+            font-size: 8px;
+            font-weight: 900;
+            text-transform: uppercase;
+        }
+
+        .status-new {
+            color: #a3610c;
+            background: #fff0d6;
+        }
+
+        .status-read {
+            color: #17657a;
+            background: #e5f2f6;
+        }
+
+        .status-replied {
+            color: #087354;
+            background: #def5e9;
+        }
+
+        .status-closed {
+            color: #6e5686;
+            background: #f0eafa;
+        }
+
+        .view-message {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 39px;
+            padding: 0 13px;
+            border: 1px solid #bdd6cf;
+            border-radius: 10px;
+            color: #087557;
+            background: #fff;
+            font-size: 9px;
+            font-weight: 900;
+            text-decoration: none;
+        }
+
+        .view-message:hover {
+            color: #fff;
+            border-color: #07845f;
+            background: #07845f;
+        }
+
+        .empty-inbox {
+            padding: 65px 25px;
+            text-align: center;
+        }
+
+        .empty-inbox-mark {
+            display: grid;
+            place-items: center;
+            width: 62px;
+            height: 62px;
+            margin: auto;
+            border-radius: 18px;
+            color: #087557;
+            background: #e4f6ee;
+            font-weight: 950;
+        }
+
+        .empty-inbox h3 {
+            margin: 17px 0 7px;
+            color: #092d3a;
+            font-size: 19px;
+        }
+
+        .empty-inbox p {
+            margin: 0;
+            color: #72868a;
+            font-size: 11px;
+        }
+
+        @@media (max-width: 1180px) {
+            .contact-stat-grid {
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+            }
+
+            .filter-form {
+                grid-template-columns: 1fr 190px auto;
+            }
+
+            .reset-button {
+                grid-column: 1 / -1;
+            }
+        }
+
+        @@media (max-width: 760px) {
+            .contact-admin-page {
+                padding: 20px 15px;
+            }
+
+            .contact-hero {
+                display: block;
+                padding: 26px 23px;
+            }
+
+            .hero-badge {
+                display: inline-block;
+                min-width: 135px;
+                margin-top: 20px;
+            }
+
+            .contact-stat-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+
+            .filter-form {
+                grid-template-columns: 1fr;
+            }
+
+            .reset-button {
+                grid-column: auto;
+            }
+        }
+
+        @@media (max-width: 470px) {
+            .contact-stat-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+}
+
+<main class="contact-admin-page">
+    <section class="contact-hero">
+        <div class="hero-copy">
+            <span class="hero-kicker">Communication centre</span>
+            <h1>Public enquiries, organised.</h1>
+            <p>
+                Review messages submitted through the GiveAID contact form,
+                follow their progress and keep every enquiry in one auditable workflow.
+            </p>
+        </div>
+
+        <div class="hero-badge">
+            <strong>@Model.NewMessages</strong>
+            <span>Awaiting review</span>
+        </div>
+    </section>
+
+    <section class="contact-stat-grid" aria-label="Contact message statistics">
+        <article class="contact-stat">
+            <span class="contact-stat-code">ALL</span>
+            <strong>@Model.TotalMessages</strong>
+            <span>Total messages</span>
+        </article>
+
+        <article class="contact-stat">
+            <span class="contact-stat-code">NEW</span>
+            <strong>@Model.NewMessages</strong>
+            <span>New enquiries</span>
+        </article>
+
+        <article class="contact-stat">
+            <span class="contact-stat-code">RD</span>
+            <strong>@Model.ReadMessages</strong>
+            <span>Read messages</span>
+        </article>
+
+        <article class="contact-stat">
+            <span class="contact-stat-code">RP</span>
+            <strong>@Model.RepliedMessages</strong>
+            <span>Replied messages</span>
+        </article>
+
+        <article class="contact-stat">
+            <span class="contact-stat-code">CL</span>
+            <strong>@Model.ClosedMessages</strong>
+            <span>Closed records</span>
+        </article>
+    </section>
+
+    <section class="message-filter-card">
+        @using (Html.BeginForm("Index", "AdminContact", FormMethod.Get, new { @class = "filter-form" }))
+        {
+            <div class="filter-field">
+                <label for="search">Search messages</label>
+                <input id="search"
+                       name="search"
+                       type="search"
+                       value="@Model.SearchQuery"
+                       placeholder="Name, email, phone, subject or message" />
+            </div>
+
+            <div class="filter-field">
+                <label for="status">Message status</label>
+                <select id="status" name="status">
+                    <option value="all" @(selectedStatus.Equals("all", StringComparison.OrdinalIgnoreCase) ? "selected" : "")>All statuses</option>
+                    <option value="New" @(selectedStatus.Equals("New", StringComparison.OrdinalIgnoreCase) ? "selected" : "")>New</option>
+                    <option value="Read" @(selectedStatus.Equals("Read", StringComparison.OrdinalIgnoreCase) ? "selected" : "")>Read</option>
+                    <option value="Replied" @(selectedStatus.Equals("Replied", StringComparison.OrdinalIgnoreCase) ? "selected" : "")>Replied</option>
+                    <option value="Closed" @(selectedStatus.Equals("Closed", StringComparison.OrdinalIgnoreCase) ? "selected" : "")>Closed</option>
+                </select>
+            </div>
+
+            <button class="filter-button" type="submit">Apply filters</button>
+            <a class="reset-button" href="@Url.Action("Index", "AdminContact")">Reset</a>
+        }
+    </section>
+
+    <section class="message-list-card">
+        <header class="list-heading">
+            <div>
+                <h2>Contact message records</h2>
+                <p>New messages appear first. Open a record to review and update its workflow status.</p>
+            </div>
+
+            <span class="record-count">
+                @(Model.Messages == null ? 0 : Model.Messages.Count) record(s)
+            </span>
+        </header>
+
+        @if (Model.Messages != null && Model.Messages.Any())
+        {
+            <div class="message-table-wrap">
+                <table class="message-table">
+                    <thead>
+                        <tr>
+                            <th>Sender</th>
+                            <th>Subject and message</th>
+                            <th>Received</th>
+                            <th>Status</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var message in Model.Messages)
+                        {
+                            var senderName = string.IsNullOrWhiteSpace(message.FullName)
+                                ? "Visitor"
+                                : message.FullName;
+
+                            var senderInitial = senderName.Substring(0, 1).ToUpperInvariant();
+                            var rowClass = message.IsNew ? "unread-row" : "";
+                            var statusClass = "message-status status-" +
+                                (message.Status ?? "new").ToLowerInvariant();
+
+                            <tr class="@rowClass">
+                                <td>
+                                    <div class="sender-cell">
+                                        <span class="sender-avatar">@senderInitial</span>
+                                        <span>
+                                            <strong>@senderName</strong>
+                                            <small>@message.Email</small>
+                                        </span>
+                                    </div>
+                                </td>
+                                <td class="subject-cell">
+                                    <strong>@message.Subject</strong>
+                                    <small title="@message.MessagePreview">@message.MessagePreview</small>
+                                </td>
+                                <td>
+                                    <strong>@message.CreatedAt.ToString("dd MMM yyyy")</strong><br />
+                                    <small>@message.CreatedAt.ToString("hh:mm tt")</small>
+                                </td>
+                                <td>
+                                    <span class="@statusClass">@message.Status</span>
+                                </td>
+                                <td>
+                                    <a class="view-message"
+                                       href="@Url.Action("Details", "AdminContact", new { id = message.ContactMessageID })">
+                                        Open message
+                                    </a>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+        else
+        {
+            <div class="empty-inbox">
+                <div class="empty-inbox-mark">IN</div>
+                <h3>No messages found</h3>
+                <p>There are no contact records matching the selected search and status filters.</p>
+            </div>
+        }
+    </section>
+</main>

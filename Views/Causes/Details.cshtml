@@ -1,305 +1,563 @@
 @model GiveAID_Project.Models.CauseDetailViewModel
+@using System
+@using System.Linq
+@{ViewBag.Title = Model.CauseName + " | GiveAID Causes"; Layout = "~/Views/Shared/_Layout.cshtml"; string key = (Model.CauseName ?? "").ToLowerInvariant(); string fallback = key.Contains("water") ? "programme-water.png" : key.Contains("health") ? "programme-health.png" : "programme-learning.png"; string hero = string.IsNullOrWhiteSpace(Model.ImageURL) ? Url.Content("~/Content/" + fallback) : Model.ImageURL; string code = (Model.CauseName ?? "C").Length > 1 ? Model.CauseName.Substring(0, 2).ToUpperInvariant() : "C";}
+@section Styles{
+    <style>
+        .detail-page {
+            background: #f7faf9;
+            color: var(--navy);
+            overflow: hidden
+        }
 
-@{
-    ViewBag.Title = Model.CauseName + " - Verified Cause & Relief Sector | GiveAID";
-    Layout = "~/Views/Shared/_Layout.cshtml";
+        .shell {
+            max-width: 1160px;
+            margin: auto;
+            padding: 0 24px
+        }
+
+        .crumbs {
+            padding: 24px 0 17px;
+            font-size: 11px;
+            color: #6b8084
+        }
+
+            .crumbs a {
+                color: var(--emerald);
+                text-decoration: none
+            }
+
+            .crumbs span {
+                padding: 0 8px;
+                color: #9aabad
+            }
+
+        .hero {
+            padding-bottom: 70px;
+            background: linear-gradient(180deg,#fff,#f7faf9)
+        }
+
+        .hero-card {
+            height: 510px;
+            border-radius: 30px;
+            overflow: hidden;
+            position: relative;
+            box-shadow: 0 28px 65px rgba(7,31,44,.22)
+        }
+
+            .hero-card > img {
+                width: 100%;
+                height: 100%;
+                object-fit: cover
+            }
+
+            .hero-card:after {
+                content: "";
+                position: absolute;
+                inset: 0;
+                background: linear-gradient(90deg,rgba(7,31,44,.94) 0,rgba(7,31,44,.76) 48%,rgba(7,31,44,.15) 100%)
+            }
+
+        .hero-copy {
+            position: absolute;
+            z-index: 2;
+            left: 50px;
+            top: 50%;
+            transform: translateY(-50%);
+            max-width: 590px;
+            color: #fff
+        }
+
+        .hero-tag {
+            display: inline-flex;
+            padding: 8px 11px;
+            border-radius: 20px;
+            background: rgba(255,255,255,.12);
+            border: 1px solid rgba(255,255,255,.18);
+            font-size: 9px;
+            text-transform: uppercase;
+            letter-spacing: .1em;
+            font-weight: 900
+        }
+
+        .hero h1 {
+            font-size: 52px;
+            line-height: 1.03;
+            letter-spacing: -.05em;
+            margin: 20px 0 14px
+        }
+
+        .hero-copy p {
+            font-size: 14px;
+            line-height: 1.8;
+            color: #c7dedd
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(4,1fr);
+            gap: 10px;
+            margin-top: 28px
+        }
+
+        .stat {
+            padding: 15px;
+            border-radius: 14px;
+            background: rgba(255,255,255,.09);
+            border: 1px solid rgba(255,255,255,.1)
+        }
+
+            .stat strong {
+                display: block;
+                font-size: 20px
+            }
+
+            .stat span {
+                font-size: 8px;
+                color: #a9c8c6;
+                text-transform: uppercase
+            }
+
+        .content {
+            padding: 75px 0 100px;
+            background: radial-gradient(circle at 4% 20%,rgba(8,127,91,.08),transparent 26%),radial-gradient(circle at 96% 75%,rgba(240,139,104,.09),transparent 28%),#f7faf9
+        }
+
+        .about {
+            display: grid;
+            grid-template-columns: 1.25fr .75fr;
+            gap: 22px;
+            align-items: start
+        }
+
+        .panel {
+            border-radius: 23px;
+            padding: 34px;
+            border: 1px solid #d4e5dd;
+            box-shadow: 0 15px 39px rgba(7,31,44,.08)
+        }
+
+        .about .panel:first-child {
+            background: linear-gradient(145deg,#e7f7ef,#fbfefd)
+        }
+
+        .about .panel:last-child {
+            background: linear-gradient(145deg,#fff2e8,#fffaf6);
+            border-color: #edd8c7
+        }
+
+        .label {
+            font-size: 9px;
+            color: var(--coral);
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: .12em
+        }
+
+        .panel h2 {
+            font-size: 29px;
+            margin: 10px 0 15px
+        }
+
+        .panel p {
+            font-size: 13px;
+            line-height: 1.85;
+            color: #587276
+        }
+
+        .progress-box {
+            margin-top: 23px
+        }
+
+        .track {
+            height: 10px;
+            background: #e1ebe7;
+            border-radius: 20px;
+            overflow: hidden
+        }
+
+            .track i {
+                display: block;
+                height: 100%;
+                background: linear-gradient(90deg,#087f5b,#3fc78f)
+            }
+
+        .progress-row {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 9px;
+            font-size: 9px;
+            color: #60777b
+        }
+
+        .fact {
+            padding: 14px;
+            border-radius: 13px;
+            background: rgba(255,255,255,.72);
+            margin-top: 10px
+        }
+
+            .fact span {
+                display: block;
+                font-size: 8px;
+                text-transform: uppercase;
+                color: #73878a
+            }
+
+            .fact strong {
+                display: block;
+                margin-top: 4px;
+                font-size: 12px
+            }
+
+        .section-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: end;
+            gap: 25px;
+            margin: 65px 0 0;
+            padding: 30px 32px 23px;
+            background: linear-gradient(120deg,#e6f6ef,#fff7eb);
+            border: 1px solid #d7e7df;
+            border-bottom: 0;
+            border-radius: 24px 24px 0 0
+        }
+
+            .section-head h2 {
+                font-size: 34px;
+                margin: 8px 0 0;
+                letter-spacing: -.04em
+            }
+
+            .section-head p {
+                max-width: 450px;
+                font-size: 11px;
+                line-height: 1.7;
+                color: #5d777a
+            }
+
+        .ngo-grid, .program-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit,minmax(285px,1fr));
+            gap: 18px;
+            padding: 0 32px 32px;
+            background: linear-gradient(120deg,#e6f6ef,#fff7eb);
+            border: 1px solid #d7e7df;
+            border-top: 0;
+            border-radius: 0 0 24px 24px
+        }
+
+        .ngo-card {
+            background: #fff;
+            border: 1px solid #d5e4de;
+            border-radius: 20px;
+            padding: 23px;
+            box-shadow: 0 14px 35px rgba(7,31,44,.09);
+            text-decoration: none;
+            color: var(--navy);
+            transition: .3s
+        }
+
+            .ngo-card:hover {
+                transform: translateY(-7px);
+                color: var(--navy)
+            }
+
+        .ngo-top {
+            display: flex;
+            gap: 14px;
+            align-items: center
+        }
+
+        .logo {
+            width: 54px;
+            height: 54px;
+            border-radius: 15px;
+            background: linear-gradient(135deg,#082d3b,#087f5b);
+            color: #fff;
+            display: grid;
+            place-items: center;
+            font-weight: 900;
+            overflow: hidden
+        }
+
+            .logo img {
+                width: 100%;
+                height: 100%;
+                object-fit: cover
+            }
+
+        .ngo-card h3 {
+            font-size: 17px;
+            margin: 0 0 4px
+        }
+
+        .ngo-card small {
+            color: #6a8084
+        }
+
+        .ngo-card p {
+            font-size: 10px;
+            line-height: 1.65;
+            color: #687d81;
+            margin: 16px 0
+        }
+
+        .ngo-meta {
+            display: flex;
+            justify-content: space-between;
+            padding-top: 13px;
+            border-top: 1px solid #e6eeeb;
+            font-size: 9px;
+            color: #557075
+        }
+
+        .program-card {
+            background: #fff;
+            border: 1px solid #d5e4de;
+            border-radius: 21px;
+            overflow: hidden;
+            box-shadow: 0 15px 38px rgba(7,31,44,.1);
+            transition: .3s
+        }
+
+            .program-card:hover {
+                transform: translateY(-8px)
+            }
+
+        .program-image {
+            height: 185px;
+            position: relative;
+            overflow: hidden
+        }
+
+            .program-image img {
+                width: 100%;
+                height: 100%;
+                object-fit: cover
+            }
+
+        .program-status {
+            position: absolute;
+            top: 14px;
+            left: 14px;
+            padding: 7px 9px;
+            border-radius: 18px;
+            background: rgba(7,31,44,.75);
+            color: #fff;
+            font-size: 8px;
+            font-weight: 900
+        }
+
+        .program-body {
+            padding: 23px
+        }
+
+            .program-body h3 {
+                font-size: 19px;
+                margin: 0 0 6px
+            }
+
+        .program-ngo {
+            font-size: 9px;
+            color: var(--emerald);
+            font-weight: 900
+        }
+
+        .program-body p {
+            font-size: 10px;
+            line-height: 1.65;
+            color: #687d81;
+            min-height: 50px
+        }
+
+        .program-actions {
+            display: flex;
+            gap: 9px;
+            margin-top: 17px
+        }
+
+            .program-actions a, .program-actions button {
+                min-height: 40px;
+                padding: 0 14px;
+                border-radius: 10px;
+                border: 1px solid #cfe0da;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                font: inherit;
+                font-size: 9px;
+                font-weight: 900;
+                text-decoration: none;
+                cursor: pointer
+            }
+
+            .program-actions a {
+                background: #087f5b;
+                color: #fff
+            }
+
+            .program-actions button {
+                background: #eef8f4;
+                color: #087457
+            }
+
+            .program-actions form {
+                margin: 0
+            }
+
+        .empty {
+            padding: 45px;
+            text-align: center;
+            background: linear-gradient(120deg,#e6f6ef,#fff7eb);
+            border: 1px solid #d7e7df;
+            border-top: 0;
+            border-radius: 0 0 24px 24px
+        }
+
+        .cta {
+            margin-top: 70px;
+            padding: 38px;
+            border-radius: 24px;
+            background: linear-gradient(110deg,#087f5b,#075a53);
+            color: #fff;
+            display: flex;
+            justify-content: space-between;
+            align-items: center
+        }
+
+            .cta h2 {
+                font-size: 28px;
+                margin: 0 0 7px
+            }
+
+            .cta p {
+                margin: 0;
+                color: #c2deda;
+                font-size: 12px
+            }
+
+            .cta a {
+                padding: 12px 16px;
+                border-radius: 10px;
+                background: #fff;
+                color: #07564d;
+                text-decoration: none;
+                font-size: 11px;
+                font-weight: 900
+            }
+
+        .reveal {
+            opacity: 0;
+            transform: translateY(24px);
+            transition: .7s
+        }
+
+            .reveal.show {
+                opacity: 1;
+                transform: none
+            }
+
+        @@media(max-width:900px) {
+            .about {
+                grid-template-columns: 1fr
+            }
+
+            .stats {
+                grid-template-columns: 1fr 1fr
+            }
+        }
+
+        @@media(max-width:620px) {
+            .shell {
+                padding: 0 16px
+            }
+
+            .hero-card {
+                height: 570px
+            }
+
+            .hero-copy {
+                left: 27px;
+                right: 27px
+            }
+
+            .hero h1 {
+                font-size: 40px
+            }
+
+            .stats {
+                grid-template-columns: 1fr 1fr
+            }
+
+            .section-head, .cta {
+                display: block
+            }
+
+                .section-head p {
+                    margin-top: 12px
+                }
+
+            .ngo-grid, .program-grid {
+                padding: 0 18px 18px
+            }
+
+            .section-head {
+                padding: 24px 18px 20px
+            }
+
+            .cta a {
+                display: inline-block;
+                margin-top: 20px
+            }
+        }
+
+        @@media(prefers-reduced-motion:reduce) {
+            .reveal {
+                opacity: 1;
+                transform: none
+            }
+        }
+    </style>
 }
-
-<!-- =========================================================
-     CAUSE DETAIL HERO SECTION
-     ========================================================= -->
-<section class="cause-detail-header-section">
-    <div class="section-container">
-        <!-- Breadcrumb Navigation -->
-        <nav class="detail-breadcrumb" aria-label="Breadcrumb">
-            <a href="@Url.Action("Index", "Home")">Home</a>
-            <span class="sep">/</span>
-            <a href="@Url.Action("Index", "Causes")">Causes</a>
-            <span class="sep">/</span>
-            <span class="current">@Model.CauseName</span>
-        </nav>
-
-        <div class="cause-detail-hero-card">
-            <div class="cause-hero-main-info">
-                <div class="cause-hero-icon-wrap">
-                    <span class="cause-big-icon">@Model.Icon</span>
-                </div>
-
-                <div class="cause-hero-text">
-                    <div class="ngo-badges-row">
-                        <span class="verified-pill">🎯 Verified Humanitarian Focus</span>
-                        <span class="active-status-pill">● Active Sector</span>
-                    </div>
-
-                    <h1 class="cause-detail-title">@Model.CauseName</h1>
-
-                    <p class="cause-detail-lead">
-                        @(!string.IsNullOrEmpty(Model.Description) ? Model.Description : "Providing dedicated resources, emergency assistance, and sustainable development initiatives across communities in Pakistan.")
-                    </p>
-                </div>
-            </div>
-
-            <!-- Header Action & Stats -->
-            <div class="ngo-hero-action-panel">
-                <div class="ngo-hero-stats-row">
-                    <div class="hero-mini-stat">
-                        <div class="stat-num">@Model.TotalNGOsCount</div>
-                        <div class="stat-lbl">Active NGOs</div>
-                    </div>
-                    <div class="hero-mini-stat">
-                        <div class="stat-num">@Model.TotalProgramsCount</div>
-                        <div class="stat-lbl">Programs</div>
-                    </div>
-                    <div class="hero-mini-stat">
-                        <div class="stat-num">PKR @Model.TotalFundsRaised.ToString("N0")</div>
-                        <div class="stat-lbl">Mobilized</div>
-                    </div>
-                </div>
-
-                <a href="@Url.Action("Create", "Donation", new { causeId = Model.CauseID })" class="btn-primary-hero full-width-btn">
-                    <span>Support @Model.CauseName</span>
-                    <span class="btn-arrow">💚</span>
-                </a>
-            </div>
+<main class="detail-page">
+    <div class="shell"><nav class="crumbs"><a href="@Url.Action("Index","Home")">Home</a><span>/</span><a href="@Url.Action("Index","Causes")">Causes</a><span>/</span>@Model.CauseName</nav></div><section class="hero"><div class="shell"><div class="hero-card"><img src="@hero" alt="@Model.CauseName programme" /><div class="hero-copy"><span class="hero-tag">Active cause record</span><h1>@Model.CauseName</h1><p>@(!string.IsNullOrWhiteSpace(Model.ShortDescription)?Model.ShortDescription:Model.Description)</p><div class="stats"><div class="stat"><strong>@Model.TotalNGOsCount</strong><span>NGOs</span></div><div class="stat"><strong>@Model.TotalProgramsCount</strong><span>Programmes</span></div><div class="stat"><strong>PKR @Model.TotalFundsRaised.ToString("N0")</strong><span>Completed</span></div><div class="stat"><strong>@Model.OverallProgressPercent%</strong><span>Overall progress</span></div></div></div></div></div></section>
+    <section class="content">
+        <div class="shell">
+            <div class="about reveal"><article class="panel"><div class="label">About this cause</div><h2>Understanding @Model.CauseName</h2><p>@(!string.IsNullOrWhiteSpace(Model.Description)?Model.Description:Model.ShortDescription)</p><div class="progress-box"><div class="track"><i style="width:@Model.OverallProgressPercent%"></i></div><div class="progress-row"><span>PKR @Model.TotalFundsRaised.ToString("N0") completed</span><span>Goal PKR @Model.TotalTargetGoal.ToString("N0")</span></div></div></article><aside class="panel"><div class="label">Cause overview</div><h2>Connected records</h2><div class="fact"><span>Associated NGOs</span><strong>@Model.TotalNGOsCount organisations</strong></div><div class="fact"><span>Programmes</span><strong>@Model.TotalProgramsCount initiatives</strong></div><div class="fact"><span>Added to GiveAID</span><strong>@Model.CreatedAt.ToString("MMMM yyyy")</strong></div></aside></div>
+            <div class="section-head reveal"><div><div class="label">Organisations</div><h2>NGOs working in this area</h2></div><p>These active NGO records are connected through programmes under this cause.</p></div>@if (Model.NGOs != null && Model.NGOs.Any())
+            {<div class="ngo-grid reveal">
+                    @foreach (var n in Model.NGOs)
+                    {
+                        string initials = string.Join("", (n.NGOName ?? "NG").Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries).Take(2).Select(x => x.Substring(0, 1))).ToUpperInvariant(); string copy = string.IsNullOrWhiteSpace(n.Description) ? "Organisation connected to this cause on GiveAID." : n.Description; if (copy.Length > 115) { copy = copy.Substring(0, 115) + "..."; }<a class="ngo-card" href="@Url.Action("Details","NGO",new{id=n.NGOID})">
+                            <div class="ngo-top">
+                                <div class="logo">
+                                    @if (!string.IsNullOrWhiteSpace(n.LogoURL))
+                                    {<img src="@n.LogoURL" alt="@n.NGOName logo" />}
+                                    else
+                                    {@initials}
+                            </div><div><h3>@n.NGOName</h3><small>@n.City</small></div>
+                        </div><p>@copy</p><div class="ngo-meta"><span>@n.ProgramsCount programme(s)</span><span>View profile &#8594;</span></div>
+                    </a>}
+        </div>}
+    else
+    {<div class="empty reveal">No active NGO records are connected to this cause.</div>}
+            <div class="section-head reveal"><div><div class="label">Initiatives</div><h2>Programmes under @Model.CauseName</h2></div><p>Progress uses completed demonstration donation records from the database.</p></div>@if (Model.Programs != null && Model.Programs.Any())
+            {<div class="program-grid reveal">
+                    @foreach (var p in Model.Programs)
+                    {
+                        string image = string.IsNullOrWhiteSpace(p.ImageURL) ? hero : p.ImageURL; string copy = string.IsNullOrWhiteSpace(p.Description) ? "Programme details maintained by the administrator." : p.Description; if (copy.Length > 125) { copy = copy.Substring(0, 125) + "..."; }<article class="program-card"><div class="program-image"><img src="@image" alt="@p.ProgramName" /><span class="program-status">@p.Status</span></div><div class="program-body"><div class="program-ngo">@p.NGOName</div><h3>@p.ProgramName</h3><p>@copy</p><div class="track"><i style="width:@p.ProgressPercent%"></i></div><div class="progress-row"><span>PKR @p.CurrentAmount.ToString("N0")</span><span>@p.ProgressPercent% of @p.TargetAmount.ToString("N0")</span></div><div class="program-actions"><a href="@Url.Action("Create","Donation",new{programId=p.ProgramID,causeId=p.CauseID,ngoId=p.NGOID})">Contribute</a>@if (Request.IsAuthenticated || Session["UserID"] != null)
+                        {
+                            using (Html.BeginForm("SaveInterest", "Dashboard", FormMethod.Post))
+                            {@Html.AntiForgeryToken()<input type="hidden" name="programId" value="@p.ProgramID" /><input type="hidden" name="returnUrl" value="@Request.RawUrl" /><button type="submit">Save interest</button>}
+                    }</div></div></article>}
+        </div>}
+    else
+    {<div class="empty reveal">No active or upcoming programmes are currently available.</div>}
+            <div class="cta reveal"><div><h2>Explore more areas of work.</h2><p>Return to the causes directory and discover other community programmes.</p></div><a href="@Url.Action("Index","Causes")">Browse all causes</a></div>
         </div>
-    </div>
-</section>
-
-<!-- =========================================================
-     CAUSE CONTENT BODY (ABOUT, NGOS, PROGRAMS)
-     ========================================================= -->
-<section class="ngo-detail-body-section">
-    <div class="section-container">
-        <div class="detail-layout-grid">
-            <!-- Main Column (Left) -->
-            <div class="detail-main-col">
-
-                <!-- 1. ABOUT THIS CAUSE -->
-                <div class="detail-card">
-                    <h2 class="section-card-title">About this Cause</h2>
-                    <div class="rich-desc-content">
-                        <p class="paragraph-lead">
-                            @(!string.IsNullOrEmpty(Model.Description) ? Model.Description : "A priority humanitarian focus area addressing crucial community welfare, sustainable infrastructure, and frontline relief across Pakistan.")
-                        </p>
-                        <div class="cause-highlights-row" style="margin-top: 18px;">
-                            <div class="meta-banner-item">
-                                <span class="meta-banner-lbl">Sector Focus:</span>
-                                <span class="meta-banner-val">@Model.CauseName</span>
-                            </div>
-                            <div class="meta-banner-item">
-                                <span class="meta-banner-lbl">Verified Partner NGOs:</span>
-                                <span class="meta-banner-val">@Model.TotalNGOsCount Organizations</span>
-                            </div>
-                            <div class="meta-banner-item">
-                                <span class="meta-banner-lbl">Active Field Campaigns:</span>
-                                <span class="meta-banner-val">@Model.TotalProgramsCount Initiatives</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- 2. NGOS WORKING ON THIS CAUSE -->
-                <div class="detail-card" id="ngos">
-                    <div class="card-header-flex">
-                        <div>
-                            <h2 class="section-card-title">NGOs working on @Model.CauseName</h2>
-                            <p class="section-card-sub">Audited non-profit partners actively delivering projects in this sector.</p>
-                        </div>
-                    </div>
-
-                    @if (Model.NGOs != null && Model.NGOs.Count > 0)
-                    {
-                        <div class="cause-ngos-list-grid">
-                            @foreach (var ngo in Model.NGOs)
-                            {
-                                <div class="cause-ngo-card">
-                                    <div class="cause-ngo-avatar">
-                                        @if (!string.IsNullOrEmpty(ngo.LogoURL))
-                                        {
-                                            <img src="@ngo.LogoURL" alt="@ngo.NGOName" class="ngo-logo-img" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" />
-                                            <div class="ngo-avatar-fallback" style="display:none;">@ngo.NGOName.Substring(0, 1)</div>
-                                        }
-                                        else
-                                        {
-                                            <div class="ngo-avatar-fallback">@ngo.NGOName.Substring(0, 1)</div>
-                                        }
-                                    </div>
-
-                                    <div class="cause-ngo-content">
-                                        <div class="cause-ngo-header-row">
-                                            <h3 class="cause-ngo-name">
-                                                <a href="@Url.Action("Details", "NGO", new { id = ngo.NGOID })">@ngo.NGOName</a>
-                                            </h3>
-                                            <span class="verified-pill-sm">🛡️ SECP Verified</span>
-                                        </div>
-                                        <div class="cause-ngo-meta">
-                                            <span>📍 @ngo.City</span>
-                                            <span>•</span>
-                                            <span>📋 @ngo.ProgramsCount Active @(ngo.ProgramsCount == 1 ? "Program" : "Programs")</span>
-                                        </div>
-                                        <p class="cause-ngo-desc">
-                                            @if (!string.IsNullOrEmpty(ngo.Description))
-                                            {
-                                                string desc = ngo.Description;
-                                                if (desc.StartsWith("[Category:"))
-                                                {
-                                                    int endIdx = desc.IndexOf(']');
-                                                    if (endIdx >= 0) { desc = desc.Substring(endIdx + 1).Trim(); }
-                                                }
-                                                if (desc.Contains("[Reg No:"))
-                                                {
-                                                    int regIdx = desc.IndexOf("[Reg No:");
-                                                    if (regIdx >= 0) { desc = desc.Substring(0, regIdx).Trim(); }
-                                                }
-                                                @(desc.Length > 95 ? desc.Substring(0, 95) + "..." : desc)
-                                            }
-                                        </p>
-                                    </div>
-
-                                    <div class="cause-ngo-actions">
-                                        <a href="@Url.Action("Details", "NGO", new { id = ngo.NGOID })" class="btn-sm-details">
-                                            <span>View Profile →</span>
-                                        </a>
-                                        <a href="@Url.Action("Create", "Donation", new { ngoId = ngo.NGOID, causeId = Model.CauseID })" class="btn-sm-donate">
-                                            <span>Donate 💚</span>
-                                        </a>
-                                    </div>
-                                </div>
-                            }
-                        </div>
-                    }
-                    else
-                    {
-                        <div class="empty-sub-state">
-                            <p>No specific NGOs are currently listed under this sector. General donations fund upcoming field interventions.</p>
-                        </div>
-                    }
-                </div>
-
-                <!-- 3. PROGRAMS SUPPORTING THIS CAUSE -->
-                <div class="detail-card" id="programs">
-                    <div class="card-header-flex">
-                        <div>
-                            <h2 class="section-card-title">Programs supporting @Model.CauseName</h2>
-                            <p class="section-card-sub">Specific field programs and relief campaigns you can support directly.</p>
-                        </div>
-                    </div>
-
-                    @if (Model.Programs != null && Model.Programs.Count > 0)
-                    {
-                        <div class="programs-list-grid">
-                            @foreach (var prog in Model.Programs)
-                            {
-                                <div class="program-item-card">
-                                    <div class="program-card-header">
-                                        <div class="program-title-wrap">
-                                            <a href="@Url.Action("Details", "NGO", new { id = prog.NGOID })" class="prog-ngo-badge" title="View NGO Profile">
-                                                <span>🏢 @prog.NGOName</span>
-                                            </a>
-                                            <h3 class="program-title">@prog.ProgramName</h3>
-                                        </div>
-                                        <span class="prog-status-pill status-@prog.Status.ToLower()">@prog.Status</span>
-                                    </div>
-
-                                    <div class="program-card-meta">
-                                        <span class="meta-item">📍 @prog.Location</span>
-                                        <span class="meta-item">🗓️ Launched: @prog.StartDate.ToString("dd MMM yyyy")</span>
-                                        @if (prog.EndDate.HasValue)
-                                        {
-                                            <span class="meta-item">🏁 Target End: @prog.EndDate.Value.ToString("dd MMM yyyy")</span>
-                                        }
-                                    </div>
-
-                                    @if (!string.IsNullOrEmpty(prog.Description))
-                                    {
-                                        <p class="program-desc">@prog.Description</p>
-                                    }
-
-                                    <!-- Funding Progress Bar -->
-                                    <div class="prog-funding-wrap">
-                                        <div class="prog-progress-bar">
-                                            <div class="prog-progress-fill" style="width: @prog.ProgressPercent%;"></div>
-                                        </div>
-                                        <div class="prog-funding-labels">
-                                            <span class="funding-raised">Raised: <strong>PKR @prog.CurrentAmount.ToString("N0")</strong></span>
-                                            <span class="funding-goal">Goal: PKR @prog.TargetAmount.ToString("N0") (@prog.ProgressPercent%)</span>
-                                        </div>
-                                    </div>
-
-                                    <div class="program-card-actions">
-                                        <a href="@Url.Action("Create", "Donation", new { ngoId = prog.NGOID, causeId = Model.CauseID, programId = prog.ProgramID })" class="btn-support-prog">
-                                            <span>Support Program 💚</span>
-                                        </a>
-                                        <a href="@Url.Action("Details", "NGO", new { id = prog.NGOID })" class="btn-view-cause-prog">
-                                            <span>View Organization Profile →</span>
-                                        </a>
-                                    </div>
-                                </div>
-                            }
-                        </div>
-                    }
-                    else
-                    {
-                        <div class="empty-sub-state">
-                            <p>No programs available yet. You can support this cause through a general contribution.</p>
-                            <a href="@Url.Action("Create", "Donation", new { causeId = Model.CauseID })" class="btn-filter-submit" style="margin-top: 12px; display: inline-flex; text-decoration: none;">
-                                <span>Support General Fund</span>
-                            </a>
-                        </div>
-                    }
-                </div>
-
-                <!-- Bottom Support Banner -->
-                <div class="ngo-cta-banner-card">
-                    <div class="ngo-cta-banner-content">
-                        <h3>Support @Model.CauseName Today</h3>
-                        <p>Help provide verified relief and resources to vulnerable families across Pakistan.</p>
-                    </div>
-                    <a href="@Url.Action("Create", "Donation", new { causeId = Model.CauseID })" class="btn-primary-hero">
-                        <span>Support This Cause 💚</span>
-                    </a>
-                </div>
-            </div>
-
-            <!-- Sidebar (Right) -->
-            <div class="detail-sidebar-col">
-                <!-- Donation Box -->
-                <div class="sidebar-sticky-card">
-                    <div class="sidebar-donate-box">
-                        <span class="sidebar-badge">Direct Sector Contribution</span>
-                        <h3 class="sidebar-donate-title">Support @Model.CauseName</h3>
-                        <p class="sidebar-donate-desc">
-                            Your contribution funds verified field operations, medical supplies, food relief, and infrastructure.
-                        </p>
-
-                        <div class="sidebar-quick-amounts">
-                            <a href="@Url.Action("Create", "Donation", new { causeId = Model.CauseID, amount = 1000 })" class="sidebar-amt-btn">PKR 1,000</a>
-                            <a href="@Url.Action("Create", "Donation", new { causeId = Model.CauseID, amount = 2500 })" class="sidebar-amt-btn">PKR 2,500</a>
-                            <a href="@Url.Action("Create", "Donation", new { causeId = Model.CauseID, amount = 5000 })" class="sidebar-amt-btn">PKR 5,000</a>
-                            <a href="@Url.Action("Create", "Donation", new { causeId = Model.CauseID, amount = 10000 })" class="sidebar-amt-btn">PKR 10,000</a>
-                        </div>
-
-                        <a href="@Url.Action("Create", "Donation", new { causeId = Model.CauseID })" class="btn-primary-hero full-width-btn">
-                            <span>Proceed to Donate 💚</span>
-                        </a>
-
-                        <div class="sidebar-trust-points">
-                            <div class="trust-point">✓ 100% Tax Deductible</div>
-                            <div class="trust-point">✓ Direct Field Allocation</div>
-                            <div class="trust-point">✓ Real-Time Audit Tracking</div>
-                        </div>
-                    </div>
-
-                    <!-- Guidance Info -->
-                    <div class="sidebar-info-card" style="margin-top: 20px;">
-                        <h4 class="info-card-title">💡 Why This Cause Matters</h4>
-                        <p class="info-card-text">
-                            GiveAID coordinates with frontline relief workers and vetted non-profits to ensure every rupee donated is applied directly where need is greatest.
-                        </p>
-                        <a href="@Url.Action("Index", "NGO", new { causeId = Model.CauseID })" class="info-card-link">Browse NGOs in this Sector →</a>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</section>
+    </section>
+</main>
+@section Scripts{
+    <script>(function () { var items = document.querySelectorAll('.reveal'); if ('IntersectionObserver' in window) { var o = new IntersectionObserver(function (es) { es.forEach(function (e) { if (e.isIntersecting) { e.target.classList.add('show'); o.unobserve(e.target); } }); }, { threshold: .1 }); items.forEach(function (x) { o.observe(x); }); } else { items.forEach(function (x) { x.classList.add('show'); }); } })();</script>
+}
